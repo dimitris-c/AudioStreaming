@@ -91,31 +91,3 @@ public enum AudioPlayerErrorCode: Error, Equatable {
     case dataNotFound
     case other
 }
-
-public struct AudioPlayerConfiguration {
-    /// All pending items will be flushed when seeking a track if this is set to `true`
-    let flushQueueOnSeek: Bool
-    /// 
-    let enableVolumeMixer: Bool
-    /// The size of the I/O read buffer.
-    let readBufferSize: Int
-    /// The size of the decompressed buffer.
-    let bufferSizeInSeconds: Double
-    /// Number of seconds of audio required to before playback first starts.
-    /// - note: Must be larger that `bufferSizeInSeconds`
-    let secondsRequiredToStartPlaying: Int
-    ///
-    let gracePeriodAfterSeekInSeconds: Double
-    /// Number of seconds of audio required to before playback resumes after a buffer underun
-    /// - note: Must be larger that `bufferSizeInSeconds`
-    let secondsRequiredToStartPlayingAfterBufferUnderun: Int
-    
-    static public let `default` = AudioPlayerConfiguration(flushQueueOnSeek: true,
-                                                           enableVolumeMixer: true,
-                                                           readBufferSize: 64 * 1024,
-                                                           bufferSizeInSeconds: 10,
-                                                           secondsRequiredToStartPlaying: 1,
-                                                           gracePeriodAfterSeekInSeconds: 0.5,
-                                                           secondsRequiredToStartPlayingAfterBufferUnderun: 7)
-}
-

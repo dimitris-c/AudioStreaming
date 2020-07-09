@@ -101,7 +101,6 @@ internal final class NetworkDataStream: NSObject {
         underlyingQueue.async { [weak self] in
             guard let self = self else { return }
             self.dataReceived.append(data)
-            print(self.dataReceived.count)
             self.writeData()
         }
         $streamState.read { state in
