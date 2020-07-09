@@ -15,5 +15,3 @@ FOUNDATION_EXPORT double AudioStreamingVersionNumber;
 FOUNDATION_EXPORT const unsigned char AudioStreamingVersionString[];
 
 // In this header, you should import all the public headers of your framework using statements like #import <AudioStreaming/PublicHeader.h>
-
-
