@@ -6,6 +6,7 @@
 import Foundation
 
 extension UnsafeMutablePointer where Pointee == UInt8 {
+    /// Allocates and performs binding to memory of an `UnsafeMutableRawPointer` to `UnsafeMutablePointer<UInt8>`
     static func uint8pointer(of size: Int) -> UnsafeMutablePointer<UInt8> {
         let alignment = MemoryLayout<UInt8>.alignment
         return UnsafeMutableRawPointer
@@ -15,10 +16,11 @@ extension UnsafeMutablePointer where Pointee == UInt8 {
 }
 
 extension UnsafeMutableRawPointer {
+    /// Converts an UnsafeMutableRawPointer to the given Object type 
     func to<Object: AnyObject>(type: Object.Type) -> Object {
         return Unmanaged<Object>.fromOpaque(self).takeUnretainedValue()
     }
-    
+    /// Converts the given object to an UnsafeMutableRawPointer
     static func from<Object: AnyObject>(object: Object) -> UnsafeMutableRawPointer {
         return Unmanaged<Object>.passUnretained(object).toOpaque()
     }

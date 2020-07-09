@@ -164,6 +164,7 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
         
         metadataStreamProccessor.delegate = self
         inputStream.delegate = self
+        performSoftSetup()
         inputStream.open()
         
         inputStream.setProperty(StreamNetworkServiceTypeValue.background, forKey: .networkServiceType)
@@ -174,7 +175,6 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
             inputStream.setProperty(sslSettings, forKey: kCFStreamPropertySSLSettings as Stream.PropertyKey)
         }
 
-        performSoftSetup()
     }
     
     private func performSoftSetup() {

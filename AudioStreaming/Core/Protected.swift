@@ -22,44 +22,13 @@ extension Lock {
     }
 }
 
-/// A `pthread_mutex_t` wrapper.
-final class Mutex: Lock {
-    private var mutex: UnsafeMutablePointer<pthread_mutex_t>
-    
-    init() {
-        mutex = .allocate(capacity: 1)
-        
-        var attr = pthread_mutexattr_t()
-        pthread_mutexattr_init(&attr)
-        pthread_mutexattr_settype(&attr, .init(PTHREAD_MUTEX_RECURSIVE))
-        
-        let error = pthread_mutex_init(mutex, &attr)
-        precondition(error == 0, "failure creating pthread_mutext")
-    }
-    
-    deinit {
-        let error = pthread_mutex_destroy(mutex)
-        precondition(error == 0, "fulire destroying pthread_mutex")
-    }
-    
-    func lock() {
-        pthread_mutex_lock(mutex)
-    }
-    
-    func unlock() {
-        pthread_mutex_unlock(mutex)
-    }
-}
-
 /// A wrapper for `os_unfair_lock`
-@objcMembers
-final public class UnfairLock: NSObject {
+final public class UnfairLock {
     let unfairLock: os_unfair_lock_t
     
-    public override init() {
+    public init() {
         unfairLock = .allocate(capacity: 1)
         unfairLock.initialize(to: os_unfair_lock())
-        super.init()
     }
     
     deinit {

@@ -37,7 +37,10 @@ internal final class NetworkDataStream: NSObject {
     
     private var task: URLSessionTask?
     
+    // the accumulated data received from the URLSession
     private var dataReceived = Data()
+    // keeps a track of the written bytes in the output stream
+    private var bytesWritten: Int = 0
     
     var urlResponse: HTTPURLResponse? {
         task?.response as? HTTPURLResponse
@@ -87,9 +90,7 @@ internal final class NetworkDataStream: NSObject {
                                    inputStream: &inputStream,
                                    outputStream: &state.outputStream)
             state.outputStream?.delegate = self
-            if let stream = state.outputStream {
-                CFWriteStreamSetDispatchQueue(stream, underlyingQueue)
-            }
+            state.outputStream?.set(on: underlyingQueue)
             state.outputStream?.open()
         }
         return inputStream
@@ -150,19 +151,26 @@ extension NetworkDataStream: StreamDelegate {
         }
     }
     
+    /// Writes the data to the outputStream
     private func writeData() {
         underlyingQueue.async { [weak self] in
             guard let self = self else { return }
             guard !self.dataReceived.isEmpty else { return }
-            
-            let count = (self.dataReceived.count > self.bufferSize) ? self.bufferSize : self.dataReceived.count
+            var bytes = self.dataReceived.getBytes { $0 }
+            bytes += self.bytesWritten
+            let dataCount = self.dataReceived.count
+            // get the count of bytes to be written, restrict to maximum of `bufferSize`
+            let count = (dataCount - self.bytesWritten >= self.bufferSize)
+                ? self.bufferSize
+                : dataCount - self.bytesWritten
             guard count > 0 else { return }
             let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: count)
             defer { buffer.deallocate() }
-            self.dataReceived.copyBytes(to: buffer, count: count)
-            self.dataReceived.removeFirst(count)
+            memcpy(buffer, bytes, count)
             
-            self.streamState.outputStream?.write(buffer, maxLength: count)
+            if let len = self.streamState.outputStream?.write(buffer, maxLength: count) {
+                self.bytesWritten += len
+            }
         }
     }
 }
