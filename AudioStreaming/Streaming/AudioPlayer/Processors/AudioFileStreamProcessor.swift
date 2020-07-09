@@ -258,6 +258,8 @@ final class AudioFileStreamProcessor {
             }
             
             let localBufferList = AudioBufferList.allocate(maximumBuffers: 1)
+            defer { localBufferList.unsafeMutablePointer.deallocate() }
+            
             let audioBuffer = rendererContext.audioBuffer
             
             if end >= start {

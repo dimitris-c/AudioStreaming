@@ -278,7 +278,7 @@ public final class AudioPlayer {
     private func startPlayer() {
         guard let player = player else { return }
         rendererContext.resetBuffers()
-//        if isEngineRunning { return }
+        if !isEngineRunning { return }
         let status = AudioOutputUnitStart(player.audioUnit)
         guard status == 0 else {
             raiseUnxpected(error: .audioSystemError)

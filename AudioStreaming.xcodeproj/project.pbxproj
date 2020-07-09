@@ -157,18 +157,8 @@
 			isa = PBXGroup;
 			children = (
 				B5EF9554247E9393003E8FF8 /* AudioEntry.swift */,
-				B5B3B7CB248647ED00656828 /* AudioPlayerState.swift */,
-				B5E1DE2424B70B4200955BFB /* AudioPlayerConfiguration.swift */,
-				B55CEABB24853CD20001C498 /* AudioPlayer.swift */,
-				B5667A912499063D00D93F85 /* AudioPlayerContext.swift */,
-				B54D876E2490E4DD00C361A0 /* AudioRendererContext.swift */,
-				B5667A8F2499018D00D93F85 /* AudioFileStreamProcessor.swift */,
-				B5667B3D249BC43000D93F85 /* AudioPlayerRenderProcessor.swift */,
-				B55CEAC024855AA20001C498 /* Processors */,
-				B54D876C2490E4A000C361A0 /* UnitDescriptions.swift */,
-				B55CEAC124855AAD0001C498 /* AudioSource */,
-				B55CEABF24855A900001C498 /* Helpers */,
-				B55A736A247FCB310050C53D /* Parsers */,
+				B5EF9556247E9439003E8FF8 /* AudioStreamSource.swift */,
+				B5EF955C247ECBB1003E8FF8 /* RemoteAudioSource.swift */,
 			);
 			path = AudioSource;
 			sourceTree = "<group>";
@@ -224,18 +214,11 @@
 		B55CEAC024855AA20001C498 /* Processors */ = {
 			isa = PBXGroup;
 			children = (
+				B5667A8F2499018D00D93F85 /* AudioFileStreamProcessor.swift */,
+				B5667B3D249BC43000D93F85 /* AudioPlayerRenderProcessor.swift */,
 				B55CE97024810DE20001C498 /* MetadataStreamProccessor.swift */,
 			);
 			path = Processors;
-			sourceTree = "<group>";
-		};
-		B55CEAC124855AAD0001C498 /* AudioSource */ = {
-			isa = PBXGroup;
-			children = (
-				B5EF9556247E9439003E8FF8 /* AudioStreamSource.swift */,
-				B5EF955C247ECBB1003E8FF8 /* RemoteAudioSource.swift */,
-			);
-			path = AudioSource;
 			sourceTree = "<group>";
 		};
 		B57A4F7A24AB4E6C00D7EA51 /* Frameworks */ = {
@@ -296,6 +279,20 @@
 			path = AudioStreamingMac;
 			sourceTree = "<group>";
 		};
+		B5E1DE2924B7179E00955BFB /* AudioPlayer */ = {
+			isa = PBXGroup;
+			children = (
+				B54D876C2490E4A000C361A0 /* UnitDescriptions.swift */,
+				B5B3B7CB248647ED00656828 /* AudioPlayerState.swift */,
+				B5E1DE2424B70B4200955BFB /* AudioPlayerConfiguration.swift */,
+				B55CEABB24853CD20001C498 /* AudioPlayer.swift */,
+				B5667A912499063D00D93F85 /* AudioPlayerContext.swift */,
+				B54D876E2490E4DD00C361A0 /* AudioRendererContext.swift */,
+				B55CEAC024855AA20001C498 /* Processors */,
+			);
+			path = AudioPlayer;
+			sourceTree = "<group>";
+		};
 		B5EF954A247DA450003E8FF8 /* Network */ = {
 			isa = PBXGroup;
 			children = (
@@ -307,7 +304,10 @@
 		B5EF9553247E9235003E8FF8 /* Streaming */ = {
 			isa = PBXGroup;
 			children = (
+				B5E1DE2924B7179E00955BFB /* AudioPlayer */,
 				B55A7369247FCB160050C53D /* AudioSource */,
+				B55CEABF24855A900001C498 /* Helpers */,
+				B55A736A247FCB310050C53D /* Parsers */,
 			);
 			path = Streaming;
 			sourceTree = "<group>";
@@ -680,7 +680,7 @@
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				INFOPLIST_FILE = AudioStreaming/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -709,7 +709,7 @@
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				INFOPLIST_FILE = AudioStreaming/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

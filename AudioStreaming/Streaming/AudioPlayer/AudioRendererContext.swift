@@ -56,7 +56,6 @@ final class AudioRendererContext: NSObject {
         self.bufferTotalFrameCount = bufferTotalFrameCount
         self.bufferFrameSizeInBytes = canonicalStream.mBytesPerFrame
 
-//        _bufferList.unsafePointer.deallocate()
     }
     
     public func clean() {
@@ -69,7 +68,6 @@ final class AudioRendererContext: NSObject {
         bufferFramesStartIndex = 0
         bufferUsedFrameCount = 0
     }
-    
     
 }
 
