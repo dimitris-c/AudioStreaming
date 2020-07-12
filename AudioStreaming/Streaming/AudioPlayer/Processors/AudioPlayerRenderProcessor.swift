@@ -9,13 +9,11 @@ final class AudioPlayerRenderProcessor: NSObject {
     private(set) var playerContext: AudioPlayerContext
     private(set) var rendererContext: AudioRendererContext
     
-    private(set) var audioQueue: DispatchQueue
     private(set) var audioSemaphore: DispatchSemaphore
     
-    init(playerContext: AudioPlayerContext, rendererContext: AudioRendererContext, queue: DispatchQueue, semaphore: DispatchSemaphore) {
+    init(playerContext: AudioPlayerContext, rendererContext: AudioRendererContext, semaphore: DispatchSemaphore) {
         self.playerContext = playerContext
         self.rendererContext = rendererContext
-        self.audioQueue = queue
         self.audioSemaphore = semaphore
     }
     
@@ -235,15 +233,24 @@ final class AudioPlayerRenderProcessor: NSObject {
         var status = status
         
         rendererContext.outAudioBufferList[0].mBuffers.mData = ioData.pointee.mBuffers.mData
-        rendererContext.outAudioBufferList[0].mBuffers.mDataByteSize = ioData.pointee.mBuffers.mDataByteSize
+        rendererContext.outAudioBufferList[0].mBuffers.mDataByteSize =
+            maxFramesPerSlice * UnitDescriptions.canonicalAudioStream.mChannelsPerFrame
         rendererContext.outAudioBufferList[0].mBuffers.mNumberChannels = UnitDescriptions.canonicalAudioStream.mChannelsPerFrame
         
-        if let renderStatus = rendererContext.renderBlock?(inNumberFrames, rendererContext.outAudioBufferList, &status) {
+        let renderStatus = rendererContext.renderBlock?(inNumberFrames, rendererContext.outAudioBufferList, &status)
+        
+        // Regardless of the returned status code, the output buffer's
+        // `mDataByteSize` field will indicate the amount of PCM data bytes
+        // rendered by the engine
+        let bytesTotal = rendererContext.outAudioBufferList[0].mBuffers.mDataByteSize
+        
+        if bytesTotal == 0 {
+            guard let renderStatus = renderStatus else { return noErr }
             switch renderStatus {
                 case .success:
-                    return 0
+                    return noErr
                 case .insufficientDataFromInputNode:
-                    return 0
+                    return noErr
                 case .cannotDoInCurrentContext:
                     print("report error")
                     return 0

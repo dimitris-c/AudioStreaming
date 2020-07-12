@@ -8,8 +8,6 @@ import Foundation
 public struct AudioPlayerConfiguration: Equatable {
     /// All pending items will be flushed when seeking a track if this is set to `true`
     let flushQueueOnSeek: Bool
-    ///
-    let enableVolumeMixer: Bool
     /// The size of the I/O read buffer.
     let readBufferSize: Int
     /// The size of the decompressed buffer.
@@ -24,12 +22,11 @@ public struct AudioPlayerConfiguration: Equatable {
     let secondsRequiredToStartPlayingAfterBufferUnderun: Int
     
     static public let `default` = AudioPlayerConfiguration(flushQueueOnSeek: true,
-                                                           enableVolumeMixer: true,
                                                            readBufferSize: 64 * 1024,
                                                            bufferSizeInSeconds: 10,
                                                            secondsRequiredToStartPlaying: 1,
                                                            gracePeriodAfterSeekInSeconds: 0.5,
-                                                           secondsRequiredToStartPlayingAfterBufferUnderun: 7)
+                                                           secondsRequiredToStartPlayingAfterBufferUnderun: 1)
     /// Normalize values on any zero values passed
     func normalizeValues() -> AudioPlayerConfiguration {
         let defaultValues = AudioPlayerConfiguration.default
@@ -42,7 +39,6 @@ public struct AudioPlayerConfiguration: Equatable {
             defaultValues.secondsRequiredToStartPlayingAfterBufferUnderun : self.secondsRequiredToStartPlayingAfterBufferUnderun
         
         return AudioPlayerConfiguration(flushQueueOnSeek: self.flushQueueOnSeek,
-                                        enableVolumeMixer: self.enableVolumeMixer,
                                         readBufferSize: readBufferSize,
                                         bufferSizeInSeconds: bufferSizeInSeconds,
                                         secondsRequiredToStartPlaying: secondsRequiredToStartPlaying,

@@ -167,14 +167,6 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
         performSoftSetup()
         inputStream.open()
         
-        inputStream.setProperty(StreamNetworkServiceTypeValue.background, forKey: .networkServiceType)
-        
-        if let scheme = url.scheme, scheme == "https" {
-            inputStream.setProperty(StreamSocketSecurityLevel.negotiatedSSL, forKey: .socketSecurityLevelKey)
-            let sslSettings: [String: Any] = [kCFStreamSSLValidatesCertificateChain as String: false]
-            inputStream.setProperty(sslSettings, forKey: kCFStreamPropertySSLSettings as Stream.PropertyKey)
-        }
-
     }
     
     private func performSoftSetup() {

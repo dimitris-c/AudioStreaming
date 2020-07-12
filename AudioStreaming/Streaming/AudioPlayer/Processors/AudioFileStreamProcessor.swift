@@ -26,13 +26,11 @@ final class AudioFileStreamProcessor {
     var isFileStreamOpen: Bool {
         audioFileStream != nil
     }
-    private let audioQueue: DispatchQueue
     private let audioSemaphore: DispatchSemaphore
     
-    init(playerContext: AudioPlayerContext, rendererContext: AudioRendererContext, queue: DispatchQueue, semaphore: DispatchSemaphore) {
+    init(playerContext: AudioPlayerContext, rendererContext: AudioRendererContext, semaphore: DispatchSemaphore) {
         self.playerContext = playerContext
         self.rendererContext = rendererContext
-        self.audioQueue = queue
         self.audioSemaphore = semaphore
     }
     
@@ -184,7 +182,8 @@ final class AudioFileStreamProcessor {
         var i = 0
         while i * step < size {
             let asbd = list[i].mASBD
-            if asbd.mFormatID == kAudioFormatMPEG4AAC_HE || asbd.mFormatID == kAudioFormatMPEG4AAC_HE_V2 {
+            let formatId = asbd.mFormatID
+            if formatId == kAudioFormatMPEG4AAC_HE || formatId == kAudioFormatMPEG4AAC_HE_V2 || formatId == kAudioFileAAC_ADTSType {
                 playerContext.currentPlayingEntry?.audioStreamBasicDescription = asbd
                 break
             }

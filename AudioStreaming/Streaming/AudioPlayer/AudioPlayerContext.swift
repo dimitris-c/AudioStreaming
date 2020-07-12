@@ -5,7 +5,7 @@
 
 import Foundation
 
-final public class AudioPlayerContext: NSObject {
+internal final class AudioPlayerContext {
     
 //    @Protected(wrappedValue: .none)
     var stopReason: AudioPlayerStopReason = .none
