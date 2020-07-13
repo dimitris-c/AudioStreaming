@@ -40,6 +40,13 @@ final class AudioFileStreamProcessor {
         return status
     }
     
+    func closeFileStreamIfNeeded() {
+        if let fileStream = audioFileStream {
+            AudioFileStreamClose(fileStream)
+            audioFileStream = nil
+        }
+    }
+    
     func parseFileSteamBytes(buffer: UnsafeMutablePointer<UInt8>, size: Int) -> OSStatus {
         guard let stream = audioFileStream else { return 0 }
         return AudioFileStreamParseBytes(stream, UInt32(size), buffer, .init())

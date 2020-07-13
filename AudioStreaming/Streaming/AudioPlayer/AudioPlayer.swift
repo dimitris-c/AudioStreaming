@@ -89,6 +89,8 @@ public final class AudioPlayer {
         AVAudioFormat(streamDescription: &UnitDescriptions.canonicalAudioStream)!
     }()
     
+    private var stateBeforePaused: PlayerInternalState = .initial
+    
     internal let audioEngine = AVAudioEngine()
     private(set) internal var player: AVAudioUnit?
     private(set) internal var converter: AVAudioUnit?
@@ -165,10 +167,39 @@ public final class AudioPlayer {
         entriesQueue.enqueue(item: entry, type: .upcoming)
         playerContext.internalState = .pendingNext
         
-        startReadProcessFromSource()
+        checkRenderWaitingAndNotifyIfNeeded()
+        sourceQueue.async { [weak self] in
+            try? self?.startEngineIfNeeded()
+            self?.processSource()
+            self?.startReadProcessFromSourceIfNeeded()
+        }
     }
     
-    private var stateBeforePaused: PlayerInternalState = .initial
+    public func stop() {
+        guard playerContext.internalState != .stopped else { return }
+        
+        stopEngine()
+        player?.auAudioUnit.stopHardware()
+        rendererContext.resetBuffers()
+        playerContext.internalState = .stopped
+        stopReadProccessFromSource()
+        checkRenderWaitingAndNotifyIfNeeded()
+        sourceQueue.async { [weak self] in
+            guard let self = self else { return }
+            self.playerContext.currentReadingEntry?.source.delegate = nil
+            self.playerContext.currentReadingEntry?.source.removeFromQueue()
+            self.playerContext.currentReadingEntry?.source.close()
+            if let playingEntry = self.playerContext.currentPlayingEntry {
+                self.processFinishPlaying(entry: playingEntry, with: nil)
+            }
+            
+            self.clearQueue()
+            self.playerContext.currentReadingEntry = nil
+            self.playerContext.currentPlayingEntry = nil
+                
+            self.processSource()
+        }
+    }
     
     public func pause() {
         if playerContext.internalState != .paused && playerContext.internalState.contains(.running) {
@@ -176,11 +207,10 @@ public final class AudioPlayer {
             playerContext.setInternalState(to: .paused)
             
             pauseEngine()
-            print("is render waiting", rendererContext.waiting)
-            stopReadProccessFromSource()
             sourceQueue.async { [weak self] in
                 self?.processSource()
             }
+            stopReadProccessFromSource()
         }
     }
     
@@ -194,7 +224,7 @@ public final class AudioPlayer {
                 print("resuming audio engine failed")
             }
             self.startPlayer(resetBuffers: false)
-            startReadProcessFromSource()
+            startReadProcessFromSourceIfNeeded()
         }
     }
     
@@ -244,9 +274,7 @@ public final class AudioPlayer {
             attachAndConnectNodes(format: audioFormat)
             
             audioEngine.prepare()
-            try startEngine()
-            
-            
+            try audioEngine.start()
         } catch {
             print("⚠️ error setuping audio engine: \(error)")
         }
@@ -285,16 +313,18 @@ public final class AudioPlayer {
         audioEngine.connect(equalizer, to: audioEngine.mainMixerNode, format:  nil)
     }
     
-    private func startEngine() throws {
-        guard !isEngineRunning else { // sanity
+    private func startEngineIfNeeded() throws {
+        guard !isEngineRunning else {
             print("engine already running")
             return
         }
         try audioEngine.start()
         print("engine started 🛵")
     }
+    
     /// Pauses the audio engine and stops the player's hardware
     private func pauseEngine() {
+        guard isEngineRunning else { return }
         audioEngine.pause()
         player?.auAudioUnit.stopHardware()
         print("engine paused ⏸")
@@ -309,7 +339,8 @@ public final class AudioPlayer {
         print("engine stopped 🛑")
     }
     
-    private func startReadProcessFromSource() {
+    private func startReadProcessFromSourceIfNeeded() {
+        guard audioReadSource.state != .resumed else { return }
         audioReadSource.add { [weak self] in
             self?.processSource()
         }
@@ -317,8 +348,8 @@ public final class AudioPlayer {
     }
     
     private func stopReadProccessFromSource() {
-        audioReadSource.removeHandler()
         audioReadSource.suspend()
+        audioReadSource.removeHandler()
     }
     
     private func startPlayer(resetBuffers: Bool) {
@@ -352,16 +383,12 @@ public final class AudioPlayer {
     private func setCurrentReading(entry: AudioEntry?, startPlaying: Bool, shouldClearQueue: Bool) {
         guard let entry = entry else { return }
         print("Setting current reading entry to: \(entry)")
-        
         if startPlaying {
             let count = Int(rendererContext.bufferTotalFrameCount * rendererContext.bufferFrameSizeInBytes)
-            memset(rendererContext.outAudioBufferList[0].mBuffers.mData, 0, count)
+            memset(rendererContext.audioBuffer.mData, 0, count)
         }
         
-        if let fileStream = audioFileStream {
-            AudioFileStreamClose(fileStream)
-            audioFileStream = nil
-        }
+        fileStreamProcessor.closeFileStreamIfNeeded()
         
         if playerContext.currentReadingEntry != nil {
             playerContext.currentReadingEntry?.source.delegate = nil
@@ -433,17 +460,25 @@ public final class AudioPlayer {
             }
             notifyDelegateEntryFinishedPlaying(entry, isPlayingSameItemProbablySeek)
         }
+        processSource()
+        checkRenderWaitingAndNotifyIfNeeded()
     }
     
     /// Clears pending queues and informs the delegate
     private func clearQueue() {
-        let pendingItems = self.entriesQueue.pendingEntriesId()
-        self.entriesQueue.removeAll()
+        let pendingItems = entriesQueue.pendingEntriesId()
+        entriesQueue.removeAll()
         if !pendingItems.isEmpty {
             asyncOnMain { [weak self] in
                 guard let self = self else { return }
                 self.delegate?.audioPlayerDidCancel(player: self, queuedItems: pendingItems)
             }
+        }
+    }
+    
+    private func checkRenderWaitingAndNotifyIfNeeded() {
+        if rendererContext.waiting {
+            audioSemaphore.signal()
         }
     }
     

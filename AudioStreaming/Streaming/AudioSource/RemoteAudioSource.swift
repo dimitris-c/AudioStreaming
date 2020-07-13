@@ -105,9 +105,15 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
     }
     
     func close() {
-        self.inputStream?.close()
+        streamRequest?.cancel()
         self.removeFromQueue()
+        if let streamTask = streamRequest {
+            networking.remove(task: streamTask)
+        }
+        self.inputStream?.unsetFromQueue()
+        self.inputStream?.close()
         self.inputStream = nil
+        streamRequest = nil
     }
     
     func seek(at offset: Int) {
@@ -173,7 +179,7 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
         guard let stream = inputStream else {
             return
         }
-        CFReadStreamSetDispatchQueue(stream, sourceQueue)
+        stream.set(on: sourceQueue)
     }
     
     private func parseResponseHeader(response: HTTPURLResponse?) -> Bool {

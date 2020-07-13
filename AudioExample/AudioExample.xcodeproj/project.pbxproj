@@ -62,6 +62,7 @@
 				B5F883C424780A3C00D277C1 /* Frameworks */,
 			);
 			sourceTree = "<group>";
+			wrapsLines = 0;
 		};
 		B5AEDBD22475274C007D8101 /* Products */ = {
 			isa = PBXGroup;

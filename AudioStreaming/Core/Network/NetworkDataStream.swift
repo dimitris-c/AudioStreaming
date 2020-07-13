@@ -56,7 +56,6 @@ internal final class NetworkDataStream: NSObject {
     }
     
     func task(for request: URLRequest, using session: URLSession) -> URLSessionTask {
-        let request = request
         let task = session.dataTask(with: request)
         self.task = task
         return task
@@ -79,10 +78,16 @@ internal final class NetworkDataStream: NSObject {
     
     func cancel() {
         self.task?.cancel()
+        self.task = nil
+        $streamState.write { state in
+            state.outputStream?.delegate = nil
+            state.outputStream?.unsetFromQueue()
+            state.outputStream?.close()
+            state.outputStream = nil
+        }
     }
     
     func asInputStream(bufferSize: Int = 1024, queue: DispatchQueue) -> InputStream? {
-        defer { self.task?.resume() }
         var inputStream: InputStream?
         self.bufferSize = bufferSize
         $streamState.write { state in
@@ -92,6 +97,10 @@ internal final class NetworkDataStream: NSObject {
             state.outputStream?.delegate = self
             state.outputStream?.set(on: underlyingQueue)
             state.outputStream?.open()
+        }
+        
+        underlyingQueue.async { [weak self] in
+            self?.resume()
         }
         return inputStream
     }

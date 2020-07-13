@@ -36,7 +36,9 @@ final class AudioRendererContext: NSObject {
     
     var waiting: Bool = false
     
+    let configuration: AudioPlayerConfiguration
     init(configuration: AudioPlayerConfiguration) {
+        self.configuration = configuration
         self.readBufferSize = configuration.readBufferSize
         self.readBuffer = UnsafeMutablePointer<UInt8>.uint8pointer(of: readBufferSize)
         self.seekRequest = SeekRequest()
@@ -59,8 +61,10 @@ final class AudioRendererContext: NSObject {
     }
     
     public func clean() {
-        inAudioBufferList[0].mBuffers.mData?.deallocate()
-        outAudioBufferList[0].mBuffers.mData?.deallocate()
+        readBuffer.deallocate()
+        inAudioBufferList.deallocate()
+        outAudioBufferList.deallocate()
+        audioBuffer.mData?.deallocate()
     }
     
     public func resetBuffers() {

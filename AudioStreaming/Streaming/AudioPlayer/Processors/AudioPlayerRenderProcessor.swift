@@ -97,8 +97,8 @@ final class AudioPlayerRenderProcessor: NSObject {
                 if isMuted {
                     memset(bufferList.mBuffers.mData, 0, Int(bufferList.mBuffers.mDataByteSize))
                 } else {
-                    if let buffermData = audioBuffer.mData {
-                        memcpy(bufferList.mBuffers.mData, buffermData + Int(start * frameSizeInBytes), Int(bufferList.mBuffers.mDataByteSize))
+                    if let mDataBuffer = audioBuffer.mData {
+                        memcpy(bufferList.mBuffers.mData, mDataBuffer + Int(start * frameSizeInBytes), Int(bufferList.mBuffers.mDataByteSize))
                     }
                 }
                 totalFramesCopied = framesToCopy
@@ -131,8 +131,8 @@ final class AudioPlayerRenderProcessor: NSObject {
                         if isMuted {
                             memset(iomData + Int(frameToCopy * frameSizeInBytes), 0, Int(frameSizeInBytes * moreFramesToCopy))
                         } else {
-                            if let buffermData = audioBuffer.mData {
-                                memcpy(iomData + Int(frameToCopy * frameSizeInBytes), buffermData, Int(frameSizeInBytes * moreFramesToCopy))
+                            if let mDataBuffer = audioBuffer.mData {
+                                memcpy(iomData + Int(frameToCopy * frameSizeInBytes), mDataBuffer, Int(frameSizeInBytes * moreFramesToCopy))
                             }
                         }
                     }

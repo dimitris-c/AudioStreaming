@@ -57,7 +57,7 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, policy: .longFormAudio)
-        try? AVAudioSession.sharedInstance().setPreferredIOBufferDuration(0.01)
+        try? AVAudioSession.sharedInstance().setPreferredIOBufferDuration(0.1)
         try? AVAudioSession.sharedInstance().setActive(true)
         
         player.delegate = self
@@ -124,7 +124,7 @@ class ViewController: UIViewController {
     
     @objc
     func stop() {
-        player.resume()
+        player.stop()
         resumeButton.setTitle("Pause", for: .normal)
     }
     
@@ -147,7 +147,7 @@ extension ViewController: AudioPlayerDelegate {
     }
     
     func audioPlayerDidStartPlaying(player: AudioPlayer, with entryId: AudioEntryId) {
-        print("did start playingP \(entryId)")
+        print("did start playing: \(entryId)")
     }
     
     func audioPlayerDidFinishBuffering(player: AudioPlayer, with entryId: AudioEntryId) {

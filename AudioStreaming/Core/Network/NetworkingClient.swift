@@ -61,6 +61,13 @@ internal final class NetworkingClient {
         networkQueue.async { [weak self] in
             self?.activeTasks.forEach { $0.cancel() }
         }
+        self.activeTasks.removeAll()
+        self.tasks = NetworkTasksMap()
+    }
+    
+    internal func remove(task: NetworkDataStream) {
+        self.activeTasks.remove(task)
+        self.tasks[task] = nil
     }
     
     // MARK: Private
@@ -73,11 +80,10 @@ internal final class NetworkingClient {
             guard let self = self else { return }
             
             self.activeTasks.insert(stream)
-            
             let task = stream.task(for: request, using: self.session)
             self.tasks[stream] = task
             
-            task.resume()
+//            task.resume()
         }
     }
 

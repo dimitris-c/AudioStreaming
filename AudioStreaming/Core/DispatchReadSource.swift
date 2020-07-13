@@ -8,16 +8,16 @@ import Foundation
 final class DispatchTimerSource {
     var handler: (() -> Void)?
     private let timer: DispatchSourceTimer
-    private var state: SourceState = .suspended
+    internal var state: SourceState = .suspended
     
-    private enum SourceState {
+    internal enum SourceState {
         case resumed
         case suspended
     }
     
     init(interval: DispatchTimeInterval, queue: DispatchQueue?) {
         self.timer = DispatchSource.makeTimerSource(flags: [], queue: queue)        
-        self.timer.schedule(deadline: .now(), repeating: interval)
+        self.timer.schedule(deadline: .now(), repeating: interval, leeway: .seconds(0))
     }
     
     deinit {
