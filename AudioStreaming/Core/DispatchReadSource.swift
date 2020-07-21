@@ -17,7 +17,7 @@ final class DispatchTimerSource {
     
     init(interval: DispatchTimeInterval, queue: DispatchQueue?) {
         self.timer = DispatchSource.makeTimerSource(flags: [], queue: queue)        
-        self.timer.schedule(deadline: .now(), repeating: interval, leeway: .seconds(0))
+        self.timer.schedule(deadline: .now() + interval, repeating: interval, leeway: .seconds(0))
     }
     
     deinit {

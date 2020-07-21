@@ -390,10 +390,10 @@ public final class AudioPlayer {
         
         fileStreamProcessor.closeFileStreamIfNeeded()
         
-        if playerContext.currentReadingEntry != nil {
-            playerContext.currentReadingEntry?.source.delegate = nil
-            playerContext.currentReadingEntry?.source.removeFromQueue()
-            playerContext.currentReadingEntry?.source.close()
+        if let readingEntry = playerContext.currentReadingEntry {
+            readingEntry.source.delegate = nil
+            readingEntry.source.removeFromQueue()
+            readingEntry.source.close()
         }
         
         playerContext.entriesLock.around {
@@ -477,9 +477,8 @@ public final class AudioPlayer {
     }
     
     private func checkRenderWaitingAndNotifyIfNeeded() {
-        if rendererContext.waiting {
-            audioSemaphore.signal()
-        }
+        guard rendererContext.waiting else { return }
+        audioSemaphore.signal()
     }
     
     private func raiseUnxpected(error: AudioPlayerErrorCode) {
@@ -493,8 +492,14 @@ public final class AudioPlayer {
 extension AudioPlayer: AudioStreamSourceDelegate {
     
     func dataAvailable(source: AudioStreamSource) {
-        guard playerContext.currentReadingEntry?.source === source else { return }
-        guard source.hasBytesAvailable else { return }
+        guard playerContext.currentReadingEntry?.source === source else {
+            print("currentReadingEntry.source is diff")
+            return
+        }
+        guard source.hasBytesAvailable else {
+            print("no bytes available")
+            return
+        }
 
         let read = source.read(into: rendererContext.readBuffer, size: rendererContext.readBufferSize)
         guard read != 0 else { return }

@@ -93,7 +93,6 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
         guard let stream = inputStream else {
             return
         }
-        
         stream.delegate = self
         stream.set(on: sourceQueue)
     }
@@ -105,14 +104,12 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
     }
     
     func close() {
+        inputStream?.close()
+        inputStream = nil
         streamRequest?.cancel()
-        self.removeFromQueue()
         if let streamTask = streamRequest {
             networking.remove(task: streamTask)
         }
-        self.inputStream?.unsetFromQueue()
-        self.inputStream?.close()
-        self.inputStream = nil
         streamRequest = nil
     }
     
@@ -170,7 +167,7 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
         
         metadataStreamProccessor.delegate = self
         inputStream.delegate = self
-        performSoftSetup()
+        inputStream.set(on: sourceQueue)
         inputStream.open()
         
     }
@@ -232,7 +229,7 @@ extension RemoteAudioSource: StreamDelegate {
     public func stream(_ aStream: Stream, handle eventCode: Stream.Event) {
         switch eventCode {
             case .openCompleted:
-                print("open completed")
+                print("input stream open completed")
             case .hasBytesAvailable:
                 if httpStatusCode == 0 {
                     if self.parseResponseHeader(response: httpResponse) {

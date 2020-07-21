@@ -12,7 +12,6 @@ enum DataStreamError: Error {
 
 protocol StreamTaskProvider: class {
     func dataStream(for request: URLSessionTask) -> NetworkDataStream?
-    func sessionTask(for stream: NetworkDataStream) -> URLSessionTask?
 }
 
 extension URLSessionConfiguration {
@@ -83,7 +82,6 @@ internal final class NetworkingClient {
             let task = stream.task(for: request, using: self.session)
             self.tasks[stream] = task
             
-//            task.resume()
         }
     }
 

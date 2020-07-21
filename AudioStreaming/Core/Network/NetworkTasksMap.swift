@@ -39,6 +39,7 @@ struct NetworkTasksMap {
                 guard let request = streams[stream] else {
                     fatalError("incosistency error: no task to request found")
                 }
+                print("Removing stream: \(request.currentRequest)")
                 tasks.removeValue(forKey: request)
                 streams.removeValue(forKey: stream)
                 return

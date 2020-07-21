@@ -24,7 +24,7 @@ final public class ProcessedPacketsState: NSObject {
     public var sizeTotal: UInt32 = 0
 }
 
-public class AudioEntry: NSObject {
+public class AudioEntry {
     private let estimationMinPackets = 2
     private let estimationMinPacketsPreferred = 64
     
@@ -114,15 +114,15 @@ public class AudioEntry: NSObject {
     }
     
 }
-//
-//extension AudioEntry: Equatable {
-//    public static func == (lhs: AudioEntry, rhs: AudioEntry) -> Bool {
-//        lhs.id == rhs.id
-//    }
-//}
-//
-//extension AudioEntry: CustomStringConvertible {
-//    public var description: String {
-//        "AudioEntry: \(id), source: \(source)"
-//    }
-//}
+
+extension AudioEntry: Equatable {
+    public static func == (lhs: AudioEntry, rhs: AudioEntry) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
+extension AudioEntry: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        "AudioEntry: \(id), source: \(source)"
+    }
+}

@@ -241,14 +241,15 @@ final class AudioFileStreamProcessor {
             var used = rendererContext.bufferUsedFrameCount
             var start = rendererContext.bufferFramesStartIndex
             var end = (rendererContext.bufferFramesStartIndex + rendererContext.bufferUsedFrameCount) % rendererContext.bufferTotalFrameCount
-            var framesLeftInBuffer = max(rendererContext.bufferTotalFrameCount - used, 0)
+            
+            var framesLeftInBuffer = max(rendererContext.bufferTotalFrameCount &- used, 0)
             rendererContext.lock.unlock()
             if framesLeftInBuffer == 0 {
                 rendererContext.lock.lock()
                 used = rendererContext.bufferUsedFrameCount
                 start = rendererContext.bufferFramesStartIndex
                 end = (rendererContext.bufferFramesStartIndex + rendererContext.bufferUsedFrameCount) % rendererContext.bufferTotalFrameCount
-                framesLeftInBuffer = max(rendererContext.bufferTotalFrameCount - used, 0)
+                framesLeftInBuffer = max(rendererContext.bufferTotalFrameCount &- used, 0)
                 rendererContext.lock.unlock()
                 if framesLeftInBuffer > 0 { break }
                 if self.playerContext.disposedRequested

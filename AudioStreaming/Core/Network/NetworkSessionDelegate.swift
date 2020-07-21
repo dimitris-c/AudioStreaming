@@ -18,11 +18,10 @@ internal final class NetworkSessionDelegate: NSObject, URLSessionDataDelegate {
     }
     
     internal func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
-        if let stream = self.stream(for: dataTask) {
-            stream.didReceive(data: data, response: dataTask.response as? HTTPURLResponse)
-        } else {
-            assertionFailure("couldn't found related stream task in didReceiveData")
+        guard let stream = self.stream(for: dataTask) else {
+            return
         }
+        stream.didReceive(data: data, response: dataTask.response as? HTTPURLResponse)
     }
 
     internal func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {

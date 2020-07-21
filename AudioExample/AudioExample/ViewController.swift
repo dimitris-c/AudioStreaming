@@ -41,7 +41,7 @@ enum AudioContent: Int, CaseIterable {
             case .pepper966:
                 return URL(string: "https://ample-09.radiojar.com/pepper.m4a?1593699983=&rj-tok=AAABcw_1KyMAIViq2XpI098ZSQ&rj-ttl=5")!
             case .khruangbin:
-                return URL(string: "https://t4.bcbits.com/stream/fdb938c3d5eb62c9ff8587af2725c9d3/mp3-128/2809605460?p=0&ts=1594650909&t=0437476b46f11d5026cef40687e84dd6766a6ced&token=1594650909_c4cd67f104d614b6c8d4ddb90d4dc904f09c6bb3")!
+                return URL(string: "https://t4.bcbits.com/stream/fdb938c3d5eb62c9ff8587af2725c9d3/mp3-128/2809605460?p=0&ts=1595337591&t=79b6ac91734a36300f765c4535d444bdf75818ef&token=1595337591_0f844ac8d452132025e8fb83b1b43ac6e2aa0503")!
             case .piano:
                 return URL(string: "https://www.kozco.com/tech/piano2-CoolEdit.mp3")!
         }
@@ -52,7 +52,7 @@ class ViewController: UIViewController {
     
     let player = AudioPlayer()
     
-    let resumeButton = UIButton(type: .custom)
+    let resumeButton = UIButton()
     
     override func viewDidLoad() {
         super.viewDidLoad()
