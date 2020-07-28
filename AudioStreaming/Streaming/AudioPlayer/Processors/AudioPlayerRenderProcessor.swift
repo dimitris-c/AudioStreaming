@@ -6,15 +6,18 @@
 import AVFoundation
 
 final class AudioPlayerRenderProcessor: NSObject {
-    private(set) var playerContext: AudioPlayerContext
-    private(set) var rendererContext: AudioRendererContext
+    private let playerContext: AudioPlayerContext
+    private let rendererContext: AudioRendererContext
     
-    private(set) var audioSemaphore: DispatchSemaphore
+    /// The AVAudioEngine's `AVAudioEngineManualRenderingBlock` render block from manual rendering
+    var renderBlock: AVAudioEngineManualRenderingBlock?
+    
+    private let packetsWaitSemaphore: DispatchSemaphore
     
     init(playerContext: AudioPlayerContext, rendererContext: AudioRendererContext, semaphore: DispatchSemaphore) {
         self.playerContext = playerContext
         self.rendererContext = rendererContext
-        self.audioSemaphore = semaphore
+        self.packetsWaitSemaphore = semaphore
     }
     
     func attachCallback(on player: AVAudioUnit) {
@@ -34,6 +37,11 @@ final class AudioPlayerRenderProcessor: NSObject {
         AudioUnitSetProperty(player.audioUnit, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Input, 0, &callback, UInt32(callbackSize))
     }
     
+    /// Provides data to the audio engine
+    ///
+    /// - parameter inNumberFrames: An `AVAudioFrameCount` provided by the `AudioEngine` instance
+    /// - returns An optional `UnsafePointer` of `AudioBufferList`
+    @inlinable
     func inRender(inNumberFrames: AVAudioFrameCount) -> UnsafePointer<AudioBufferList>? {
         playerContext.entriesLock.lock()
         let entry = playerContext.currentPlayingEntry
@@ -216,28 +224,28 @@ final class AudioPlayerRenderProcessor: NSObject {
                 }
             }
             
-            self.audioSemaphore.signal()
+            self.packetsWaitSemaphore.signal()
         }
         
         let bytesPerFrames = UnitDescriptions.canonicalAudioStream.mBytesPerFrame
         let size = max(inNumberFrames, bytesPerFrames * totalFramesCopied)
 
-        rendererContext.inAudioBufferList[0].mBuffers.mData = rendererContext.outAudioBufferList[0].mBuffers.mData
+        rendererContext.inAudioBufferList[0].mBuffers.mData = bufferList.mBuffers.mData
         rendererContext.inAudioBufferList[0].mBuffers.mDataByteSize = size
-        rendererContext.inAudioBufferList[0].mBuffers.mNumberChannels = UnitDescriptions.canonicalAudioStream.mChannelsPerFrame
+        rendererContext.inAudioBufferList[0].mBuffers.mNumberChannels = mChannelsPerFrame
         
         return UnsafePointer(rendererContext.inAudioBufferList)
     }
     
+    @inlinable
     func render(inNumberFrames: UInt32, ioData: UnsafeMutablePointer<AudioBufferList>, status: OSStatus) -> OSStatus {
         var status = status
         
         rendererContext.outAudioBufferList[0].mBuffers.mData = ioData.pointee.mBuffers.mData
-        rendererContext.outAudioBufferList[0].mBuffers.mDataByteSize =
-            maxFramesPerSlice * UnitDescriptions.canonicalAudioStream.mChannelsPerFrame
-        rendererContext.outAudioBufferList[0].mBuffers.mNumberChannels = UnitDescriptions.canonicalAudioStream.mChannelsPerFrame
+        rendererContext.outAudioBufferList[0].mBuffers.mDataByteSize = maxFramesPerSlice * mChannelsPerFrame
+        rendererContext.outAudioBufferList[0].mBuffers.mNumberChannels = mChannelsPerFrame
         
-        let renderStatus = rendererContext.renderBlock?(inNumberFrames, rendererContext.outAudioBufferList, &status)
+        let renderStatus = renderBlock?(inNumberFrames, rendererContext.outAudioBufferList, &status)
         
         // Regardless of the returned status code, the output buffer's
         // `mDataByteSize` field will indicate the amount of PCM data bytes

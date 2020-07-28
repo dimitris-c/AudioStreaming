@@ -7,7 +7,6 @@ import Foundation
 
 internal final class AudioPlayerContext {
     
-//    @Protected(wrappedValue: .none)
     var stopReason: AudioPlayerStopReason = .none
     
     var state: AudioPlayerState = .ready
@@ -17,7 +16,6 @@ internal final class AudioPlayerContext {
     /// This is the player's internal state to use
     /// - NOTE: Do not use directly instead use the `internalState` to set and get the property
     /// or the `setInternalState(to:when:)`method
-//    @Protected(wrappedValue: .initial)
     private let stateLock = UnfairLock()
     private var __playerInternalState: PlayerInternalState = .initial
     
@@ -26,7 +24,7 @@ internal final class AudioPlayerContext {
         set { setInternalState(to: newValue) }
     }
     
-    var entriesLock = UnfairLock()
+    let entriesLock = UnfairLock()
     
     var currentReadingEntry: AudioEntry?
     var currentPlayingEntry: AudioEntry?
@@ -46,23 +44,19 @@ internal final class AudioPlayerContext {
     /// - parameter inState: If the `inState` expression is not nil, the internalState will be set if the evaluated expression is `true`
     /// - NOTE: This sets the underlying `__playerInternalState` variable
     internal func setInternalState(to state: PlayerInternalState,
-                                       when inState: ((PlayerInternalState) -> Bool)? = nil) {
+                                   when inState: ((PlayerInternalState) -> Bool)? = nil) {
         let newValues = playerStateAndStopReason(for: state)
-//        $stopReason.write { $0 = newValues.stopReason }
         stateLock.lock(); defer { stateLock.unlock() }
         stopReason = newValues.stopReason
-//        $__playerInternalState.write { internalState in
-//            guard let self = self else { return }
-            guard state != internalState else { return }
-            if let inState = inState, !inState(internalState) {
-                return
-            }
-            __playerInternalState = state
-            let previousPlayerState = self.state
-            if newValues.state != previousPlayerState {
-                self.state = newValues.state
-            }
-//        }
+        guard state != internalState else { return }
+        if let inState = inState, !inState(internalState) {
+            return
+        }
+        __playerInternalState = state
+        let previousPlayerState = self.state
+        if newValues.state != previousPlayerState {
+            self.state = newValues.state
+        }
     }
     
 }

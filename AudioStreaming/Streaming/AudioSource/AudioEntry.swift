@@ -10,15 +10,13 @@ public struct AudioEntryId: Equatable {
     public var id: String
 }
 
-@objcMembers
-final public class EntryFramesState: NSObject {
+final public class EntryFramesState {
     public var queued: Int = 0
     public var played: Int = 0
     public var lastFrameQueued: Int = -1
 }
 
-@objcMembers
-final public class ProcessedPacketsState: NSObject {
+final public class ProcessedPacketsState {
     public var buferSize: UInt32 = 0
     public var count: UInt32 = 0
     public var sizeTotal: UInt32 = 0
@@ -46,15 +44,13 @@ public class AudioEntry {
         Float(audioStreamBasicDescription.mSampleRate)
     }
     
-    @objc public var framesState: EntryFramesState
-    @objc public var processedPacketsState: ProcessedPacketsState
+    public var framesState: EntryFramesState
+    public var processedPacketsState: ProcessedPacketsState
     
     public var audioDataOffset: UInt64 = 0
     public var audioDataByteCount: UInt64?
     
     var audioStreamBasicDescription = AudioStreamBasicDescription()
-    
-    private let underlyingQueue: DispatchQueue
     
     private var avaragePacketByteSize: Double {
         let packets = processedPacketsState
@@ -62,7 +58,7 @@ public class AudioEntry {
         return Double(packets.sizeTotal / packets.count)
     }
     
-    init(source: AudioStreamSource, entryId: AudioEntryId, underlyingQueue: DispatchQueue) {
+    init(source: AudioStreamSource, entryId: AudioEntryId) {
         self.source = source
         self.id = entryId
         
@@ -70,8 +66,6 @@ public class AudioEntry {
         
         self.processedPacketsState = ProcessedPacketsState()
         self.framesState = EntryFramesState()
-        
-        self.underlyingQueue = underlyingQueue
     }
 
     func reset() {

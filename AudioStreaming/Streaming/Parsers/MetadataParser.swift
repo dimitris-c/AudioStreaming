@@ -12,11 +12,11 @@ public enum MetadataParsingError: Error, Equatable {
 
 typealias MetadataOutput = Result<[String: String], MetadataParsingError>
 
+private let zeroBytesCharSet = CharacterSet(charactersIn: "\0")
 struct MetadataParser: Parser {
     typealias Input = Data?
     typealias Output = MetadataOutput
     
-    private let zeroBytesCharSet = CharacterSet(charactersIn: "\0")
     func parse(input: Data?) -> MetadataOutput {
         guard let data = input else { return .failure(.unableToParse) }
         

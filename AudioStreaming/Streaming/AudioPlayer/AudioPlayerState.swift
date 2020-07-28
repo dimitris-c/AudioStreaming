@@ -64,6 +64,7 @@ func playerStateAndStopReason(for internalState: PlayerInternalState) -> (state:
 }
 
 // MARK: Public States
+
 public enum AudioPlayerState: Equatable {
     case ready
     case running

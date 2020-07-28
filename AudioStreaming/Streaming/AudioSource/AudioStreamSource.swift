@@ -9,8 +9,6 @@ import AudioToolbox
 protocol AudioStreamSourceDelegate: class {
     /// Indicates that there's data available
     func dataAvailable(source: AudioStreamSource)
-    /// Indicates that there's data available
-//    func dataAvailable(source: AudioStreamSource, data: Data)
     /// Indicates an error occurred
     func errorOccured(source: AudioStreamSource)
     /// Indicates end of file has occurred

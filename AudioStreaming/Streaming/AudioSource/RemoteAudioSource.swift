@@ -159,7 +159,7 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
         
         let request = networking.stream(request: urlRequest)
         streamRequest = request
-        inputStream = request.asInputStream(bufferSize: readBufferSize, queue: sourceQueue)
+        inputStream = request.asInputStream(bufferSize: readBufferSize)
         guard let inputStream = inputStream else {
             delegate?.errorOccured(source: self)
             return

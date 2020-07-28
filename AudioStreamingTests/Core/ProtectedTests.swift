@@ -15,7 +15,9 @@ class ProtectedTests: XCTestCase {
         
         DispatchQueue.concurrentPerform(iterations: 1_000) { int in
             _ = protected.wrappedValue
-            protected.wrappedValue = "\(int)"
+            protected.write { value in
+                value = "\(int)"
+            }
         }
         
         XCTAssertNotEqual(protected.wrappedValue, initialValue)
@@ -41,21 +43,9 @@ final class ProtectedWrapperTests: XCTestCase {
     override func setUp() {
         super.setUp()
 
-        value = 100
-    }
-
-    func testThatWrappedValuesAreAccessedSafely() {
-        // Given
-        let initialValue = value
-
-        // When
-        DispatchQueue.concurrentPerform(iterations: 10_000) { i in
-            _ = value
-            value = i
+        $value.write { (value) in
+            value = 100
         }
-        
-        // Then
-        XCTAssertNotEqual(value, initialValue)
     }
 
     func testThatProjectedReadWriteAccessedSafely() {

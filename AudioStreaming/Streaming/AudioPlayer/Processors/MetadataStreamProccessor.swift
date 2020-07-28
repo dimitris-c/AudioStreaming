@@ -66,7 +66,8 @@ final class MetadataStreamProccessor: MetadataStreamSource {
     
     /**
      Metadata from Shoutcast/Icecast servers are included in the audio stream.
-     There's a header value which you get on the HTTP headers *Icy-metaint* this value is the audio bytes
+     There's a header value which you get on the HTTP headers *Icy-metaint* this value is the audio bytes between
+     the metadata.
      ```
      =========================================
      [ audio data ][b][metadata][ audio data ]

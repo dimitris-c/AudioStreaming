@@ -87,7 +87,7 @@ internal final class NetworkDataStream: NSObject {
         }
     }
     
-    func asInputStream(bufferSize: Int = 1024, queue: DispatchQueue) -> InputStream? {
+    func asInputStream(bufferSize: Int = 1024) -> InputStream? {
         var inputStream: InputStream?
         self.bufferSize = bufferSize
         $streamState.write { state in

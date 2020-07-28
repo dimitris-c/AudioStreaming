@@ -236,7 +236,7 @@ final class AudioFileStreamProcessor {
             }
         }
         
-        while true {
+        packetProccess: while true {
             rendererContext.lock.lock()
             var used = rendererContext.bufferUsedFrameCount
             var start = rendererContext.bufferFramesStartIndex
@@ -251,7 +251,9 @@ final class AudioFileStreamProcessor {
                 end = (rendererContext.bufferFramesStartIndex + rendererContext.bufferUsedFrameCount) % rendererContext.bufferTotalFrameCount
                 framesLeftInBuffer = max(rendererContext.bufferTotalFrameCount &- used, 0)
                 rendererContext.lock.unlock()
-                if framesLeftInBuffer > 0 { break }
+                if framesLeftInBuffer > 0 {
+                    break packetProccess
+                }
                 if self.playerContext.disposedRequested
                     || self.playerContext.internalState == .disposed
                     || self.playerContext.internalState == .pendingNext
@@ -267,28 +269,21 @@ final class AudioFileStreamProcessor {
             let localBufferList = AudioBufferList.allocate(maximumBuffers: 1)
             defer { localBufferList.unsafeMutablePointer.deallocate() }
             
-            let audioBuffer = rendererContext.audioBuffer
-            
             if end >= start {
                 var framesAdded: UInt32 = 0
                 var framesToDecode: UInt32 = rendererContext.bufferTotalFrameCount - end
                 
-                localBufferList[0].mData = audioBuffer.mData! + Int(end * rendererContext.bufferFrameSizeInBytes)
-                localBufferList[0].mDataByteSize = framesToDecode * rendererContext.bufferFrameSizeInBytes
-                localBufferList[0].mNumberChannels = audioBuffer.mNumberChannels
+                let offset: Int = Int(end * rendererContext.bufferFrameSizeInBytes)
+                prefillLocalBufferList(list: localBufferList,
+                                       dataOffset: offset,
+                                       framesToDecode: framesToDecode)
                 
                 var status = AudioConverterFillComplexBuffer(converter, _converterCallback, &convertInfo, &framesToDecode, localBufferList.unsafeMutablePointer, nil)
                 
                 framesAdded = framesToDecode
                 
                 if status == 100 {
-                    rendererContext.lock.lock()
-                    rendererContext.bufferUsedFrameCount += framesAdded
-                    rendererContext.lock.unlock()
-                    
-                    playerContext.currentReadingEntry?.lock.lock()
-                    playerContext.currentReadingEntry?.framesState.queued += Int(framesAdded)
-                    playerContext.currentReadingEntry?.lock.unlock()
+                    filUsedFrames(framesCount: framesAdded)
                     return
                 } else if status != 0 {
                     /// raise undexpected error... codec error
@@ -297,42 +292,23 @@ final class AudioFileStreamProcessor {
                 
                 framesToDecode = start
                 if framesToDecode == 0 {
-                    rendererContext.lock.lock()
-                    rendererContext.bufferUsedFrameCount += framesAdded
-                    rendererContext.lock.unlock()
-                    
-                    playerContext.currentReadingEntry?.lock.lock()
-                    playerContext.currentReadingEntry?.framesState.queued += Int(framesAdded)
-                    playerContext.currentReadingEntry?.lock.unlock()
-                    continue
+                    filUsedFrames(framesCount: framesAdded)
+                    continue packetProccess
                 }
-                
-                localBufferList[0].mData = audioBuffer.mData
-                localBufferList[0].mDataByteSize = framesToDecode * rendererContext.bufferFrameSizeInBytes
-                localBufferList[0].mNumberChannels = audioBuffer.mNumberChannels
+                prefillLocalBufferList(list: localBufferList,
+                                       dataOffset: 0,
+                                       framesToDecode: framesToDecode)
                 
                 status = AudioConverterFillComplexBuffer(converter, _converterCallback, &convertInfo, &framesToDecode, localBufferList.unsafeMutablePointer, nil)
                 
                 framesAdded += framesToDecode
                 
                 if status == 100 {
-                    rendererContext.lock.lock()
-                    rendererContext.bufferUsedFrameCount += framesAdded
-                    rendererContext.lock.unlock()
-                    
-                    playerContext.currentReadingEntry?.lock.lock()
-                    playerContext.currentReadingEntry?.framesState.queued += Int(framesAdded)
-                    playerContext.currentReadingEntry?.lock.unlock()
+                    filUsedFrames(framesCount: framesAdded)
                     return
                 } else if status == 0 {
-                    rendererContext.lock.lock()
-                    rendererContext.bufferUsedFrameCount += framesAdded
-                    rendererContext.lock.unlock()
-                    
-                    playerContext.currentReadingEntry?.lock.lock()
-                    playerContext.currentReadingEntry?.framesState.queued += Int(framesAdded)
-                    playerContext.currentReadingEntry?.lock.unlock()
-                    continue
+                    filUsedFrames(framesCount: framesAdded)
+                    continue packetProccess
                 } else if status != 0 {
                     /// raise undexpected error... codec error
                     return
@@ -341,37 +317,47 @@ final class AudioFileStreamProcessor {
             } else {
                 var framesAdded: UInt32 = 0
                 var framesToDecode: UInt32 = start - end
-                                
-                localBufferList[0].mData = audioBuffer.mData! + Int(end * rendererContext.bufferFrameSizeInBytes)
-                localBufferList[0].mDataByteSize = framesToDecode * rendererContext.bufferFrameSizeInBytes
-                localBufferList[0].mNumberChannels = audioBuffer.mNumberChannels
+                
+                let offset: Int = Int(end * rendererContext.bufferFrameSizeInBytes)
+                prefillLocalBufferList(list: localBufferList,
+                                       dataOffset: offset,
+                                       framesToDecode: framesToDecode)
                 
                 let status = AudioConverterFillComplexBuffer(converter, _converterCallback, &convertInfo, &framesToDecode, localBufferList.unsafeMutablePointer, nil)
                 
                 framesAdded = framesToDecode
                 if status == 100 {
-                    rendererContext.lock.lock()
-                    rendererContext.bufferUsedFrameCount += framesAdded
-                    rendererContext.lock.unlock()
-                    
-                    playerContext.currentReadingEntry?.lock.lock()
-                    playerContext.currentReadingEntry?.framesState.queued += Int(framesAdded)
-                    playerContext.currentReadingEntry?.lock.unlock()
+                    filUsedFrames(framesCount: framesAdded)
                     return
                 } else if status == 0 {
-                    rendererContext.lock.lock()
-                    rendererContext.bufferUsedFrameCount += framesAdded
-                    rendererContext.lock.unlock()
-                    
-                    playerContext.currentReadingEntry?.lock.lock()
-                    playerContext.currentReadingEntry?.framesState.queued += Int(framesAdded)
-                    playerContext.currentReadingEntry?.lock.unlock()
-                    continue
+                    filUsedFrames(framesCount: framesAdded)
+                    continue packetProccess
                 } else if status != 0 {
                     /// raise undexpected error... codec error
                     return
                 }
             }
+        }
+    }
+    
+    private func prefillLocalBufferList(list: UnsafeMutableAudioBufferListPointer, dataOffset: Int, framesToDecode: UInt32) {
+        if let mData = rendererContext.audioBuffer.mData {
+            if dataOffset > 0 {
+                list[0].mData = mData + dataOffset
+            } else {
+                list[0].mData = mData
+            }
+        }
+        list[0].mDataByteSize = framesToDecode * rendererContext.bufferFrameSizeInBytes
+        list[0].mNumberChannels = rendererContext.audioBuffer.mNumberChannels
+    }
+    
+    private func filUsedFrames(framesCount: UInt32) {
+        rendererContext.lock.around {
+            rendererContext.bufferUsedFrameCount += framesCount
+        }
+        playerContext.currentReadingEntry?.lock.around {
+            playerContext.currentReadingEntry?.framesState.queued += Int(framesCount)
         }
     }
 }

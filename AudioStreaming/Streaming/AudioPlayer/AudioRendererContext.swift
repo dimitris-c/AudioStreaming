@@ -12,7 +12,7 @@ final class AudioRendererContext: NSObject {
 
     public let lock = UnfairLock()
     
-    var readBufferSize: Int
+    let readBufferSize: Int
     var readBuffer: UnsafeMutablePointer<UInt8>
     
     var bufferFrameSizeInBytes: UInt32 = 0
@@ -25,9 +25,6 @@ final class AudioRendererContext: NSObject {
     var audioBuffer: AudioBuffer
     var inAudioBufferList: UnsafeMutablePointer<AudioBufferList>
     var outAudioBufferList: UnsafeMutablePointer<AudioBufferList>
-    
-    /// The AVAudioEngine render block from manual rendering
-    var renderBlock: AVAudioEngineManualRenderingBlock?
     
     var discontinuous: Bool = false
     
@@ -80,7 +77,8 @@ private func allocateBufferList(dataByteSize: Int) -> UnsafeMutablePointer<Audio
     
     _bufferList[0].mDataByteSize = UInt32(dataByteSize)
     let alingment = MemoryLayout<UInt8>.alignment
-    _bufferList[0].mData = UnsafeMutableRawPointer.allocate(byteCount: Int(dataByteSize), alignment: alingment)
+    let mData = UnsafeMutableRawPointer.allocate(byteCount: Int(dataByteSize), alignment: alingment)
+    _bufferList[0].mData = mData
     _bufferList[0].mNumberChannels = 2
     
     return _bufferList.unsafeMutablePointer

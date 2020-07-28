@@ -29,7 +29,7 @@ enum AudioContent: Int, CaseIterable {
             case .radiox:
                 return "Radio X (stream)"
             case .khruangbin:
-                return "Khruangbin (mp3)"
+                return "Khruangbin (mp3 preview)"
             case .piano:
                 return "Piano (mp3)"
         }
@@ -46,7 +46,7 @@ enum AudioContent: Int, CaseIterable {
             case .radiox:
                 return URL(string: "https://media-ssl.musicradio.com/RadioXUK?dax_version=release_1606&dax_player=GlobalPlayer&dax_platform=Web&dax_listenerid=1595318377694_0.6169900013451329&aisDelivery=streaming&listenerid=1595318377693_0.5828082361790362")!
             case .khruangbin:
-                return URL(string: "https://t4.bcbits.com/stream/509df739152ef1972e570bdc3bbbe2aa/mp3-v0/2809605460?p=1&ts=1595928611&t=5fe1557261bfd9f6d6c6d3d03e468582ee1d7005&token=1595928611_cbfa5e50dad7cbe86e21a1fbf9e4c9c906e53e41")!
+                return URL(string: "https://p.scdn.co/mp3-preview/cab4b09c23ffc11774d879977131df9d150fcef4?cid=d8a5ed958d274c2e8ee717e6a4b0971d")!
             case .piano:
                 return URL(string: "https://www.kozco.com/tech/piano2-CoolEdit.mp3")!
         }
@@ -87,16 +87,28 @@ class ViewController: UIViewController {
         
         
         resumeButton.setTitle("Pause", for: .normal)
-        resumeButton.setTitleColor(.black, for: .normal)
-        resumeButton.setTitleColor(.darkGray, for: .highlighted)
-        resumeButton.setTitleColor(.lightGray, for: .disabled)
+        if #available(iOS 13.0, *) {
+            resumeButton.setTitleColor(.label, for: .normal)
+            resumeButton.setTitleColor(.secondaryLabel, for: .highlighted)
+            resumeButton.setTitleColor(.tertiaryLabel, for: .disabled)
+        } else {
+            resumeButton.setTitleColor(.black, for: .normal)
+            resumeButton.setTitleColor(.gray, for: .highlighted)
+            resumeButton.setTitleColor(.lightGray, for: .disabled)
+        }
         resumeButton.addTarget(self, action: #selector(pauseResume), for: .touchUpInside)
         resumeButton.translatesAutoresizingMaskIntoConstraints = false
         
         let stopButton = UIButton(type: .custom)
         stopButton.setTitle("Stop", for: .normal)
-        stopButton.setTitleColor(.black, for: .normal)
-        stopButton.setTitleColor(.darkGray, for: .highlighted)
+        if #available(iOS 13.0, *) {
+            stopButton.setTitleColor(.label, for: .normal)
+            stopButton.setTitleColor(.secondaryLabel, for: .highlighted)
+            stopButton.setTitleColor(.tertiaryLabel, for: .disabled)
+        } else {
+            stopButton.setTitleColor(.black, for: .normal)
+            stopButton.setTitleColor(.darkGray, for: .highlighted)
+        }
         stopButton.addTarget(self, action: #selector(stop), for: .touchUpInside)
         
         let controlsStackView = UIStackView(arrangedSubviews: [resumeButton, stopButton])
@@ -115,8 +127,12 @@ class ViewController: UIViewController {
     
     func buildButton(for content: AudioContent) -> UIButton {
         let button = UIButton(type: .system)
-        button.titleLabel?.font = UIFont.systemFont(ofSize: 20)
-        button.setTitleColor(.black, for: .normal)
+        button.titleLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
+        if #available(iOS 13.0, *) {
+            button.setTitleColor(.label, for: .normal)
+        } else {
+            button.setTitleColor(.black, for: .normal)
+        }
         button.setTitle(content.title, for: .normal)
         button.tag = content.rawValue // being naive
         button.addTarget(self, action: #selector(play), for: .touchUpInside)
@@ -127,6 +143,7 @@ class ViewController: UIViewController {
     func play(button: UIButton) {
         if let content = AudioContent(rawValue: button.tag) {
             player.play(url: content.streamUrl)
+            resumeButton.setTitle("Pause", for: .normal)
         }
     }
     
@@ -173,7 +190,7 @@ extension ViewController: AudioPlayerDelegate {
         print("===> duration: \(duration)")
     }
     
-    func audioPlayerUnexpectedError(player: AudioPlayer, error: AudioPlayerErrorCode) {
+    func audioPlayerUnexpectedError(player: AudioPlayer, error: AudioPlayerError) {
         print("player error'd unexpectedly: \(error)")
     }
     

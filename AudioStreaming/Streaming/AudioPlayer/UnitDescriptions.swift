@@ -7,12 +7,8 @@ import AVFoundation
 
 
 private let outputChannels: UInt32 = 2
+
 struct UnitDescriptions {
-    static let converter = AudioComponentDescription(componentType: kAudioUnitType_FormatConverter,
-                                                     componentSubType: kAudioUnitSubType_AUConverter,
-                                                     componentManufacturer: kAudioUnitManufacturer_Apple,
-                                                     componentFlags: 0,
-                                                     componentFlagsMask: 0)
     
     static var output: AudioComponentDescription = {
         var desc = AudioComponentDescription()
@@ -28,6 +24,9 @@ struct UnitDescriptions {
         return desc
     }()
     
+    /// The canonical audio stream description to be used as a format of the decoded audio
+    ///
+    /// This defaults to Linear PCM format with sampleRate `44100.0`
     static var canonicalAudioStream: AudioStreamBasicDescription = {
         var bytesPerSample = UInt32(MemoryLayout<Int32>.size)
         if #available(iOS 8.0, *) {

@@ -34,6 +34,7 @@ public protocol AudioPlayerDelegate: class {
 }
 
 internal var maxFramesPerSlice: UInt32 = 8192
+internal var mChannelsPerFrame: UInt32 = UnitDescriptions.canonicalAudioStream.mChannelsPerFrame
 
 func createAudioUnit(with description: AudioComponentDescription,
                      completion: @escaping (Result<AVAudioUnit, Error>) -> Void) {
@@ -45,7 +46,7 @@ func createAudioUnit(with description: AudioComponentDescription,
             completion(.success(audioUnit))
         }
         else {
-            completion(.failure(AudioPlayerError.audioSystemError))
+            completion(.failure(AudioPlayerError.audioSystemError(.playerNotFound)))
         }
     }
 }
@@ -59,9 +60,13 @@ public final class AudioPlayer {
         set { playerContext.muted = newValue }
     }
     
+    /// The volume of the audio
+    ///
+    /// Defaults to 1.0. Valid ranges are 0.0 to 1.0
+    /// The value is restricted from 0.0 to 1.0
     public var volume: Float32 {
-        get { self.audioEngine.mainMixerNode.volume }
-        set { self.audioEngine.mainMixerNode.volume = newValue }
+        get { self.audioEngine.mainMixerNode.outputVolume }
+        set { self.audioEngine.mainMixerNode.outputVolume = min(1.0, max(0.0, newValue)) }
     }
     
     public var rate: Float {
@@ -105,8 +110,6 @@ public final class AudioPlayer {
     
     internal let fileStreamProcessor: AudioFileStreamProcessor
     internal let playerRenderProcessor: AudioPlayerRenderProcessor
-    
-    fileprivate var renderBlock: AVAudioEngineManualRenderingBlock?
     
     internal var audioReadSource: DispatchTimerSource
     internal let underlyingQueue = DispatchQueue(label: "streaming.core.queue", qos: .userInitiated)
@@ -160,8 +163,7 @@ public final class AudioPlayer {
                                             readBufferSize: configuration.readBufferSize,
                                             httpHeaders: headers)
         let entry = AudioEntry(source: audioSource,
-                               entryId: AudioEntryId(id: url.absoluteString),
-                               underlyingQueue: propertiesQueue)
+                               entryId: AudioEntryId(id: url.absoluteString))
         audioSource.delegate = self
         clearQueue()
         entriesQueue.enqueue(item: entry, type: .upcoming)
@@ -179,7 +181,6 @@ public final class AudioPlayer {
         guard playerContext.internalState != .stopped else { return }
         
         stopEngine()
-        player?.auAudioUnit.stopHardware()
         rendererContext.resetBuffers()
         playerContext.internalState = .stopped
         stopReadProccessFromSource()
@@ -221,7 +222,7 @@ public final class AudioPlayer {
             do {
                 try self.audioEngine.start()
             } catch {
-                print("resuming audio engine failed")
+                print("resuming audio engine failed: \(error)")
             }
             self.startPlayer(resetBuffers: false)
             startReadProcessFromSourceIfNeeded()
@@ -253,20 +254,16 @@ public final class AudioPlayer {
     private func setupEngine() {
         do {
             audioEngine.stop()
-            rendererContext.renderBlock = audioEngine.manualRenderingBlock
+            playerRenderProcessor.renderBlock = audioEngine.manualRenderingBlock
             
             let audioFormat = AVAudioFormat(streamDescription: &UnitDescriptions.canonicalAudioStream)!
             
             try audioEngine.enableManualRenderingMode(.realtime,
                                                       format: audioFormat,
                                                       maximumFrameCount: AVAudioFrameCount(maxFramesPerSlice))
-
-            let inputBlock = { [weak self] frameCount in
-                self?.manualRenderingInput(frameCount: frameCount)
-            }
             
             let success = audioEngine.inputNode.setManualRenderingInputPCMFormat(audioFormat,
-                                                                                 inputBlock: inputBlock)
+                                                                                 inputBlock: manualRenderingInput)
             guard success else {
                 assertionFailure("failure setting manual rendering mode")
                 return
@@ -336,6 +333,7 @@ public final class AudioPlayer {
             return
         }
         audioEngine.stop()
+        player?.auAudioUnit.stopHardware()
         print("engine stopped 🛑")
     }
     

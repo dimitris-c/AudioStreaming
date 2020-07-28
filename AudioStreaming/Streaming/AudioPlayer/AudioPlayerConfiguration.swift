@@ -15,7 +15,7 @@ public struct AudioPlayerConfiguration: Equatable {
     /// Number of seconds of audio required to before playback first starts.
     /// - note: Must be larger that `bufferSizeInSeconds`
     let secondsRequiredToStartPlaying: Double
-    ///
+    /// Number of seconds of audio required after seek occcurs.
     let gracePeriodAfterSeekInSeconds: Double
     /// Number of seconds of audio required to before playback resumes after a buffer underun
     /// - note: Must be larger that `bufferSizeInSeconds`
