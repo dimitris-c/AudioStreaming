@@ -14,6 +14,7 @@ enum AudioContent: Int, CaseIterable {
     case offradio
     case enlefko
     case pepper966
+    case radiox
     case khruangbin
     case piano
     
@@ -25,6 +26,8 @@ enum AudioContent: Int, CaseIterable {
                 return "Enlefko (stream)"
             case .pepper966:
                 return "Pepper 96.6 (stream)"
+            case .radiox:
+                return "Radio X (stream)"
             case .khruangbin:
                 return "Khruangbin (mp3)"
             case .piano:
@@ -40,8 +43,10 @@ enum AudioContent: Int, CaseIterable {
                 return URL(string: "http://s3.yesstreaming.net:7033/stream")!
             case .pepper966:
                 return URL(string: "https://ample-09.radiojar.com/pepper.m4a?1593699983=&rj-tok=AAABcw_1KyMAIViq2XpI098ZSQ&rj-ttl=5")!
+            case .radiox:
+                return URL(string: "https://media-ssl.musicradio.com/RadioXUK?dax_version=release_1606&dax_player=GlobalPlayer&dax_platform=Web&dax_listenerid=1595318377694_0.6169900013451329&aisDelivery=streaming&listenerid=1595318377693_0.5828082361790362")!
             case .khruangbin:
-                return URL(string: "https://t4.bcbits.com/stream/fdb938c3d5eb62c9ff8587af2725c9d3/mp3-128/2809605460?p=0&ts=1595337591&t=79b6ac91734a36300f765c4535d444bdf75818ef&token=1595337591_0f844ac8d452132025e8fb83b1b43ac6e2aa0503")!
+                return URL(string: "https://t4.bcbits.com/stream/509df739152ef1972e570bdc3bbbe2aa/mp3-v0/2809605460?p=1&ts=1595928611&t=5fe1557261bfd9f6d6c6d3d03e468582ee1d7005&token=1595928611_cbfa5e50dad7cbe86e21a1fbf9e4c9c906e53e41")!
             case .piano:
                 return URL(string: "https://www.kozco.com/tech/piano2-CoolEdit.mp3")!
         }
@@ -50,7 +55,10 @@ enum AudioContent: Int, CaseIterable {
 }
 class ViewController: UIViewController {
     
-    let player = AudioPlayer()
+    let player: AudioPlayer = {
+        let config = AudioPlayerConfiguration(enableLogs: true)
+        return AudioPlayer(configuration: config)
+    }()
     
     let resumeButton = UIButton()
     
@@ -63,7 +71,7 @@ class ViewController: UIViewController {
         player.delegate = self
         
         let buttons = AudioContent.allCases.map(buildButton(for:))
-
+        
         let stackView = UIStackView(arrangedSubviews: buttons)
         stackView.spacing = 5
         stackView.axis = .vertical
