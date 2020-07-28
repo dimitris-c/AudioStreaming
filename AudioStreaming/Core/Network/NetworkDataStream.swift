@@ -111,7 +111,9 @@ internal final class NetworkDataStream: NSObject {
         underlyingQueue.async { [weak self] in
             guard let self = self else { return }
             self.dataReceived.append(data)
-            self.writeData()
+            if let outputStream = self.streamState.outputStream {
+                self.writeData(on: outputStream)
+            }
         }
         $streamState.read { state in
             underlyingQueue.async {
@@ -150,7 +152,7 @@ extension NetworkDataStream: StreamDelegate {
             case .openCompleted:
                 print("output stream open completed")
             case .hasSpaceAvailable:
-                writeData()
+                writeData(on: stream)
             case .endEncountered:
                 print("end encountered")
             case .errorOccurred:
@@ -161,7 +163,7 @@ extension NetworkDataStream: StreamDelegate {
     }
     
     /// Writes the data to the outputStream
-    private func writeData() {
+    private func writeData(on stream: OutputStream) {
         underlyingQueue.async { [weak self] in
             guard let self = self else { return }
             guard !self.dataReceived.isEmpty else { return }
@@ -177,33 +179,17 @@ extension NetworkDataStream: StreamDelegate {
             defer { buffer.deallocate() }
             memcpy(buffer, bytes, count)
             
-            if let len = self.streamState.outputStream?.write(buffer, maxLength: count) {
-                self.bytesWritten += len
-            }
+            let len = stream.write(buffer, maxLength: count)
+            self.bytesWritten += len
         }
     }
 }
-
-// MARK: Equatable & Hashable
-
-//extension NetworkDataStream: Equatable {
-//    static func == (lhs: NetworkDataStream, rhs: NetworkDataStream) -> Bool {
-//        lhs.id == rhs.id
-//    }
-//}
-//
-//extension NetworkDataStream: Hashable {
-//    func hash(into hasher: inout Hasher) {
-//        hasher.combine(id)
-//    }
-//}
 
 // MARK: StreamEvent Extension
 
 extension NetworkDataStream.StreamEvent {
     /// `Result` value from `StreamEvent`
     var result: Result<NetworkDataStream.StreamResponse, Error>? {
-        print(self)
         guard case let .stream(result) = self else {
             return nil
         }
