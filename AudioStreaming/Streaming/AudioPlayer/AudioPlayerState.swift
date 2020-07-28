@@ -83,11 +83,39 @@ public enum AudioPlayerStopReason: Equatable {
     case disposed
 }
 
-public enum AudioPlayerErrorCode: Error, Equatable {
-    case none
+public enum AudioPlayerError: LocalizedError, Equatable {
     case streamParseBytesFailure
-    case audioSystemError
+    case audioSystemError(AudioSystemError)
     case codecError
     case dataNotFound
     case other
+    
+    public var errorDescription: String? {
+        switch self {
+            case .streamParseBytesFailure:
+                return "Couldn't parse the bytes from the stream"
+            case .audioSystemError(let error):
+                return error.errorDescription
+            case .codecError:
+                return "Codec error while parsing data packets"
+            case .dataNotFound:
+                return "No data supplied from network stream"
+            case .other:
+                return "Audio Player error"
+        }
+    }
+}
+
+public enum AudioSystemError: LocalizedError, Equatable {
+    case playerNotFound
+    case playerStartError
+    case fileStreamError
+    
+    public var errorDescription: String? {
+        switch self {
+            case .playerNotFound: return "Player not found"
+            case .playerStartError: return "Player couldn't start"
+            case .fileStreamError: return "Audio file stream couldn't start"
+        }
+    }
 }

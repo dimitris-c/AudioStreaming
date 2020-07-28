@@ -26,7 +26,7 @@ public protocol AudioPlayerDelegate: class {
                                      duration: Double)
     /// Tells the delegate when an unexpected error occured.
     /// - note: Probably a good time to recreate the player when this occurs
-    func audioPlayerUnexpectedError(player: AudioPlayer, error: AudioPlayerErrorCode)
+    func audioPlayerUnexpectedError(player: AudioPlayer, error: AudioPlayerError)
     
     func audioPlayerDidCancel(player: AudioPlayer, queuedItems: [AudioEntryId])
     
@@ -45,7 +45,7 @@ func createAudioUnit(with description: AudioComponentDescription,
             completion(.success(audioUnit))
         }
         else {
-            completion(.failure(AudioPlayerErrorCode.audioSystemError))
+            completion(.failure(AudioPlayerError.audioSystemError))
         }
     }
 }
@@ -296,7 +296,7 @@ public final class AudioPlayer {
         }
 
         guard let player = player else {
-            raiseUnxpected(error: .audioSystemError)
+            raiseUnxpected(error: .audioSystemError(.playerNotFound))
             return
         }
         
@@ -361,7 +361,7 @@ public final class AudioPlayer {
         do {
             try player.auAudioUnit.startHardware()
         } catch {
-            raiseUnxpected(error: .audioSystemError)
+            raiseUnxpected(error: .audioSystemError(.playerStartError))
         }
         // TODO: stop system background task
 
@@ -481,10 +481,11 @@ public final class AudioPlayer {
         audioSemaphore.signal()
     }
     
-    private func raiseUnxpected(error: AudioPlayerErrorCode) {
+    private func raiseUnxpected(error: AudioPlayerError) {
         playerContext.internalState = .error
         // todo raise on main thread from playback thread
         delegate?.audioPlayerUnexpectedError(player: self, error: error)
+        Logger.error("Error: %@", category: .generic, args: error.localizedDescription)
     }
     
 }
@@ -492,21 +493,15 @@ public final class AudioPlayer {
 extension AudioPlayer: AudioStreamSourceDelegate {
     
     func dataAvailable(source: AudioStreamSource) {
-        guard playerContext.currentReadingEntry?.source === source else {
-            print("currentReadingEntry.source is diff")
-            return
-        }
-        guard source.hasBytesAvailable else {
-            print("no bytes available")
-            return
-        }
+        guard playerContext.currentReadingEntry?.source === source else { return }
+        guard source.hasBytesAvailable else { return }
 
         let read = source.read(into: rendererContext.readBuffer, size: rendererContext.readBufferSize)
         guard read != 0 else { return }
 
         if !fileStreamProcessor.isFileStreamOpen {
             guard fileStreamProcessor.openFileStream(with: source.audioFileHint) == noErr else {
-                raiseUnxpected(error: .audioSystemError)
+                raiseUnxpected(error: .audioSystemError(.fileStreamError))
                 return
             }
         }
