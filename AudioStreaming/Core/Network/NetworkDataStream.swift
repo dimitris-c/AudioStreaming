@@ -150,13 +150,13 @@ extension NetworkDataStream: StreamDelegate {
         guard let stream = streamState.outputStream, aStream == stream else { return }
         switch eventCode {
             case .openCompleted:
-                print("output stream open completed")
+                Logger.debug("output stream open completed", category: .networking)
             case .hasSpaceAvailable:
                 writeData(on: stream)
             case .endEncountered:
-                print("end encountered")
+                Logger.debug("output stream end encountered", category: .networking)
             case .errorOccurred:
-                print("handle error! stop everything right?")
+                Logger.debug("handle error! stop everything right?", category: .networking)
             default:
                 break
         }

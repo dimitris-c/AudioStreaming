@@ -229,7 +229,7 @@ extension RemoteAudioSource: StreamDelegate {
     public func stream(_ aStream: Stream, handle eventCode: Stream.Event) {
         switch eventCode {
             case .openCompleted:
-                print("input stream open completed")
+                Logger.debug("input stream open completed", category: .networking)
             case .hasBytesAvailable:
                 if httpStatusCode == 0 {
                     if self.parseResponseHeader(response: httpResponse) {

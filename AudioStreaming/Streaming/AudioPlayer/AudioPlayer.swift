@@ -312,11 +312,11 @@ public final class AudioPlayer {
     
     private func startEngineIfNeeded() throws {
         guard !isEngineRunning else {
-            print("engine already running")
+            Logger.debug("engine already running 🛵", category: .generic)
             return
         }
         try audioEngine.start()
-        print("engine started 🛵")
+        Logger.debug("engine started 🛵", category: .generic)
     }
     
     /// Pauses the audio engine and stops the player's hardware
@@ -324,17 +324,17 @@ public final class AudioPlayer {
         guard isEngineRunning else { return }
         audioEngine.pause()
         player?.auAudioUnit.stopHardware()
-        print("engine paused ⏸")
+        Logger.debug("engine paused ⏸", category: .generic)
     }
     
     private func stopEngine() {
         guard isEngineRunning else {
-            print("already already stopped 🛑")
+            Logger.debug("already already stopped 🛑", category: .generic)
             return
         }
         audioEngine.stop()
         player?.auAudioUnit.stopHardware()
-        print("engine stopped 🛑")
+        Logger.debug("engine stopped 🛑", category: .generic)
     }
     
     private func startReadProcessFromSourceIfNeeded() {
@@ -380,7 +380,7 @@ public final class AudioPlayer {
     
     private func setCurrentReading(entry: AudioEntry?, startPlaying: Bool, shouldClearQueue: Bool) {
         guard let entry = entry else { return }
-        print("Setting current reading entry to: \(entry)")
+        Logger.debug("Setting current reading entry to: %@", category: .generic, args: entry.debugDescription)
         if startPlaying {
             let count = Int(rendererContext.bufferTotalFrameCount * rendererContext.bufferFrameSizeInBytes)
             memset(rendererContext.audioBuffer.mData, 0, count)
@@ -482,7 +482,10 @@ public final class AudioPlayer {
     private func raiseUnxpected(error: AudioPlayerError) {
         playerContext.internalState = .error
         // todo raise on main thread from playback thread
-        delegate?.audioPlayerUnexpectedError(player: self, error: error)
+        asyncOnMain { [weak self] in
+            guard let self = self else { return }
+            self.delegate?.audioPlayerUnexpectedError(player: self, error: error)
+        }
         Logger.error("Error: %@", category: .generic, args: error.localizedDescription)
     }
     

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B500732024D00BAC00BB4475 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B500731F24D00BAC00BB4475 /* Logger.swift */; };
 		B514657F248E3884005C03F7 /* DispatchReadSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = B514657E248E3884005C03F7 /* DispatchReadSource.swift */; };
 		B51FE0C02488F67C00F2A4D2 /* Queue.swift in Sources */ = {isa = PBXBuildFile; fileRef = B51FE0BF2488F67C00F2A4D2 /* Queue.swift */; };
 		B51FE0C22488F96A00F2A4D2 /* QueueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B51FE0C12488F96A00F2A4D2 /* QueueTests.swift */; };
@@ -71,6 +72,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		B500731F24D00BAC00BB4475 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		B514657E248E3884005C03F7 /* DispatchReadSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DispatchReadSource.swift; sourceTree = "<group>"; };
 		B51FE0BF2488F67C00F2A4D2 /* Queue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Queue.swift; sourceTree = "<group>"; };
 		B51FE0C12488F96A00F2A4D2 /* QueueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueTests.swift; sourceTree = "<group>"; };
@@ -321,6 +323,7 @@
 				B51FE0BF2488F67C00F2A4D2 /* Queue.swift */,
 				B514657E248E3884005C03F7 /* DispatchReadSource.swift */,
 				B59DF1A22493E90C0043C498 /* AudioFileStream+Helpers.swift */,
+				B500731F24D00BAC00BB4475 /* Logger.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -509,6 +512,7 @@
 				B5A5FA8B24AE371C00870E2F /* Data+Bytes.swift in Sources */,
 				B55A736C247FCB420050C53D /* HTTPHeaderParser.swift in Sources */,
 				B55CE96E248058B60001C498 /* MetadataParser.swift in Sources */,
+				B500732024D00BAC00BB4475 /* Logger.swift in Sources */,
 				B5276B72247D4D5B00D2F56A /* NetworkTasksMap.swift in Sources */,
 				B5276B74247D4D9F00D2F56A /* NetworkSessionDelegate.swift in Sources */,
 				B55CE97824813BCA0001C498 /* UnsafeMutablePointer+Helpers.swift in Sources */,
@@ -680,7 +684,7 @@
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				INFOPLIST_FILE = AudioStreaming/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -690,7 +694,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.decimal.AudioStreaming;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
-				SUPPORTS_MACCATALYST = YES;
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -709,7 +713,7 @@
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				INFOPLIST_FILE = AudioStreaming/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -719,7 +723,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.decimal.AudioStreaming;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
-				SUPPORTS_MACCATALYST = YES;
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -781,7 +785,7 @@
 					"@executable_path/../Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				PRODUCT_BUNDLE_IDENTIFIER = com.decimal.AudioStreamingMac;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = macosx;
@@ -806,7 +810,7 @@
 					"@executable_path/../Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				PRODUCT_BUNDLE_IDENTIFIER = com.decimal.AudioStreamingMac;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = macosx;
