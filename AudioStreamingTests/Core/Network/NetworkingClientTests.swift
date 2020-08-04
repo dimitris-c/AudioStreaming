@@ -81,9 +81,10 @@ class NetworkingClientTests: XCTestCase {
                     expect.fulfill()
                 default: break
                 }
-            }.asInputStream()
+            }
+            .asInputStream()
         
-        waitForExpectations(timeout: 10, handler: nil)
+        wait(for: [expect], timeout: 10)
         
         let xmlParser = XMLParser(stream: inputStream!)
         let xmlParsed = xmlParser.parse()

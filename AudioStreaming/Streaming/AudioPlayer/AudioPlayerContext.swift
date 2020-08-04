@@ -9,7 +9,12 @@ internal final class AudioPlayerContext {
     
     var stopReason: AudioPlayerStopReason = .none
     
-    var state: AudioPlayerState = .ready
+    var state: AudioPlayerState = .ready {
+        didSet {
+            stateChanged?(oldValue, state)
+        }
+    }
+    var stateChanged: ((_ oldState: AudioPlayerState, _ newState: AudioPlayerState) -> Void)?
     
     var muted: Bool
     

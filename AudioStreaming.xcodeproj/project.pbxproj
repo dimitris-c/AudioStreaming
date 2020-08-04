@@ -26,6 +26,8 @@
 		B55CEAB82485172D0001C498 /* HTTPHeaderParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55CEAB72485172D0001C498 /* HTTPHeaderParserTests.swift */; };
 		B55CEABA248530C00001C498 /* MetadataParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55CEAB9248530C00001C498 /* MetadataParser.swift */; };
 		B55CEABC24853CD20001C498 /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55CEABB24853CD20001C498 /* AudioPlayer.swift */; };
+		B55F77CF24D82ADE0057F431 /* AudioPlayerDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55F77CE24D82ADE0057F431 /* AudioPlayerDelegate.swift */; };
+		B55F77D124D82CD50057F431 /* AVAudioUnit+Convenience.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55F77D024D82CD50057F431 /* AVAudioUnit+Convenience.swift */; };
 		B5667A902499018D00D93F85 /* AudioFileStreamProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5667A8F2499018D00D93F85 /* AudioFileStreamProcessor.swift */; };
 		B5667A922499063D00D93F85 /* AudioPlayerContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5667A912499063D00D93F85 /* AudioPlayerContext.swift */; };
 		B5667B3E249BC43100D93F85 /* AudioPlayerRenderProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5667B3D249BC43000D93F85 /* AudioPlayerRenderProcessor.swift */; };
@@ -91,6 +93,8 @@
 		B55CEAB72485172D0001C498 /* HTTPHeaderParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPHeaderParserTests.swift; sourceTree = "<group>"; };
 		B55CEAB9248530C00001C498 /* MetadataParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataParser.swift; sourceTree = "<group>"; };
 		B55CEABB24853CD20001C498 /* AudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayer.swift; sourceTree = "<group>"; };
+		B55F77CE24D82ADE0057F431 /* AudioPlayerDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerDelegate.swift; sourceTree = "<group>"; };
+		B55F77D024D82CD50057F431 /* AVAudioUnit+Convenience.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AVAudioUnit+Convenience.swift"; sourceTree = "<group>"; };
 		B5667A8F2499018D00D93F85 /* AudioFileStreamProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioFileStreamProcessor.swift; sourceTree = "<group>"; };
 		B5667A912499063D00D93F85 /* AudioPlayerContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerContext.swift; sourceTree = "<group>"; };
 		B5667B3D249BC43000D93F85 /* AudioPlayerRenderProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerRenderProcessor.swift; sourceTree = "<group>"; };
@@ -182,6 +186,7 @@
 				B59DF10324916FD50043C498 /* DispatchQueue+Helpers.swift */,
 				B5A5FA8A24AE371C00870E2F /* Data+Bytes.swift */,
 				B5E1DE2224B706A500955BFB /* Stream+DispatchQueue.swift */,
+				B55F77D024D82CD50057F431 /* AVAudioUnit+Convenience.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -287,6 +292,7 @@
 				B54D876C2490E4A000C361A0 /* UnitDescriptions.swift */,
 				B5B3B7CB248647ED00656828 /* AudioPlayerState.swift */,
 				B5E1DE2424B70B4200955BFB /* AudioPlayerConfiguration.swift */,
+				B55F77CE24D82ADE0057F431 /* AudioPlayerDelegate.swift */,
 				B55CEABB24853CD20001C498 /* AudioPlayer.swift */,
 				B5667A912499063D00D93F85 /* AudioPlayerContext.swift */,
 				B54D876E2490E4DD00C361A0 /* AudioRendererContext.swift */,
@@ -510,7 +516,9 @@
 				B5F883C32477DC4400D277C1 /* NetworkDataStream.swift in Sources */,
 				B54D876F2490E4DD00C361A0 /* AudioRendererContext.swift in Sources */,
 				B5A5FA8B24AE371C00870E2F /* Data+Bytes.swift in Sources */,
+				B55F77CF24D82ADE0057F431 /* AudioPlayerDelegate.swift in Sources */,
 				B55A736C247FCB420050C53D /* HTTPHeaderParser.swift in Sources */,
+				B55F77D124D82CD50057F431 /* AVAudioUnit+Convenience.swift in Sources */,
 				B55CE96E248058B60001C498 /* MetadataParser.swift in Sources */,
 				B500732024D00BAC00BB4475 /* Logger.swift in Sources */,
 				B5276B72247D4D5B00D2F56A /* NetworkTasksMap.swift in Sources */,

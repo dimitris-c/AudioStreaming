@@ -92,3 +92,9 @@ final class PlayerQueueEntries {
         }
     }
 }
+
+extension PlayerQueueEntries: CustomDebugStringConvertible {
+    var debugDescription: String {
+        "PlayerQueue upcoming: \(upcoming.count), buffering: \(bufferring.count)"
+    }
+}

@@ -2,6 +2,8 @@
 //  Created by Dimitrios Chatzieleftheriou on 18/06/2020.
 //  Copyright © 2020 Decimal. All rights reserved.
 //
+//  Inspired by Thong Nguyen's StreamingKit. All rights reserved.
+//
 
 import AVFoundation
 
@@ -13,6 +15,9 @@ final class AudioPlayerRenderProcessor: NSObject {
     var renderBlock: AVAudioEngineManualRenderingBlock?
     
     private let packetsWaitSemaphore: DispatchSemaphore
+    
+    /// A block that notifies if the audio entry has finished playing
+    var audioFinished: ((_ entry: AudioEntry?) -> Void)?
     
     init(playerContext: AudioPlayerContext, rendererContext: AudioRendererContext, semaphore: DispatchSemaphore) {
         self.playerContext = playerContext
@@ -192,11 +197,10 @@ final class AudioPlayerRenderProcessor: NSObject {
         let lastFramePlayed = currentPlayingEntry.framesState.played == currentPlayingEntry.framesState.lastFrameQueued
         
         currentPlayingEntry.lock.unlock()
-        
         if signal || lastFramePlayed {
             
             if lastFramePlayed && entry === playerContext.currentPlayingEntry {
-                // todo call audio queue finished playing on audio player
+                audioFinished?(entry)
                 
                 while extraFramesPlayedNotAssigned > 0 {
                     if let newEntry = playerContext.currentPlayingEntry {
@@ -211,8 +215,7 @@ final class AudioPlayerRenderProcessor: NSObject {
                         
                         if framesState.played == framesState.lastFrameQueued {
                             newEntry.lock.unlock()
-                            //
-                            // todo call audio queue finished playing on audio player on newEntry
+                            audioFinished?(newEntry)
                         }
                         newEntry.lock.unlock()
                         

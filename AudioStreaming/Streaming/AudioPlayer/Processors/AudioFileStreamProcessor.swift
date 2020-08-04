@@ -2,6 +2,8 @@
 //  Created by Dimitrios Chatzieleftheriou on 16/06/2020.
 //  Copyright © 2020 Decimal. All rights reserved.
 //
+//  Inspired by Thong Nguyen's StreamingKit. All rights reserved.
+//
 
 import AVFoundation
 

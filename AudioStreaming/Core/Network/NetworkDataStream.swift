@@ -35,12 +35,15 @@ internal final class NetworkDataStream: NSObject {
     private let underlyingQueue: DispatchQueue
     private let id: UUID
     
+    /// the underlying task of the network request
     private var task: URLSessionTask?
     
-    // the accumulated data received from the URLSession
+    /// The accumulated data received from the URLSession
     private var dataReceived = Data()
-    // keeps a track of the written bytes in the output stream
+    /// Keeps a track of the written bytes in the output stream
     private var bytesWritten: Int = 0
+    /// the expected content length of the audio, this is used to close the output stream.
+    private var expectedContentLength = ExpectedContentLength.undefined
     
     var urlResponse: HTTPURLResponse? {
         task?.response as? HTTPURLResponse
@@ -49,8 +52,7 @@ internal final class NetworkDataStream: NSObject {
     // The Buffer size to read/write in the InputStream/OutputStream
     private var bufferSize: Int = 1024
     
-    internal init(id: UUID,
-                  underlyingQueue: DispatchQueue) {
+    internal init(id: UUID, underlyingQueue: DispatchQueue) {
         self.id = id
         self.underlyingQueue = underlyingQueue
     }
@@ -110,6 +112,9 @@ internal final class NetworkDataStream: NSObject {
     internal func didReceive(data: Data, response: HTTPURLResponse?) {
         underlyingQueue.async { [weak self] in
             guard let self = self else { return }
+            if let contentLength = response?.expectedContentLength, contentLength > 0 {
+                self.expectedContentLength = .length(value: contentLength)
+            }
             self.dataReceived.append(data)
             if let outputStream = self.streamState.outputStream {
                 self.writeData(on: outputStream)
@@ -126,7 +131,6 @@ internal final class NetworkDataStream: NSObject {
     }
     
     internal func didComplete(with error: Error?) {
-        // send completion
         $streamState.read { state in
             underlyingQueue.async { [weak self] in
                 guard let self = self else { return }
@@ -153,6 +157,12 @@ extension NetworkDataStream: StreamDelegate {
                 Logger.debug("output stream open completed", category: .networking)
             case .hasSpaceAvailable:
                 writeData(on: stream)
+                if let length = self.expectedContentLength.length {
+                    if length == self.bytesWritten {
+                        stream.close()
+                        stream.unsetFromQueue()
+                    }
+                }
             case .endEncountered:
                 Logger.debug("output stream end encountered", category: .networking)
             case .errorOccurred:
@@ -174,7 +184,9 @@ extension NetworkDataStream: StreamDelegate {
             let count = (dataCount - self.bytesWritten >= self.bufferSize)
                 ? self.bufferSize
                 : dataCount - self.bytesWritten
-            guard count > 0 else { return }
+            guard count > 0 else {
+                return
+            }
             let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: count)
             defer { buffer.deallocate() }
             memcpy(buffer, bytes, count)
@@ -185,37 +197,26 @@ extension NetworkDataStream: StreamDelegate {
     }
 }
 
-// MARK: StreamEvent Extension
+// MARK: - Internal Convenience
 
-extension NetworkDataStream.StreamEvent {
-    /// `Result` value from `StreamEvent`
-    var result: Result<NetworkDataStream.StreamResponse, Error>? {
-        guard case let .stream(result) = self else {
-            return nil
+/// An enum defining the content length of a network request
+internal enum ExpectedContentLength: Equatable {
+    /// Content length is undefined, eg the audio stream is a live broadcast
+    case undefined
+    /// Content length is specified, eg the audio stream is of fixed duration
+    case length(value: Int64)
+    
+    var isUndefined: Bool {
+        self == .undefined
+    }
+    
+    var length: Int64? {
+        switch self {
+            case .length(let value):
+                return value
+            case .undefined:
+                return nil
         }
-        return result
     }
-    
-    /// `Data` value if any
-    var value: Data? {
-        guard case let .success(value) = result else {
-            return nil
-        }
-        return value.data
-    }
-    
-    var completion: NetworkDataStream.Completion? {
-        guard case let .complete(completion) = self else { return nil }
-        
-        return completion
-    }
-    
-    /// `Error` value if any
-    var error: Error? {
-        guard case let .failure(error) = result else {
-            return nil
-        }
-        return error
-    }
-    
 }
+

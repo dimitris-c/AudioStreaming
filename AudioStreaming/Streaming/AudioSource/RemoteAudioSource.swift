@@ -116,7 +116,7 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
     func seek(at offset: Int) {
         dispatchPrecondition(condition: .onQueue(sourceQueue))
         
-        self.close()
+        close()
         
         relativePosition = 0
         seekOffset = offset
@@ -126,11 +126,11 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
             return
         }
         
-        self.performOpen(seek: offset)
+        performOpen(seek: offset)
     }
     
     func read(into buffer: UnsafeMutablePointer<UInt8>, size: Int) -> Int {
-        return self.performRead(into: buffer, size: size)
+        performRead(into: buffer, size: size)
     }
     
     

@@ -13,7 +13,7 @@ extension InputStream {
         CFReadStreamSetDispatchQueue(self, queue)
     }
     
-    /// Unsets the InputStream to the specified DispatchQueue
+    /// Unsets the InputStream from the attached DispatchQueue
     ///
     /// This sets the `DispatchQueue` to `nil`
     func unsetFromQueue() {
@@ -30,7 +30,7 @@ extension OutputStream {
         CFWriteStreamSetDispatchQueue(self, queue)
     }
     
-    /// Unsets the OutputStream to the specified DispatchQueue
+    /// Unsets the OutputStream from the attached DispatchQueue
     ///
     /// This sets the `DispatchQueue` to `nil`
     func unsetFromQueue() {

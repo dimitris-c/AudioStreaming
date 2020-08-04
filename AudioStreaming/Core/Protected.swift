@@ -24,7 +24,7 @@ extension Lock {
 
 /// A wrapper for `os_unfair_lock`
 final public class UnfairLock {
-    let unfairLock: os_unfair_lock_t
+    private let unfairLock: os_unfair_lock_t
     
     public init() {
         unfairLock = .allocate(capacity: 1)
