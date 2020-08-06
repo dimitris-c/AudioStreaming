@@ -5,7 +5,7 @@
 
 import AVFoundation
 
-protocol MetadataStreamSourceDelegate {
+protocol MetadataStreamSourceDelegate: class {
     func didReceiveMetadata(metadata: Result<[String: String], MetadataParsingError>)
 }
 
@@ -32,7 +32,7 @@ protocol MetadataStreamSource {
 
 final class MetadataStreamProccessor: MetadataStreamSource {
     
-    var delegate: MetadataStreamSourceDelegate?
+    weak var delegate: MetadataStreamSourceDelegate?
     
     var canProccessMetadata: Bool {
         return metadataStep > 0
