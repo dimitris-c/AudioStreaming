@@ -14,17 +14,14 @@ final class AudioPlayerRenderProcessor: NSObject {
     /// The AVAudioEngine's `AVAudioEngineManualRenderingBlock` render block from manual rendering
     var renderBlock: AVAudioEngineManualRenderingBlock?
     
-    private let packetsWaitSemaphore: DispatchSemaphore
-    
     /// A block that notifies if the audio entry has finished playing
     var audioFinished: ((_ entry: AudioEntry?) -> Void)?
     
     init(playerContext: AudioPlayerContext,
          rendererContext: AudioRendererContext,
-         semaphore: DispatchSemaphore, audioFormat: AVAudioFormat) {
+         audioFormat: AVAudioFormat) {
         self.playerContext = playerContext
         self.rendererContext = rendererContext
-        self.packetsWaitSemaphore = semaphore
         self.audioFormat = audioFormat
     }
     
@@ -245,7 +242,7 @@ final class AudioPlayerRenderProcessor: NSObject {
                 }
             }
             
-            self.packetsWaitSemaphore.signal()
+            rendererContext.packetsSemaphore.signal()
         }
         
         let bytesPerFrames = audioFormat.basicStreamDescription.mBytesPerFrame

@@ -69,7 +69,7 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
                      readBufferSize: Int,
                      httpHeaders: [String: String]) {
         let metadataParser = MetadataParser()
-        let metadataProccessor = MetadataStreamProccessor(parser: metadataParser.eraseToAnyParser())
+        let metadataProccessor = MetadataStreamProcessor(parser: metadataParser.eraseToAnyParser())
         self.init(networking: networking,
                   metadataStreamSource: metadataProccessor,
                   url: url,

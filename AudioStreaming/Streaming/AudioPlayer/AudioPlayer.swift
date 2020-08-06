@@ -3,7 +3,6 @@
 //  Copyright © 2020 Decimal. All rights reserved.
 //
 
-import Foundation
 import CoreAudio
 import AVFoundation
 
@@ -79,7 +78,6 @@ public final class AudioPlayer {
     
     private let audioReadSource: DispatchTimerSource
     private let underlyingQueue = DispatchQueue(label: "streaming.core.queue", qos: .userInitiated)
-    private let audioSemaphore = DispatchSemaphore(value: 0)
     private let sourceQueue: DispatchQueue
     
     private(set) lazy var networking = NetworkingClient()
@@ -100,12 +98,10 @@ public final class AudioPlayer {
         
         self.fileStreamProcessor = AudioFileStreamProcessor(playerContext: playerContext,
                                                             rendererContext: rendererContext,
-                                                            semaphore: audioSemaphore,
                                                             audioFormat: audioFormat)
         
         self.playerRenderProcessor = AudioPlayerRenderProcessor(playerContext: playerContext,
                                                                 rendererContext: rendererContext,
-                                                                semaphore: audioSemaphore,
                                                                 audioFormat: audioFormat)
         
         self.configPlayerContext()
@@ -146,9 +142,14 @@ public final class AudioPlayer {
         
         checkRenderWaitingAndNotifyIfNeeded()
         sourceQueue.async { [weak self] in
-            try? self?.startEngineIfNeeded()
-            self?.processSource()
-            self?.startReadProcessFromSourceIfNeeded()
+            guard let self = self else { return }
+            do {
+                try self.startEngineIfNeeded()
+            } catch {
+                self.raiseUnxpected(error: .audioSystemError(.engineFailure))
+            }
+            self.processSource()
+            self.startReadProcessFromSourceIfNeeded()
         }
     }
     
@@ -204,10 +205,15 @@ public final class AudioPlayer {
         startReadProcessFromSourceIfNeeded()
     }
     
+    /// The duration of the audio, in seconds.
+    ///
+    /// **NOTE** In live audio playback this will be `0.0`
+    ///
+    /// - Returns: A `Double` value indicating the total duration.
     public func duration() -> Double {
         guard playerContext.internalState != .pendingNext else { return 0 }
         playerContext.entriesLock.lock(); defer { playerContext.entriesLock.unlock() }
-        guard let entry = playerContext.currentReadingEntry else { return 0 }
+        guard let entry = playerContext.currentPlayingEntry else { return 0 }
         
         let entryDuration = entry.duration()
         let progress = self.progress()
@@ -217,17 +223,20 @@ public final class AudioPlayer {
         return entryDuration
     }
     
+    /// The progress of the audio playback, in seconds.
     public func progress() -> Double {
         // TODO: account for seek request
         guard playerContext.internalState != .pendingNext else { return 0 }
-        guard let entry = playerContext.currentReadingEntry else { return 0 }
+        guard let entry = playerContext.currentPlayingEntry else { return 0 }
         return Double(entry.seekTime) + (Double(entry.framesState.played) / audioFormat.sampleRate)
     }
     
     // MARK: Private
     
+    /// Setups the audio engine with manual rendering mode.
     private func setupEngine() {
         do {
+            // audio engine must be stop before enabling manualRendering mode.
             audioEngine.stop()
             playerRenderProcessor.renderBlock = audioEngine.manualRenderingBlock
             
@@ -254,6 +263,8 @@ public final class AudioPlayer {
         }
     }
     
+    /// Creates and configures an `AVAudioUnit` with an output configuration
+    /// and assigns it to the `player` variable.
     private func configPlayerNode() {
         let playerRenderProcessor = self.playerRenderProcessor
         AVAudioUnit.createAudioUnit(with: UnitDescriptions.output) { [weak self] result in
@@ -269,6 +280,7 @@ public final class AudioPlayer {
         }
     }
     
+    /// Attaches callbacks to the `playerContext` and `renderProcessor`.
     private func configPlayerContext() {
         self.playerContext.stateChanged = { [weak self] oldValue, newValue in
             guard let self = self else { return }
@@ -285,6 +297,7 @@ public final class AudioPlayer {
         }
     }
     
+    /// Attaches and connect nodes to the `AudioEngine`.
     private func attachAndConnectNodes() {
         audioEngine.attach(rateNode)
         
@@ -292,6 +305,9 @@ public final class AudioPlayer {
         audioEngine.connect(rateNode, to: audioEngine.mainMixerNode, format:  nil)
     }
     
+    /// Starts the engine, if not already running.
+    ///
+    /// - Throws: An `Error` when failed to start the engine.
     private func startEngineIfNeeded() throws {
         guard !isEngineRunning else {
             Logger.debug("engine already running 🛵", category: .generic)
@@ -300,6 +316,9 @@ public final class AudioPlayer {
         try startEngine()
     }
     
+    /// Force starts the engine
+    ///
+    /// - Throws: An `Error` when failed to start the engine.
     private func startEngine() throws {
         try audioEngine.start()
         Logger.debug("engine started 🛵", category: .generic)
@@ -313,6 +332,9 @@ public final class AudioPlayer {
         Logger.debug("engine paused ⏸", category: .generic)
     }
     
+    /// Stops the audio engine and the player's hardware
+    ///
+    /// - parameter reason: A value of `AudioPlayerStopReason` indicating the reason the engine stopped.
     private func stopEngine(reason: AudioPlayerStopReason) {
         guard isEngineRunning else {
             Logger.debug("already already stopped 🛑", category: .generic)
@@ -356,7 +378,6 @@ public final class AudioPlayer {
     
     private func processSource() {
         guard !playerContext.disposedRequested else { return }
-        // don't process on paused but don't stop the run loop
         guard playerContext.internalState != .paused else { return }
         
         if playerContext.internalState == .pendingNext {
@@ -476,9 +497,10 @@ public final class AudioPlayer {
         }
     }
     
+    /// Signals the packet process
     private func checkRenderWaitingAndNotifyIfNeeded() {
         guard rendererContext.waiting else { return }
-        audioSemaphore.signal()
+        rendererContext.packetsSemaphore.signal()
     }
     
     private func raiseUnxpected(error: AudioPlayerError) {
@@ -572,7 +594,10 @@ extension AudioPlayer: AudioStreamSourceDelegate {
     }
     
     func metadataReceived(data: [String : String]) {
-        self.delegate?.audioPlayerDidReadMetadata(player: self, metadata: data)
+        asyncOnMain { [weak self] in
+            guard let self = self else { return }
+            self.delegate?.audioPlayerDidReadMetadata(player: self, metadata: data)
+        }
     }
     
 }

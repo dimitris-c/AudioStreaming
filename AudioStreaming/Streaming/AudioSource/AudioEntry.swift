@@ -67,7 +67,7 @@ public class AudioEntry {
         self.processedPacketsState = ProcessedPacketsState()
         self.framesState = EntryFramesState()
     }
-
+    
     func reset() {
         lock.lock(); defer { lock.unlock() }
         self.framesState = EntryFramesState()

@@ -24,6 +24,8 @@ final class AudioRendererContext: NSObject {
     var inAudioBufferList: UnsafeMutablePointer<AudioBufferList>
     var outAudioBufferList: UnsafeMutablePointer<AudioBufferList>
     
+    let packetsSemaphore = DispatchSemaphore(value: 1)
+    
     var discontinuous: Bool = false
     
     let framesRequestToStartPlaying: UInt32
@@ -56,6 +58,7 @@ final class AudioRendererContext: NSObject {
 
     }
     
+    /// Deallocates buffer resources
     public func clean() {
         readBuffer.deallocate()
         inAudioBufferList.deallocate()
@@ -63,6 +66,7 @@ final class AudioRendererContext: NSObject {
         audioBuffer.mData?.deallocate()
     }
     
+    /// Resets the `BufferContext`
     public func resetBuffers() {
         lock.lock(); defer { lock.unlock() }
         bufferContext.reset()
@@ -70,6 +74,10 @@ final class AudioRendererContext: NSObject {
     
 }
 
+/// Allocates a buffer list
+///
+/// - parameter dataByteSize: An `Int` value indicating the size that the buffer will hold
+/// - Returns: An `UnsafeMutablePointer<AudioBufferList>` object
 private func allocateBufferList(dataByteSize: Int) -> UnsafeMutablePointer<AudioBufferList> {
     let _bufferList = AudioBufferList.allocate(maximumBuffers: 1)
     

@@ -9,7 +9,7 @@ enum PlayerQueueType {
 }
 
 /// Handles the buffering and upcoming upcoming `AudioEntries`
-/// The underlying objects are defines as `Queue<AudioEntry>`
+/// The underlying objects are defined as `Queue<AudioEntry>`
 final class PlayerQueueEntries {
     private var bufferring: Queue<AudioEntry>
     private var upcoming: Queue<AudioEntry>

@@ -21,7 +21,7 @@
 		B54D876F2490E4DD00C361A0 /* AudioRendererContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = B54D876E2490E4DD00C361A0 /* AudioRendererContext.swift */; };
 		B55A736C247FCB420050C53D /* HTTPHeaderParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55A736B247FCB420050C53D /* HTTPHeaderParser.swift */; };
 		B55CE96E248058B60001C498 /* MetadataParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55CE96D248058B60001C498 /* MetadataParser.swift */; };
-		B55CE97124810DE20001C498 /* MetadataStreamProccessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55CE97024810DE20001C498 /* MetadataStreamProccessor.swift */; };
+		B55CE97124810DE20001C498 /* MetadataStreamProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55CE97024810DE20001C498 /* MetadataStreamProcessor.swift */; };
 		B55CE97824813BCA0001C498 /* UnsafeMutablePointer+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55CE97724813BCA0001C498 /* UnsafeMutablePointer+Helpers.swift */; };
 		B55CEAB42485107C0001C498 /* Parser.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55CEAB32485107C0001C498 /* Parser.swift */; };
 		B55CEAB82485172D0001C498 /* HTTPHeaderParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55CEAB72485172D0001C498 /* HTTPHeaderParserTests.swift */; };
@@ -90,7 +90,7 @@
 		B54D876E2490E4DD00C361A0 /* AudioRendererContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRendererContext.swift; sourceTree = "<group>"; };
 		B55A736B247FCB420050C53D /* HTTPHeaderParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPHeaderParser.swift; sourceTree = "<group>"; };
 		B55CE96D248058B60001C498 /* MetadataParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataParser.swift; sourceTree = "<group>"; };
-		B55CE97024810DE20001C498 /* MetadataStreamProccessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataStreamProccessor.swift; sourceTree = "<group>"; };
+		B55CE97024810DE20001C498 /* MetadataStreamProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataStreamProcessor.swift; sourceTree = "<group>"; };
 		B55CE97724813BCA0001C498 /* UnsafeMutablePointer+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UnsafeMutablePointer+Helpers.swift"; sourceTree = "<group>"; };
 		B55CEAB32485107C0001C498 /* Parser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Parser.swift; sourceTree = "<group>"; };
 		B55CEAB72485172D0001C498 /* HTTPHeaderParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPHeaderParserTests.swift; sourceTree = "<group>"; };
@@ -229,7 +229,7 @@
 			children = (
 				B5667A8F2499018D00D93F85 /* AudioFileStreamProcessor.swift */,
 				B5667B3D249BC43000D93F85 /* AudioPlayerRenderProcessor.swift */,
-				B55CE97024810DE20001C498 /* MetadataStreamProccessor.swift */,
+				B55CE97024810DE20001C498 /* MetadataStreamProcessor.swift */,
 			);
 			path = Processors;
 			sourceTree = "<group>";
@@ -517,7 +517,7 @@
 				B5EF9555247E9393003E8FF8 /* AudioEntry.swift in Sources */,
 				B51FE0C02488F67C00F2A4D2 /* Queue.swift in Sources */,
 				B5667A922499063D00D93F85 /* AudioPlayerContext.swift in Sources */,
-				B55CE97124810DE20001C498 /* MetadataStreamProccessor.swift in Sources */,
+				B55CE97124810DE20001C498 /* MetadataStreamProcessor.swift in Sources */,
 				B55CEAB42485107C0001C498 /* Parser.swift in Sources */,
 				B5E1DE2524B70B4200955BFB /* AudioPlayerConfiguration.swift in Sources */,
 				B5F883C32477DC4400D277C1 /* NetworkDataStream.swift in Sources */,

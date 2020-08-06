@@ -108,12 +108,14 @@ public enum AudioPlayerError: LocalizedError, Equatable {
 }
 
 public enum AudioSystemError: LocalizedError, Equatable {
+    case engineFailure
     case playerNotFound
     case playerStartError
     case fileStreamError
     
     public var errorDescription: String? {
         switch self {
+            case .engineFailure: return "Audio engine couldn't start"
             case .playerNotFound: return "Player not found"
             case .playerStartError: return "Player couldn't start"
             case .fileStreamError: return "Audio file stream couldn't start"

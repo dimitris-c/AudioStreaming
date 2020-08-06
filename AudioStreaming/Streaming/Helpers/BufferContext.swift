@@ -12,6 +12,7 @@ final class BufferContext {
     var frameStartIndex: UInt32 = 0
     var frameUsedCount: UInt32 = 0
     
+    @inlinable
     var end: UInt32 {
         (frameStartIndex + frameUsedCount) % totalFrameCount
     }

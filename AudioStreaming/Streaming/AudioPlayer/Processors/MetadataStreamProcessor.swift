@@ -30,7 +30,7 @@ protocol MetadataStreamSource {
     
 }
 
-final class MetadataStreamProccessor: MetadataStreamSource {
+final class MetadataStreamProcessor: MetadataStreamSource {
     
     weak var delegate: MetadataStreamSourceDelegate?
     
@@ -75,6 +75,7 @@ final class MetadataStreamProccessor: MetadataStreamSource {
      ```
      Source: https://web.archive.org/web/20190521203350/https://www.smackfu.com/stuff/programming/shoutcast.html
     */
+    @inlinable
     func proccessFromRead(into buffer: UnsafeMutablePointer<UInt8>,
                           size: Int,
                           using stream: InputStream) -> Int {
@@ -82,11 +83,8 @@ final class MetadataStreamProccessor: MetadataStreamSource {
         if dataOffset > 0 {
             // read the audio data
             read = stream.read(buffer, maxLength: min(dataOffset, size))
-            if read > 0 {
-                dataOffset -= read
-            }
-        } else
-        {
+            dataOffset -= max(0, read)
+        } else {
             if dataLength == 0 {
                 let metadataLengthByte = UnsafeMutablePointer<UInt8>.uint8pointer(of: 1)
                 defer { metadataLengthByte.deallocate() }
@@ -100,19 +98,20 @@ final class MetadataStreamProccessor: MetadataStreamSource {
                         tempBytes = UnsafeMutablePointer<UInt8>.uint8pointer(of: dataLength)
                         dataBytesRead = 0
                     } else {
-                        dataOffset = metadataStep
                         data = nil
+                        dataOffset = metadataStep
+                        dataLength = 0
                         tempBytes?.deallocate()
                         tempBytes = nil
-                        dataLength = 0
                     }
                     read = 0
                 }
             } else {
                 guard let tempBytes = tempBytes else { return 0 }
                 
-                read = stream.read(tempBytes + dataBytesRead,
-                                   maxLength: dataLength - dataBytesRead)
+                let bytes = tempBytes + dataBytesRead
+                let length = dataLength - dataBytesRead
+                read = stream.read(bytes, maxLength: length)
                 
                 if read > 0 {
                     data?.append(tempBytes, count: read)
@@ -122,13 +121,7 @@ final class MetadataStreamProccessor: MetadataStreamSource {
                         let processedMetadata = parser.parse(input: data)
                         delegate?.didReceiveMetadata(metadata: processedMetadata)
                         
-                        // reset
-                        data = nil
-                        dataOffset = metadataStep
-                        dataLength = 0
-                        dataBytesRead = 0
-                        self.tempBytes?.deallocate()
-                        self.tempBytes = nil
+                        self.reset()
                     }
                     
                     read = 0
@@ -136,5 +129,14 @@ final class MetadataStreamProccessor: MetadataStreamSource {
             }
         }
         return read
+    }
+    
+    private func reset() {
+        data = nil
+        dataOffset = metadataStep
+        dataLength = 0
+        dataBytesRead = 0
+        tempBytes?.deallocate()
+        tempBytes = nil
     }
 }
