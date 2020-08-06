@@ -6,21 +6,19 @@
 import CoreAudio
 import AVFoundation
 
+internal var maxFramesPerSlice: AVAudioFrameCount = 8192
+
 final class AudioRendererContext: NSObject {
     var fileFormat: String = ""
-    var maxFramesPerBuffer: Int = 0
 
     public let lock = UnfairLock()
     
     let readBufferSize: Int
-    var readBuffer: UnsafeMutablePointer<UInt8>
+    let readBuffer: UnsafeMutablePointer<UInt8>
     
-    var bufferFrameSizeInBytes: UInt32 = 0
-    var bufferTotalFrameCount: UInt32 = 0
-    var bufferFramesStartIndex: UInt32 = 0
-    var bufferUsedFrameCount: UInt32 = 0
-    
-    var seekRequest: SeekRequest
+    let bufferContext: BufferContext
+
+    let seekRequest: SeekRequest
     
     var audioBuffer: AudioBuffer
     var inAudioBufferList: UnsafeMutablePointer<AudioBufferList>
@@ -34,13 +32,13 @@ final class AudioRendererContext: NSObject {
     var waiting: Bool = false
     
     let configuration: AudioPlayerConfiguration
-    init(configuration: AudioPlayerConfiguration) {
+    init(configuration: AudioPlayerConfiguration, audioFormat: AVAudioFormat) {
         self.configuration = configuration
         self.readBufferSize = configuration.readBufferSize
         self.readBuffer = UnsafeMutablePointer<UInt8>.uint8pointer(of: readBufferSize)
         self.seekRequest = SeekRequest()
         
-        let canonicalStream = UnitDescriptions.canonicalAudioStream
+        let canonicalStream = audioFormat.basicStreamDescription
         
         self.framesRequestToStartPlaying = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.secondsRequiredToStartPlaying)
         self.framesRequiredAfterRebuffering = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.secondsRequiredToStartPlayingAfterBufferUnderun)
@@ -52,8 +50,9 @@ final class AudioRendererContext: NSObject {
         audioBuffer = outAudioBufferList[0].mBuffers
         
         let bufferTotalFrameCount = UInt32(dataByteSize) / canonicalStream.mBytesPerFrame
-        self.bufferTotalFrameCount = bufferTotalFrameCount
-        self.bufferFrameSizeInBytes = canonicalStream.mBytesPerFrame
+        
+        self.bufferContext = BufferContext(sizeInBytes: canonicalStream.mBytesPerFrame,
+                                           totalFrameCount: bufferTotalFrameCount)
 
     }
     
@@ -66,8 +65,7 @@ final class AudioRendererContext: NSObject {
     
     public func resetBuffers() {
         lock.lock(); defer { lock.unlock() }
-        bufferFramesStartIndex = 0
-        bufferUsedFrameCount = 0
+        bufferContext.reset()
     }
     
 }

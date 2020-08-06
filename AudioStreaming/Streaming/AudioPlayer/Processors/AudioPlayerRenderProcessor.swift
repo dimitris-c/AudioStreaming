@@ -10,7 +10,7 @@ import AVFoundation
 final class AudioPlayerRenderProcessor: NSObject {
     private let playerContext: AudioPlayerContext
     private let rendererContext: AudioRendererContext
-    
+    private let audioFormat: AVAudioFormat
     /// The AVAudioEngine's `AVAudioEngineManualRenderingBlock` render block from manual rendering
     var renderBlock: AVAudioEngineManualRenderingBlock?
     
@@ -19,27 +19,30 @@ final class AudioPlayerRenderProcessor: NSObject {
     /// A block that notifies if the audio entry has finished playing
     var audioFinished: ((_ entry: AudioEntry?) -> Void)?
     
-    init(playerContext: AudioPlayerContext, rendererContext: AudioRendererContext, semaphore: DispatchSemaphore) {
+    init(playerContext: AudioPlayerContext,
+         rendererContext: AudioRendererContext,
+         semaphore: DispatchSemaphore, audioFormat: AVAudioFormat) {
         self.playerContext = playerContext
         self.rendererContext = rendererContext
         self.packetsWaitSemaphore = semaphore
+        self.audioFormat = audioFormat
     }
     
-    func attachCallback(on player: AVAudioUnit) {
-        
-        var description = UnitDescriptions.canonicalAudioStream
-        let size = MemoryLayout.size(ofValue: description)
-        
-        AudioUnitSetProperty(player.audioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &description, UInt32(size))
-        
-        let framesPerSliceSize = MemoryLayout.size(ofValue: maxFramesPerSlice)
-        AudioUnitSetProperty(player.audioUnit, kAudioUnitProperty_MaximumFramesPerSlice, kAudioUnitScope_Global, 0, &maxFramesPerSlice, UInt32(framesPerSliceSize))
-        
-        let refCon = UnsafeMutableRawPointer.from(object: self)
-        var callback = AURenderCallbackStruct(inputProc: renderCallback,
-                                              inputProcRefCon: refCon)
-        let callbackSize = MemoryLayout.size(ofValue: callback)
-        AudioUnitSetProperty(player.audioUnit, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Input, 0, &callback, UInt32(callbackSize))
+    func attachCallback(on player: AVAudioUnit, audioFormat: AVAudioFormat) {
+        if player.auAudioUnit.inputBusses.count > 0 {
+            do {
+                try player.auAudioUnit.inputBusses[0].setFormat(audioFormat)
+            } catch {
+                Logger.error("Player auAudioUnit inputbus failure %@",
+                             category: .audioRendering,
+                             args: error.localizedDescription)
+            }
+        }
+        // set the max frames to render
+        player.auAudioUnit.maximumFramesToRender = maxFramesPerSlice
+
+        // sets the render provider callback
+        player.auAudioUnit.outputProvider = renderProvider
     }
     
     /// Provides data to the audio engine
@@ -61,11 +64,12 @@ final class AudioPlayerRenderProcessor: NSObject {
         let isMuted = playerContext.muted
         let audioBuffer = rendererContext.audioBuffer
         var bufferList = rendererContext.outAudioBufferList[0]
-        let frameSizeInBytes = rendererContext.bufferFrameSizeInBytes
-        let used = rendererContext.bufferUsedFrameCount
-        let start = rendererContext.bufferFramesStartIndex
-        let end = (rendererContext.bufferFramesStartIndex + rendererContext.bufferUsedFrameCount) % rendererContext.bufferTotalFrameCount
-        let signal = rendererContext.waiting && used < rendererContext.bufferTotalFrameCount / 2
+        let bufferContext = rendererContext.bufferContext
+        let frameSizeInBytes = bufferContext.sizeInBytes
+        let used = bufferContext.frameUsedCount
+        let start = bufferContext.frameStartIndex
+        let end = bufferContext.end
+        let signal = rendererContext.waiting && used < bufferContext.totalFrameCount / 2
         
         if let playingEntry = entry {
             if state == .waitingForData {
@@ -108,29 +112,37 @@ final class AudioPlayerRenderProcessor: NSObject {
                 bufferList.mBuffers.mDataByteSize = frameSizeInBytes * framesToCopy
                 
                 if isMuted {
-                    memset(bufferList.mBuffers.mData, 0, Int(bufferList.mBuffers.mDataByteSize))
+                    memset(bufferList.mBuffers.mData,
+                           0,
+                           Int(bufferList.mBuffers.mDataByteSize))
                 } else {
                     if let mDataBuffer = audioBuffer.mData {
-                        memcpy(bufferList.mBuffers.mData, mDataBuffer + Int(start * frameSizeInBytes), Int(bufferList.mBuffers.mDataByteSize))
+                        memcpy(bufferList.mBuffers.mData,
+                               mDataBuffer + Int(start * frameSizeInBytes),
+                               Int(bufferList.mBuffers.mDataByteSize))
                     }
                 }
                 totalFramesCopied = framesToCopy
                 
                 rendererContext.lock.lock()
-                rendererContext.bufferFramesStartIndex = (rendererContext.bufferFramesStartIndex + totalFramesCopied) % rendererContext.bufferTotalFrameCount
-                rendererContext.bufferUsedFrameCount -= totalFramesCopied
+                rendererContext.bufferContext.frameStartIndex = (rendererContext.bufferContext.frameStartIndex + totalFramesCopied) % rendererContext.bufferContext.totalFrameCount
+                rendererContext.bufferContext.frameUsedCount -= totalFramesCopied
                 rendererContext.lock.unlock()
                 
             } else {
-                let frameToCopy = min(inNumberFrames, rendererContext.bufferTotalFrameCount - start)
+                let frameToCopy = min(inNumberFrames, rendererContext.bufferContext.totalFrameCount - start)
                 bufferList.mBuffers.mNumberChannels = 2
                 bufferList.mBuffers.mDataByteSize = frameSizeInBytes * frameToCopy
                 
                 if isMuted {
-                    memset(bufferList.mBuffers.mData, 0, Int(bufferList.mBuffers.mDataByteSize))
+                    memset(bufferList.mBuffers.mData,
+                           0,
+                           Int(bufferList.mBuffers.mDataByteSize))
                 } else {
-                    if let buffermData = audioBuffer.mData {
-                        memcpy(bufferList.mBuffers.mData, buffermData + Int(start * frameSizeInBytes), Int(bufferList.mBuffers.mDataByteSize))
+                    if let mDataBuffer = audioBuffer.mData {
+                        memcpy(bufferList.mBuffers.mData,
+                               mDataBuffer + Int(start * frameSizeInBytes),
+                               Int(bufferList.mBuffers.mDataByteSize))
                     }
                 }
                 
@@ -140,12 +152,16 @@ final class AudioPlayerRenderProcessor: NSObject {
                     moreFramesToCopy = min(delta, end)
                     bufferList.mBuffers.mNumberChannels = 2
                     bufferList.mBuffers.mDataByteSize += frameSizeInBytes * moreFramesToCopy
-                    if let iomData = bufferList.mBuffers.mData {
+                    if let mDataBuffer = bufferList.mBuffers.mData {
                         if isMuted {
-                            memset(iomData + Int(frameToCopy * frameSizeInBytes), 0, Int(frameSizeInBytes * moreFramesToCopy))
+                            memset(mDataBuffer + Int(frameToCopy * frameSizeInBytes),
+                                   0,
+                                   Int(frameSizeInBytes * moreFramesToCopy))
                         } else {
                             if let mDataBuffer = audioBuffer.mData {
-                                memcpy(iomData + Int(frameToCopy * frameSizeInBytes), mDataBuffer, Int(frameSizeInBytes * moreFramesToCopy))
+                                memcpy(mDataBuffer + Int(frameToCopy * frameSizeInBytes),
+                                       mDataBuffer,
+                                       Int(frameSizeInBytes * moreFramesToCopy))
                             }
                         }
                     }
@@ -153,8 +169,8 @@ final class AudioPlayerRenderProcessor: NSObject {
                 totalFramesCopied = frameToCopy + moreFramesToCopy
 
                 rendererContext.lock.lock()
-                rendererContext.bufferFramesStartIndex = (rendererContext.bufferFramesStartIndex + totalFramesCopied) % rendererContext.bufferTotalFrameCount
-                rendererContext.bufferUsedFrameCount -= totalFramesCopied
+                rendererContext.bufferContext.frameStartIndex = (rendererContext.bufferContext.frameStartIndex + totalFramesCopied) % rendererContext.bufferContext.totalFrameCount
+                rendererContext.bufferContext.frameUsedCount -= totalFramesCopied
                 rendererContext.lock.unlock()
                 
             }
@@ -167,7 +183,9 @@ final class AudioPlayerRenderProcessor: NSObject {
         if totalFramesCopied < inNumberFrames {
             let delta = inNumberFrames - totalFramesCopied
             if let mData = bufferList.mBuffers.mData {
-                memset(mData + Int((totalFramesCopied * frameSizeInBytes)), 0, Int(delta * frameSizeInBytes))
+                memset(mData + Int(totalFramesCopied * frameSizeInBytes),
+                       0,
+                       Int(delta * frameSizeInBytes))
             }
             if playerContext.currentPlayingEntry != nil || state == .waitingForDataAfterSeek || state == .waitingForData || state == .rebuffering {
                 // buffering
@@ -230,12 +248,12 @@ final class AudioPlayerRenderProcessor: NSObject {
             self.packetsWaitSemaphore.signal()
         }
         
-        let bytesPerFrames = UnitDescriptions.canonicalAudioStream.mBytesPerFrame
+        let bytesPerFrames = audioFormat.basicStreamDescription.mBytesPerFrame
         let size = max(inNumberFrames, bytesPerFrames * totalFramesCopied)
 
         rendererContext.inAudioBufferList[0].mBuffers.mData = bufferList.mBuffers.mData
         rendererContext.inAudioBufferList[0].mBuffers.mDataByteSize = size
-        rendererContext.inAudioBufferList[0].mBuffers.mNumberChannels = mChannelsPerFrame
+        rendererContext.inAudioBufferList[0].mBuffers.mNumberChannels = audioFormat.basicStreamDescription.mChannelsPerFrame
         
         return UnsafePointer(rendererContext.inAudioBufferList)
     }
@@ -243,7 +261,8 @@ final class AudioPlayerRenderProcessor: NSObject {
     @inlinable
     func render(inNumberFrames: UInt32, ioData: UnsafeMutablePointer<AudioBufferList>, status: OSStatus) -> OSStatus {
         var status = status
-        
+
+        let mChannelsPerFrame = audioFormat.basicStreamDescription.mChannelsPerFrame
         rendererContext.outAudioBufferList[0].mBuffers.mData = ioData.pointee.mBuffers.mData
         rendererContext.outAudioBufferList[0].mBuffers.mDataByteSize = maxFramesPerSlice * mChannelsPerFrame
         rendererContext.outAudioBufferList[0].mBuffers.mNumberChannels = mChannelsPerFrame
@@ -275,11 +294,10 @@ final class AudioPlayerRenderProcessor: NSObject {
         }
         return status
     }
+    
+    @inlinable
+    func renderProvider(flags: UnsafeMutablePointer<AudioUnitRenderActionFlags>, timeStamp: UnsafePointer<AudioTimeStamp>, inNumberFrames: AUAudioFrameCount, inputBusNumber: Int, inputData: UnsafeMutablePointer<AudioBufferList>) -> AUAudioUnitStatus {
+        let status = noErr
+        return render(inNumberFrames: inNumberFrames, ioData: inputData, status: status)
+    }
 }
-
-private func renderCallback(userInfo: UnsafeMutableRawPointer, ioActionFlags: UnsafeMutablePointer<AudioUnitRenderActionFlags>, inTimeStamp _: UnsafePointer<AudioTimeStamp>, inBusNumber _: UInt32, inNumberFrames: UInt32, ioData: UnsafeMutablePointer<AudioBufferList>?) -> OSStatus {
-    let userData = userInfo.to(type: AudioPlayerRenderProcessor.self)
-    let status = noErr
-    return userData.render(inNumberFrames: inNumberFrames, ioData: ioData!, status: status)
-}
-

@@ -38,7 +38,7 @@ internal final class AudioPlayerContext {
     
     let configuration: AudioPlayerConfiguration
     
-    init(configuration: AudioPlayerConfiguration, targetQueue: DispatchQueue) {
+    init(configuration: AudioPlayerConfiguration) {
         self.configuration = configuration
         self.muted = false
     }

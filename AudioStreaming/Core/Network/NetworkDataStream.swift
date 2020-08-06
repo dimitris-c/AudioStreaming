@@ -109,12 +109,15 @@ internal final class NetworkDataStream: NSObject {
     
     // MARK: Internal
     
+    internal func didReceive(response: HTTPURLResponse?) {
+        if let contentLength = response?.expectedContentLength, contentLength > 0 {
+            self.expectedContentLength = .length(value: contentLength)
+        }
+    }
+    
     internal func didReceive(data: Data, response: HTTPURLResponse?) {
         underlyingQueue.async { [weak self] in
             guard let self = self else { return }
-            if let contentLength = response?.expectedContentLength, contentLength > 0 {
-                self.expectedContentLength = .length(value: contentLength)
-            }
             self.dataReceived.append(data)
             if let outputStream = self.streamState.outputStream {
                 self.writeData(on: outputStream)
@@ -191,8 +194,8 @@ extension NetworkDataStream: StreamDelegate {
             defer { buffer.deallocate() }
             memcpy(buffer, bytes, count)
             
-            let len = stream.write(buffer, maxLength: count)
-            self.bytesWritten += len
+            let writtenLength = stream.write(buffer, maxLength: count)
+            self.bytesWritten += writtenLength
         }
     }
 }

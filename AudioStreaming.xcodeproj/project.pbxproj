@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		B500732024D00BAC00BB4475 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B500731F24D00BAC00BB4475 /* Logger.swift */; };
 		B514657F248E3884005C03F7 /* DispatchReadSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = B514657E248E3884005C03F7 /* DispatchReadSource.swift */; };
+		B51B9F9A24DBE5BF00BDEAA2 /* AVAudioFormat+Convenience.swift in Sources */ = {isa = PBXBuildFile; fileRef = B51B9F9924DBE5BF00BDEAA2 /* AVAudioFormat+Convenience.swift */; };
 		B51FE0C02488F67C00F2A4D2 /* Queue.swift in Sources */ = {isa = PBXBuildFile; fileRef = B51FE0BF2488F67C00F2A4D2 /* Queue.swift */; };
 		B51FE0C22488F96A00F2A4D2 /* QueueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B51FE0C12488F96A00F2A4D2 /* QueueTests.swift */; };
 		B51FE0C624890CCB00F2A4D2 /* PlayerQueueEntries.swift in Sources */ = {isa = PBXBuildFile; fileRef = B51FE0C3248905B400F2A4D2 /* PlayerQueueEntries.swift */; };
@@ -28,6 +29,7 @@
 		B55CEABC24853CD20001C498 /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55CEABB24853CD20001C498 /* AudioPlayer.swift */; };
 		B55F77CF24D82ADE0057F431 /* AudioPlayerDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55F77CE24D82ADE0057F431 /* AudioPlayerDelegate.swift */; };
 		B55F77D124D82CD50057F431 /* AVAudioUnit+Convenience.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55F77D024D82CD50057F431 /* AVAudioUnit+Convenience.swift */; };
+		B55F77D624DACE140057F431 /* BufferContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55F77D524DACE140057F431 /* BufferContext.swift */; };
 		B5667A902499018D00D93F85 /* AudioFileStreamProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5667A8F2499018D00D93F85 /* AudioFileStreamProcessor.swift */; };
 		B5667A922499063D00D93F85 /* AudioPlayerContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5667A912499063D00D93F85 /* AudioPlayerContext.swift */; };
 		B5667B3E249BC43100D93F85 /* AudioPlayerRenderProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5667B3D249BC43000D93F85 /* AudioPlayerRenderProcessor.swift */; };
@@ -76,6 +78,7 @@
 /* Begin PBXFileReference section */
 		B500731F24D00BAC00BB4475 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		B514657E248E3884005C03F7 /* DispatchReadSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DispatchReadSource.swift; sourceTree = "<group>"; };
+		B51B9F9924DBE5BF00BDEAA2 /* AVAudioFormat+Convenience.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AVAudioFormat+Convenience.swift"; sourceTree = "<group>"; };
 		B51FE0BF2488F67C00F2A4D2 /* Queue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Queue.swift; sourceTree = "<group>"; };
 		B51FE0C12488F96A00F2A4D2 /* QueueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueTests.swift; sourceTree = "<group>"; };
 		B51FE0C3248905B400F2A4D2 /* PlayerQueueEntries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerQueueEntries.swift; sourceTree = "<group>"; };
@@ -95,6 +98,7 @@
 		B55CEABB24853CD20001C498 /* AudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayer.swift; sourceTree = "<group>"; };
 		B55F77CE24D82ADE0057F431 /* AudioPlayerDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerDelegate.swift; sourceTree = "<group>"; };
 		B55F77D024D82CD50057F431 /* AVAudioUnit+Convenience.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AVAudioUnit+Convenience.swift"; sourceTree = "<group>"; };
+		B55F77D524DACE140057F431 /* BufferContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BufferContext.swift; sourceTree = "<group>"; };
 		B5667A8F2499018D00D93F85 /* AudioFileStreamProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioFileStreamProcessor.swift; sourceTree = "<group>"; };
 		B5667A912499063D00D93F85 /* AudioPlayerContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerContext.swift; sourceTree = "<group>"; };
 		B5667B3D249BC43000D93F85 /* AudioPlayerRenderProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerRenderProcessor.swift; sourceTree = "<group>"; };
@@ -187,6 +191,7 @@
 				B5A5FA8A24AE371C00870E2F /* Data+Bytes.swift */,
 				B5E1DE2224B706A500955BFB /* Stream+DispatchQueue.swift */,
 				B55F77D024D82CD50057F431 /* AVAudioUnit+Convenience.swift */,
+				B51B9F9924DBE5BF00BDEAA2 /* AVAudioFormat+Convenience.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -214,6 +219,7 @@
 			children = (
 				B51FE0C3248905B400F2A4D2 /* PlayerQueueEntries.swift */,
 				B5EF955A247EBCB3003E8FF8 /* AudioFileType.swift */,
+				B55F77D524DACE140057F431 /* BufferContext.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -497,6 +503,7 @@
 				B5E1DE2324B706A500955BFB /* Stream+DispatchQueue.swift in Sources */,
 				B59DF10424916FD50043C498 /* DispatchQueue+Helpers.swift in Sources */,
 				B5B3B7CC248647ED00656828 /* AudioPlayerState.swift in Sources */,
+				B51B9F9A24DBE5BF00BDEAA2 /* AVAudioFormat+Convenience.swift in Sources */,
 				B51FE0C624890CCB00F2A4D2 /* PlayerQueueEntries.swift in Sources */,
 				B5EF9557247E9439003E8FF8 /* AudioStreamSource.swift in Sources */,
 				B59DF1A32493E90C0043C498 /* AudioFileStream+Helpers.swift in Sources */,
@@ -523,6 +530,7 @@
 				B500732024D00BAC00BB4475 /* Logger.swift in Sources */,
 				B5276B72247D4D5B00D2F56A /* NetworkTasksMap.swift in Sources */,
 				B5276B74247D4D9F00D2F56A /* NetworkSessionDelegate.swift in Sources */,
+				B55F77D624DACE140057F431 /* BufferContext.swift in Sources */,
 				B55CE97824813BCA0001C498 /* UnsafeMutablePointer+Helpers.swift in Sources */,
 				B5F883B62476DADB00D277C1 /* Protected.swift in Sources */,
 			);

@@ -3,7 +3,7 @@
 //  Copyright © 2020 Decimal. All rights reserved.
 //
 
-import Foundation
+import AVFoundation
 import AudioToolbox
 
 public struct AudioEntryId: Equatable {
@@ -37,11 +37,11 @@ public class AudioEntry {
     
     var packetCount: Double = 0
     var packetDuration: Double {
-        return Double(audioStreamBasicDescription.mFramesPerPacket) / Double(sampleRate)
+        return Double(audioStreamFormat.basicStreamDescription.mFramesPerPacket) / Double(sampleRate)
     }
     /// The sample rate from the `audioStreamBasicDescription`
     var sampleRate: Float {
-        Float(audioStreamBasicDescription.mSampleRate)
+        Float(audioStreamFormat.basicStreamDescription.mSampleRate)
     }
     
     public var framesState: EntryFramesState
@@ -50,7 +50,7 @@ public class AudioEntry {
     public var audioDataOffset: UInt64 = 0
     public var audioDataByteCount: UInt64?
     
-    var audioStreamBasicDescription = AudioStreamBasicDescription()
+    var audioStreamFormat = AVAudioFormat()
     
     private var avaragePacketByteSize: Double {
         let packets = processedPacketsState
@@ -77,16 +77,16 @@ public class AudioEntry {
         let packets = processedPacketsState
         if packetDuration > 0 {
             if packets.count > estimationMinPacketsPreferred ||
-                (audioStreamBasicDescription.mBytesPerFrame == 0 && packets.count > estimationMinPackets) {
+                (audioStreamFormat.basicStreamDescription.mBytesPerFrame == 0 && packets.count > estimationMinPackets) {
                 return avaragePacketByteSize / packetDuration * 8
             }
         }
-        return (Double(audioStreamBasicDescription.mBytesPerFrame) * audioStreamBasicDescription.mSampleRate) * 8
+        return (Double(audioStreamFormat.basicStreamDescription.mBytesPerFrame) * audioStreamFormat.basicStreamDescription.mSampleRate) * 8
     }
     
     func progressInFrames() -> Float {
         lock.lock(); defer { lock.unlock() }
-        return (seekTime + Float(audioStreamBasicDescription.mSampleRate)) + Float(framesState.played)
+        return (seekTime + Float(audioStreamFormat.basicStreamDescription.mSampleRate)) + Float(framesState.played)
     }
     
     func duration() -> Double {

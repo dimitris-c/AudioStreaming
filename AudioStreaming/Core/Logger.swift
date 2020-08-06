@@ -6,9 +6,7 @@
 import Foundation
 import os
 
-
 private let loggingSubsystem = "audio.streaming.log"
-
 
 final internal class Logger {
     private static let audioRendering = OSLog(subsystem: loggingSubsystem, category: "audio.rendering")

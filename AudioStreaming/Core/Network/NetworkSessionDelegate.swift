@@ -30,6 +30,14 @@ internal final class NetworkSessionDelegate: NSObject, URLSessionDataDelegate {
         }
     }
     
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
+        guard let stream = self.stream(for: dataTask) else {
+            return
+        }
+        stream.didReceive(response: response as? HTTPURLResponse)
+        completionHandler(.allow)
+    }
+    
 }
 
 //extension NetworkSessionDelegate: URLSessionTaskDelegate {

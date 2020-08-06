@@ -7,9 +7,6 @@ import Foundation
 import CoreAudio
 import AVFoundation
 
-internal var maxFramesPerSlice: UInt32 = 8192
-internal var mChannelsPerFrame: UInt32 = UnitDescriptions.canonicalAudioStream.mChannelsPerFrame
-
 public final class AudioPlayer {
     
     public weak var delegate: AudioPlayerDelegate?
@@ -27,59 +24,74 @@ public final class AudioPlayer {
         get { self.audioEngine.mainMixerNode.outputVolume }
         set { self.audioEngine.mainMixerNode.outputVolume = min(1.0, max(0.0, newValue)) }
     }
-    
+    /// The playback rate of the player.
+    ///
+    /// The default value is 1.0. Valid ranges are 1/32 to 32.0
+    ///
+    /// **NOTE:** Setting this to a value of more than `1.0` while playing a live broadcast stream would
+    /// result in the audio being exhausted before it could fetch new data.
     public var rate: Float {
         get { self.rateNode.rate }
         set { self.rateNode.rate = newValue }
     }
     
+    /// The player's current state.
     public var state: AudioPlayerState {
         playerContext.state
     }
     
+    /// Indicates the reason that the player stopped.
     public var stopReason: AudioPlayerStopReason {
         playerContext.stopReason
     }
     
+    /// The current configuration of the player.
     public let configuration: AudioPlayerConfiguration
     
+    /// An `AVAudioFormat` object for the canonical audio stream
     private var audioFormat: AVAudioFormat = {
-        AVAudioFormat(streamDescription: &UnitDescriptions.canonicalAudioStream)!
+        AVAudioFormat(commonFormat: .pcmFormatInt32, sampleRate: 44100.0, channels: 2, interleaved: true)!
     }()
     
+    /// Keeps track of the player's state before being paused.
     private var stateBeforePaused: PlayerInternalState = .initial
     
-    internal let audioEngine = AVAudioEngine()
-    private(set) internal var player: AVAudioUnit?
-    private(set) internal var converter: AVAudioUnit?
-    internal let rateNode = AVAudioUnitTimePitch()
-    internal var audioFileStream: AudioFileStreamID? = nil
-    internal let equalizer = AVAudioUnitEQ()
+    /// The underlying `AVAudioEngine` object
+    let audioEngine = AVAudioEngine()
+    /// An `AVAudioUnit` object that represents the audio player
+    private(set) var player: AVAudioUnit?
+    /// An `AVAudioUnitTimePitch` that controls the playback rate of the audio engine
+    let rateNode = AVAudioUnitTimePitch()
     
-    internal var isEngineRunning: Bool { audioEngine.isRunning }
+    /// A Boolean value that indicates whether the audio engine is running.
+    /// `true` if the engine is running, otherwise, `false`
+    var isEngineRunning: Bool { audioEngine.isRunning }
     
-    internal var rendererContext: AudioRendererContext
-    internal var playerContext: AudioPlayerContext
+    /// An object representing the context of the audio render.
+    /// Holds the audio buffer and in/out lists as required by the audio rendering
+    let rendererContext: AudioRendererContext
+    /// An object representing the context of the player.
+    /// Holds the player's state, current playing and reading entries.
+    let playerContext: AudioPlayerContext
     
-    internal let fileStreamProcessor: AudioFileStreamProcessor
-    internal let playerRenderProcessor: AudioPlayerRenderProcessor
+    let fileStreamProcessor: AudioFileStreamProcessor
+    let playerRenderProcessor: AudioPlayerRenderProcessor
     
-    internal var audioReadSource: DispatchTimerSource
-    internal let underlyingQueue = DispatchQueue(label: "streaming.core.queue", qos: .userInitiated)
-    internal let propertiesQueue = DispatchQueue(label: "streaming.core.queue.properties", qos: .userInitiated)
-    internal var audioSemaphore = DispatchSemaphore(value: 0)
-    internal var sourceQueue: DispatchQueue
+    private let audioReadSource: DispatchTimerSource
+    private let underlyingQueue = DispatchQueue(label: "streaming.core.queue", qos: .userInitiated)
+    private let audioSemaphore = DispatchSemaphore(value: 0)
+    private let sourceQueue: DispatchQueue
     
     private(set) lazy var networking = NetworkingClient()
-    internal var audioSource: AudioStreamSource?
+    var audioSource: AudioStreamSource?
     
-    internal var entriesQueue: PlayerQueueEntries
+    var entriesQueue: PlayerQueueEntries
     
     public init(configuration: AudioPlayerConfiguration = .default) {
         self.configuration = configuration.normalizeValues()
         
-        self.rendererContext = AudioRendererContext(configuration: configuration)
-        self.playerContext = AudioPlayerContext(configuration: configuration, targetQueue: propertiesQueue)
+        self.rendererContext = AudioRendererContext(configuration: configuration, audioFormat: audioFormat)
+        self.playerContext = AudioPlayerContext(configuration: configuration)
         
         self.entriesQueue = PlayerQueueEntries()
         
@@ -88,11 +100,13 @@ public final class AudioPlayer {
         
         self.fileStreamProcessor = AudioFileStreamProcessor(playerContext: playerContext,
                                                             rendererContext: rendererContext,
-                                                            semaphore: audioSemaphore)
+                                                            semaphore: audioSemaphore,
+                                                            audioFormat: audioFormat)
         
         self.playerRenderProcessor = AudioPlayerRenderProcessor(playerContext: playerContext,
                                                                 rendererContext: rendererContext,
-                                                                semaphore: audioSemaphore)
+                                                                semaphore: audioSemaphore,
+                                                                audioFormat: audioFormat)
         
         self.configPlayerContext()
         self.configPlayerNode()
@@ -106,10 +120,17 @@ public final class AudioPlayer {
     
     // MARK: Public
     
+    /// Starts the audio playback for the given URL
+    ///
+    /// - parameter url: A `URL` specifying the audio context to be played
     public func play(url: URL) {
         play(url: url, headers: [:])
     }
     
+    /// Starts the audio playback for the given URL
+    ///
+    /// - parameter url: A `URL` specifying the audio context to be played.
+    /// - parameter headers: A `Dictionary` specifying any additional headers to be pass to the network request.
     public func play(url: URL, headers: [String: String]) {
         let audioSource = RemoteAudioSource(networking: self.networking,
                                             url: url,
@@ -131,6 +152,7 @@ public final class AudioPlayer {
         }
     }
     
+    /// Stops the audio playback
     public func stop() {
         guard playerContext.internalState != .stopped else { return }
         
@@ -154,6 +176,7 @@ public final class AudioPlayer {
         }
     }
     
+    /// Pauses the audio playback
     public func pause() {
         if playerContext.internalState != .paused && playerContext.internalState.contains(.running) {
             stateBeforePaused = playerContext.internalState
@@ -166,19 +189,19 @@ public final class AudioPlayer {
             stopReadProccessFromSource()
         }
     }
-    
+    /// Resumes the audio playback, if previous paused
     public func resume() {
-        if playerContext.internalState == .paused {
-            playerContext.setInternalState(to: stateBeforePaused)
-            // check if seek time requested and reset buffers
-            do {
-                try self.audioEngine.start()
-            } catch {
-                print("resuming audio engine failed: \(error)")
-            }
-            self.startPlayer(resetBuffers: false)
-            startReadProcessFromSourceIfNeeded()
+        guard playerContext.internalState == .paused else { return }
+        playerContext.setInternalState(to: stateBeforePaused)
+        // check if seek time requested and reset buffers
+        do {
+            try startEngine()
+        } catch {
+            Logger.debug("resuming audio engine failed: %@", category: .generic, args: error.localizedDescription)
         }
+        
+        startPlayer(resetBuffers: false)
+        startReadProcessFromSourceIfNeeded()
     }
     
     public func duration() -> Double {
@@ -198,7 +221,7 @@ public final class AudioPlayer {
         // TODO: account for seek request
         guard playerContext.internalState != .pendingNext else { return 0 }
         guard let entry = playerContext.currentReadingEntry else { return 0 }
-        return Double(entry.seekTime) + (Double(entry.framesState.played) / Double(audioFormat.sampleRate))
+        return Double(entry.seekTime) + (Double(entry.framesState.played) / audioFormat.sampleRate)
     }
     
     // MARK: Private
@@ -208,19 +231,21 @@ public final class AudioPlayer {
             audioEngine.stop()
             playerRenderProcessor.renderBlock = audioEngine.manualRenderingBlock
             
-            let audioFormat = AVAudioFormat(streamDescription: &UnitDescriptions.canonicalAudioStream)!
-            
             try audioEngine.enableManualRenderingMode(.realtime,
                                                       format: audioFormat,
-                                                      maximumFrameCount: AVAudioFrameCount(maxFramesPerSlice))
+                                                      maximumFrameCount: maxFramesPerSlice)
+            
+            let inputBlock = { [weak self] frameCount -> UnsafePointer<AudioBufferList>? in
+                self?.playerRenderProcessor.inRender(inNumberFrames: frameCount)
+            }
             
             let success = audioEngine.inputNode.setManualRenderingInputPCMFormat(audioFormat,
-                                                                                 inputBlock: manualRenderingInput)
+                                                                                 inputBlock: inputBlock)
             guard success else {
                 assertionFailure("failure setting manual rendering mode")
                 return
             }
-            attachAndConnectNodes(format: audioFormat)
+            attachAndConnectNodes()
             
             audioEngine.prepare()
             try audioEngine.start()
@@ -229,27 +254,19 @@ public final class AudioPlayer {
         }
     }
     
-    internal func manualRenderingInput(frameCount: AVAudioFrameCount) -> UnsafePointer<AudioBufferList>? {
-        return playerRenderProcessor.inRender(inNumberFrames: frameCount)
-    }
-    
     private func configPlayerNode() {
         let playerRenderProcessor = self.playerRenderProcessor
         AVAudioUnit.createAudioUnit(with: UnitDescriptions.output) { [weak self] result in
+            guard let self = self else { return }
             switch result {
                 case .success(let unit):
-                    self?.player = unit
+                    self.player = unit
+                    playerRenderProcessor.attachCallback(on: unit, audioFormat: self.audioFormat)
                 case .failure(let error):
                     assertionFailure("couldn't create player unit: \(error)")
+                    self.raiseUnxpected(error: .audioSystemError(.playerNotFound))
             }
         }
-        
-        guard let player = player else {
-            raiseUnxpected(error: .audioSystemError(.playerNotFound))
-            return
-        }
-        
-        playerRenderProcessor.attachCallback(on: player)
     }
     
     private func configPlayerContext() {
@@ -268,14 +285,11 @@ public final class AudioPlayer {
         }
     }
     
-    private func attachAndConnectNodes(format: AVAudioFormat) {
-        audioEngine.attach(equalizer)
+    private func attachAndConnectNodes() {
         audioEngine.attach(rateNode)
         
-        let eqFormat = equalizer.outputFormat(forBus: 0)
         audioEngine.connect(audioEngine.inputNode, to: rateNode, format: nil)
-        audioEngine.connect(rateNode, to: equalizer, format: eqFormat)
-        audioEngine.connect(equalizer, to: audioEngine.mainMixerNode, format:  nil)
+        audioEngine.connect(rateNode, to: audioEngine.mainMixerNode, format:  nil)
     }
     
     private func startEngineIfNeeded() throws {
@@ -283,6 +297,10 @@ public final class AudioPlayer {
             Logger.debug("engine already running 🛵", category: .generic)
             return
         }
+        try startEngine()
+    }
+    
+    private func startEngine() throws {
         try audioEngine.start()
         Logger.debug("engine started 🛵", category: .generic)
     }
@@ -366,7 +384,7 @@ public final class AudioPlayer {
         guard let entry = entry else { return }
         Logger.debug("Setting current reading entry to: %@", category: .generic, args: entry.debugDescription)
         if startPlaying {
-            let count = Int(rendererContext.bufferTotalFrameCount * rendererContext.bufferFrameSizeInBytes)
+            let count = Int(rendererContext.bufferContext.totalFrameCount * rendererContext.bufferContext.sizeInBytes)
             memset(rendererContext.audioBuffer.mData, 0, count)
         }
         
@@ -406,7 +424,7 @@ public final class AudioPlayer {
             if let entry = entry, !isPlayingSameItemProbablySeek {
                 let entryId = entry.id
                 let progressInFrames = entry.progressInFrames()
-                let progress = Double(progressInFrames) / UnitDescriptions.canonicalAudioStream.mSampleRate
+                let progress = Double(progressInFrames) / self.audioFormat.basicStreamDescription.mSampleRate
                 let duration = entry.duration()
                 
                 asyncOnMain {
