@@ -348,25 +348,36 @@ public final class AudioPlayer {
         Logger.debug("engine stopped 🛑", category: .generic)
     }
     
+    /// Starts the timer of `audioReadSource` for proccesing the source read stream
+    ///
+    /// This calls `processSource` method every `500 ms`
+    ///
     private func startReadProcessFromSourceIfNeeded() {
-        guard audioReadSource.state != .resumed else { return }
+        guard audioReadSource.state != .activated else { return }
         audioReadSource.add { [weak self] in
             self?.processSource()
         }
-        audioReadSource.resume()
+        audioReadSource.activate()
     }
     
+    /// Stops and removes the handler from the timer, @see `audioReadSource`
     private func stopReadProccessFromSource() {
         audioReadSource.suspend()
         audioReadSource.removeHandler()
     }
     
+    /// Starts the audio player, reseting the buffers if requested
+    ///
+    /// - parameter resetBuffers: A `Bool` value indicating if the buffers should be reset, prior starting the player.
     private func startPlayer(resetBuffers: Bool) {
         guard let player = player else { return }
         if resetBuffers {
             rendererContext.resetBuffers()
         }
-        if !isEngineRunning && !player.auAudioUnit.isRunning { return }
+        if !isEngineRunning && !player.auAudioUnit.isRunning {
+            Logger.debug("trying to start the player when audio engine and player are already running", category: .generic)
+            return
+        }
         do {
             try player.auAudioUnit.startHardware()
         } catch {
@@ -376,6 +387,7 @@ public final class AudioPlayer {
         
     }
     
+    /// Processing the `playerContext` state to ensure correct behavior of playing/stop/seek
     private func processSource() {
         guard !playerContext.disposedRequested else { return }
         guard playerContext.internalState != .paused else { return }
