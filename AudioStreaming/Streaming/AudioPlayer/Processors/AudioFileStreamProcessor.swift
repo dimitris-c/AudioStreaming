@@ -25,11 +25,11 @@ final class AudioFileStreamProcessor {
     
     private let playerContext: AudioPlayerContext
     private let rendererContext: AudioRendererContext
-    private let audioFormat: AVAudioFormat
+    private let outputAudioFormat: AVAudioFormat
     
     internal var audioFileStream: AudioFileStreamID? = nil
     internal var audioConverter: AudioConverterRef? = nil
-    internal var audioConverterStreamDescription = AudioStreamBasicDescription()
+    internal var inputFormat = AudioStreamBasicDescription()
     
     var isFileStreamOpen: Bool {
         audioFileStream != nil
@@ -37,10 +37,10 @@ final class AudioFileStreamProcessor {
     
     init(playerContext: AudioPlayerContext,
          rendererContext: AudioRendererContext,
-         audioFormat: AVAudioFormat) {
+         outputAudioFormat: AVAudioFormat) {
         self.playerContext = playerContext
         self.rendererContext = rendererContext
-        self.audioFormat = audioFormat
+        self.outputAudioFormat = outputAudioFormat
     }
     
     /// Opens the `AudioFileStream`
@@ -79,27 +79,27 @@ final class AudioFileStreamProcessor {
     /// - parameter fromFormat: An `AVAudioFormat` indicating the format of the remote audio
     /// - parameter toFormat: An `AVAudioFormat` indicating the local format in which the fromFormat will be converted to.
     func createAudioConverter(from fromFormat: AVAudioFormat, to toFormat: AVAudioFormat) {
-        var streamDescription = fromFormat.basicStreamDescription
+        var inputFormat = fromFormat.basicStreamDescription
         if let converter = audioConverter,
-           memcmp(&streamDescription, &audioConverterStreamDescription, MemoryLayout.size(ofValue: AudioStreamBasicDescription.self)) != 0 {
+           memcmp(&inputFormat, &inputFormat, MemoryLayout.size(ofValue: AudioStreamBasicDescription.self)) != 0 {
             AudioConverterReset(converter)
         }
         disposeAudioConverter()
         
         
         var classDesc = AudioClassDescription()
-        var canonical = toFormat.basicStreamDescription
-        if getHardwareCodecClassDescripition(formatId: streamDescription.mFormatID, classDesc: &classDesc) {
-            AudioConverterNewSpecific(&streamDescription, &canonical, 1, &classDesc, &audioConverter)
+        var outputFormat = toFormat.basicStreamDescription
+        if getHardwareCodecClassDescripition(formatId: inputFormat.mFormatID, classDesc: &classDesc) {
+            AudioConverterNewSpecific(&inputFormat, &outputFormat, 1, &classDesc, &audioConverter)
         }
         
         if audioConverter == nil {
-            guard AudioConverterNew(&streamDescription, &canonical, &audioConverter) == noErr else {
+            guard AudioConverterNew(&inputFormat, &outputFormat, &audioConverter) == noErr else {
                 // raise error...
                 return
             }
         }
-        audioConverterStreamDescription = streamDescription
+        self.inputFormat = inputFormat
         
         // magic cookie info
         let fileHint = playerContext.currentReadingEntry?.source.audioFileHint
@@ -202,7 +202,7 @@ final class AudioFileStreamProcessor {
             }
         }
         if let readingEntry = playerContext.currentReadingEntry {
-            createAudioConverter(from: readingEntry.audioStreamFormat, to: audioFormat)
+            createAudioConverter(from: readingEntry.audioStreamFormat, to: outputAudioFormat)
         }
     }
     
@@ -255,7 +255,7 @@ final class AudioFileStreamProcessor {
                                            packDescription: inPacketDescriptions)
         convertInfo.audioBuffer.mData = UnsafeMutableRawPointer(mutating: inInputData)
         convertInfo.audioBuffer.mDataByteSize = inNumberBytes
-        convertInfo.audioBuffer.mNumberChannels = audioConverterStreamDescription.mChannelsPerFrame
+        convertInfo.audioBuffer.mNumberChannels = inputFormat.mChannelsPerFrame
         
         if let readingEntry = playerContext.currentReadingEntry, let inPacketDescriptions = inPacketDescriptions {
             let processedPackCount = readingEntry.processedPacketsState.count
@@ -385,6 +385,7 @@ final class AudioFileStreamProcessor {
     /// - parameter list: An `UnsafeMutableAudioBufferListPointer` object representing the buffer list be filled with data
     /// - parameter dataOffset: An `Int` value indicating any offset to be applied to the buffer data
     /// - parameter framesToDecode: An `UInt32` value indicating the frames to be decoded, used in calculating the data size of the buffer.
+    @inline(__always)
     private func prefillLocalBufferList(list: UnsafeMutableAudioBufferListPointer, dataOffset: Int, framesToDecode: UInt32) {
         if let mData = rendererContext.audioBuffer.mData {
             if dataOffset > 0 {
@@ -400,6 +401,7 @@ final class AudioFileStreamProcessor {
     /// Advances the processed frames for buffer and reading entry
     ///
     /// - parameter frameCount: An `UInt32` value to be added to the used count of the buffers.
+    @inline(__always)
     private func filUsedFrames(framesCount: UInt32) {
         rendererContext.lock.around {
             rendererContext.bufferContext.frameUsedCount += framesCount

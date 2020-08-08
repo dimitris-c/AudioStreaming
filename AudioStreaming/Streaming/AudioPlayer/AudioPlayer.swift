@@ -48,7 +48,7 @@ public final class AudioPlayer {
     public let configuration: AudioPlayerConfiguration
     
     /// An `AVAudioFormat` object for the canonical audio stream
-    private var audioFormat: AVAudioFormat = {
+    private var outputAudioFormat: AVAudioFormat = {
         AVAudioFormat(commonFormat: .pcmFormatInt32, sampleRate: 44100.0, channels: 2, interleaved: true)!
     }()
     
@@ -88,7 +88,7 @@ public final class AudioPlayer {
     public init(configuration: AudioPlayerConfiguration = .default) {
         self.configuration = configuration.normalizeValues()
         
-        self.rendererContext = AudioRendererContext(configuration: configuration, audioFormat: audioFormat)
+        self.rendererContext = AudioRendererContext(configuration: configuration, outputAudioFormat: outputAudioFormat)
         self.playerContext = AudioPlayerContext()
         
         self.entriesQueue = PlayerQueueEntries()
@@ -98,11 +98,11 @@ public final class AudioPlayer {
         
         self.fileStreamProcessor = AudioFileStreamProcessor(playerContext: playerContext,
                                                             rendererContext: rendererContext,
-                                                            audioFormat: audioFormat)
+                                                            outputAudioFormat: outputAudioFormat)
         
         self.playerRenderProcessor = AudioPlayerRenderProcessor(playerContext: playerContext,
                                                                 rendererContext: rendererContext,
-                                                                audioFormat: audioFormat)
+                                                                outputAudioFormat: outputAudioFormat)
         
         self.configPlayerContext()
         self.configPlayerNode()
@@ -138,11 +138,11 @@ public final class AudioPlayer {
         audioSource.delegate = self
         clearQueue()
         entriesQueue.enqueue(item: entry, type: .upcoming)
+        playerContext.internalState = .pendingNext
         
         checkRenderWaitingAndNotifyIfNeeded()
         sourceQueue.async { [weak self] in
             guard let self = self else { return }
-            self.playerContext.internalState = .pendingNext
             do {
                 try self.startEngineIfNeeded()
             } catch {
@@ -228,7 +228,7 @@ public final class AudioPlayer {
         // TODO: account for seek request
         guard playerContext.internalState != .pendingNext else { return 0 }
         guard let entry = playerContext.currentPlayingEntry else { return 0 }
-        return Double(entry.seekTime) + (Double(entry.framesState.played) / audioFormat.sampleRate)
+        return Double(entry.seekTime) + (Double(entry.framesState.played) / outputAudioFormat.sampleRate)
     }
     
     // MARK: Private
@@ -241,14 +241,14 @@ public final class AudioPlayer {
             playerRenderProcessor.renderBlock = audioEngine.manualRenderingBlock
             
             try audioEngine.enableManualRenderingMode(.realtime,
-                                                      format: audioFormat,
+                                                      format: outputAudioFormat,
                                                       maximumFrameCount: maxFramesPerSlice)
             
             let inputBlock = { [weak self] frameCount -> UnsafePointer<AudioBufferList>? in
                 self?.playerRenderProcessor.inRender(inNumberFrames: frameCount)
             }
             
-            let success = audioEngine.inputNode.setManualRenderingInputPCMFormat(audioFormat,
+            let success = audioEngine.inputNode.setManualRenderingInputPCMFormat(outputAudioFormat,
                                                                                  inputBlock: inputBlock)
             guard success else {
                 assertionFailure("failure setting manual rendering mode")
@@ -272,7 +272,7 @@ public final class AudioPlayer {
             switch result {
                 case .success(let unit):
                     self.player = unit
-                    playerRenderProcessor.attachCallback(on: unit, audioFormat: self.audioFormat)
+                    playerRenderProcessor.attachCallback(on: unit, audioFormat: self.outputAudioFormat)
                 case .failure(let error):
                     assertionFailure("couldn't create player unit: \(error)")
                     self.raiseUnxpected(error: .audioSystemError(.playerNotFound))
@@ -457,7 +457,7 @@ public final class AudioPlayer {
             if let entry = entry, !isPlayingSameItemProbablySeek {
                 let entryId = entry.id
                 let progressInFrames = entry.progressInFrames()
-                let progress = Double(progressInFrames) / self.audioFormat.basicStreamDescription.mSampleRate
+                let progress = Double(progressInFrames) / self.outputAudioFormat.basicStreamDescription.mSampleRate
                 let duration = entry.duration()
                 
                 asyncOnMain {

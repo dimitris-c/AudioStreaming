@@ -26,7 +26,9 @@ public protocol AudioPlayerDelegate: class {
     /// - note: Probably a good time to recreate the player when this occurs
     func audioPlayerUnexpectedError(player: AudioPlayer, error: AudioPlayerError)
     
+    /// Tells the delegate when cancel occurs, usually due to a stop or play (new source)
     func audioPlayerDidCancel(player: AudioPlayer, queuedItems: [AudioEntryId])
     
+    /// Tells the delegate when a metadata read occurred from the stream.
     func audioPlayerDidReadMetadata(player: AudioPlayer, metadata: [String: String])
 }

@@ -10,7 +10,7 @@ import AVFoundation
 final class AudioPlayerRenderProcessor: NSObject {
     private let playerContext: AudioPlayerContext
     private let rendererContext: AudioRendererContext
-    private let audioFormat: AVAudioFormat
+    private let outputAudioFormat: AVAudioFormat
     /// The AVAudioEngine's `AVAudioEngineManualRenderingBlock` render block from manual rendering
     var renderBlock: AVAudioEngineManualRenderingBlock?
     
@@ -19,10 +19,10 @@ final class AudioPlayerRenderProcessor: NSObject {
     
     init(playerContext: AudioPlayerContext,
          rendererContext: AudioRendererContext,
-         audioFormat: AVAudioFormat) {
+         outputAudioFormat: AVAudioFormat) {
         self.playerContext = playerContext
         self.rendererContext = rendererContext
-        self.audioFormat = audioFormat
+        self.outputAudioFormat = outputAudioFormat
     }
     
     func attachCallback(on player: AVAudioUnit, audioFormat: AVAudioFormat) {
@@ -65,7 +65,7 @@ final class AudioPlayerRenderProcessor: NSObject {
         let used = bufferContext.frameUsedCount
         let start = bufferContext.frameStartIndex
         let end = bufferContext.end
-        let signal = rendererContext.waiting && used < bufferContext.totalFrameCount / 2
+        let framesConsumedSignal = rendererContext.waiting && used < bufferContext.totalFrameCount / 2
         
         if let playingEntry = playingEntry {
             if state == .waitingForData {
@@ -215,7 +215,7 @@ final class AudioPlayerRenderProcessor: NSObject {
         let lastFramePlayed = currentPlayingEntry.framesState.isAtEnd
         
         currentPlayingEntry.lock.unlock()
-        if signal || lastFramePlayed {
+        if framesConsumedSignal || lastFramePlayed {
             
             if lastFramePlayed && playingEntry === playerContext.currentPlayingEntry {
                 audioFinished?(playingEntry)
@@ -249,12 +249,12 @@ final class AudioPlayerRenderProcessor: NSObject {
             rendererContext.packetsSemaphore.signal()
         }
         
-        let bytesPerFrames = audioFormat.basicStreamDescription.mBytesPerFrame
+        let bytesPerFrames = outputAudioFormat.basicStreamDescription.mBytesPerFrame
         let size = max(inNumberFrames, bytesPerFrames * totalFramesCopied)
 
         rendererContext.inAudioBufferList[0].mBuffers.mData = bufferList.mBuffers.mData
         rendererContext.inAudioBufferList[0].mBuffers.mDataByteSize = size
-        rendererContext.inAudioBufferList[0].mBuffers.mNumberChannels = audioFormat.basicStreamDescription.mChannelsPerFrame
+        rendererContext.inAudioBufferList[0].mBuffers.mNumberChannels = outputAudioFormat.basicStreamDescription.mChannelsPerFrame
         
         return UnsafePointer(rendererContext.inAudioBufferList)
     }
@@ -262,7 +262,7 @@ final class AudioPlayerRenderProcessor: NSObject {
     func render(inNumberFrames: UInt32, ioData: UnsafeMutablePointer<AudioBufferList>, status: OSStatus) -> OSStatus {
         var status = status
 
-        let mChannelsPerFrame = audioFormat.basicStreamDescription.mChannelsPerFrame
+        let mChannelsPerFrame = outputAudioFormat.basicStreamDescription.mChannelsPerFrame
         rendererContext.outAudioBufferList[0].mBuffers.mData = ioData.pointee.mBuffers.mData
         rendererContext.outAudioBufferList[0].mBuffers.mDataByteSize = maxFramesPerSlice * mChannelsPerFrame
         rendererContext.outAudioBufferList[0].mBuffers.mNumberChannels = mChannelsPerFrame

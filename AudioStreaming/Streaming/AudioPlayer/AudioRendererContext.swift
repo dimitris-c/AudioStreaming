@@ -34,13 +34,13 @@ final class AudioRendererContext: NSObject {
     var waiting: Bool = false
     
     let configuration: AudioPlayerConfiguration
-    init(configuration: AudioPlayerConfiguration, audioFormat: AVAudioFormat) {
+    init(configuration: AudioPlayerConfiguration, outputAudioFormat: AVAudioFormat) {
         self.configuration = configuration
         self.readBufferSize = configuration.readBufferSize
         self.readBuffer = UnsafeMutablePointer<UInt8>.uint8pointer(of: readBufferSize)
         self.seekRequest = SeekRequest()
         
-        let canonicalStream = audioFormat.basicStreamDescription
+        let canonicalStream = outputAudioFormat.basicStreamDescription
         
         self.framesRequestToStartPlaying = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.secondsRequiredToStartPlaying)
         self.framesRequiredAfterRebuffering = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.secondsRequiredToStartPlayingAfterBufferUnderun)
