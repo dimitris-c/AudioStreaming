@@ -212,8 +212,7 @@ public final class AudioPlayer {
     /// - Returns: A `Double` value indicating the total duration.
     public func duration() -> Double {
         guard playerContext.internalState != .pendingNext else { return 0 }
-        playerContext.entriesLock.lock(); defer { playerContext.entriesLock.unlock() }
-        guard let entry = playerContext.currentPlayingEntry else { return 0 }
+        guard let entry = playerContext.entriesLock.around( { playerContext.currentPlayingEntry } ) else { return 0 }
         
         let entryDuration = entry.duration()
         let progress = self.progress()
@@ -227,8 +226,11 @@ public final class AudioPlayer {
     public func progress() -> Double {
         // TODO: account for seek request
         guard playerContext.internalState != .pendingNext else { return 0 }
-        guard let entry = playerContext.currentPlayingEntry else { return 0 }
-        return Double(entry.seekTime) + (Double(entry.framesState.played) / outputAudioFormat.sampleRate)
+        guard let entry = playerContext.entriesLock.around( { playerContext.currentPlayingEntry } ) else { return 0 }
+        
+        return entry.lock.around {
+            return Double(entry.seekTime) + (Double(entry.framesState.played) / outputAudioFormat.sampleRate)
+        }
     }
     
     // MARK: Private

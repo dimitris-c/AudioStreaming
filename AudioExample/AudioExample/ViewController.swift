@@ -61,8 +61,13 @@ class ViewController: UIViewController {
     }()
     
     let resumeButton = UIButton()
-    
     let muteButton = UIButton()
+    
+    let slider = UISlider()
+    let elapsedPlayTimeLabel = UILabel()
+    let remainingPlayTimeLabel = UILabel()
+    
+    private var displayLink: CADisplayLink?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -130,11 +135,37 @@ class ViewController: UIViewController {
         controlsStackView.axis = .horizontal
         controlsStackView.distribution = .fillEqually
         controlsStackView.alignment = .center
-        self.view.addSubview(controlsStackView)
+        
+        if #available(iOS 13.0, *) {
+            slider.tintColor = .systemGray2
+            slider.thumbTintColor = .systemGray
+        } else {
+            slider.tintColor = .darkGray
+            slider.thumbTintColor = .black
+        }
+        
+        elapsedPlayTimeLabel.font = UIFont.preferredFont(forTextStyle: .footnote)
+        elapsedPlayTimeLabel.textAlignment = .left
+        remainingPlayTimeLabel.font = UIFont.preferredFont(forTextStyle: .footnote)
+        remainingPlayTimeLabel.textAlignment = .right
+        
+        let playbackTimeLabelsStack = UIStackView(arrangedSubviews: [elapsedPlayTimeLabel, remainingPlayTimeLabel])
+        playbackTimeLabelsStack.translatesAutoresizingMaskIntoConstraints = false
+        playbackTimeLabelsStack.axis = .horizontal
+        playbackTimeLabelsStack.distribution = .fillEqually
+        
+        let controlsAndSliderStack = UIStackView(arrangedSubviews: [controlsStackView, slider, playbackTimeLabelsStack])
+        controlsAndSliderStack.translatesAutoresizingMaskIntoConstraints = false
+        controlsAndSliderStack.spacing = 10
+        controlsAndSliderStack.setCustomSpacing(5, after: slider)
+        controlsAndSliderStack.axis = .vertical
+        controlsAndSliderStack.distribution = .fillEqually
+        
+        self.view.addSubview(controlsAndSliderStack)
         NSLayoutConstraint.activate([
-            controlsStackView.topAnchor.constraint(equalTo: stackView.bottomAnchor, constant: 40),
-            controlsStackView.leftAnchor.constraint(equalTo: self.view.leftAnchor, constant: 20),
-            controlsStackView.rightAnchor.constraint(equalTo: self.view.rightAnchor, constant: -20)
+            controlsAndSliderStack.topAnchor.constraint(equalTo: stackView.bottomAnchor, constant: 40),
+            controlsAndSliderStack.leftAnchor.constraint(equalTo: self.view.leftAnchor, constant: 20),
+            controlsAndSliderStack.rightAnchor.constraint(equalTo: self.view.rightAnchor, constant: -20)
         ])
     }
     
@@ -157,6 +188,8 @@ class ViewController: UIViewController {
         if let content = AudioContent(rawValue: button.tag) {
             player.play(url: content.streamUrl)
             resumeButton.setTitle("Pause", for: .normal)
+            startDisplayLink()
+            resetLabelsAndSlider()
         }
     }
     
@@ -164,6 +197,7 @@ class ViewController: UIViewController {
     func stop() {
         player.stop()
         resumeButton.setTitle("Pause", for: .normal)
+        stopDisplayLink(resetLabels: true)
     }
     
     @objc
@@ -171,9 +205,11 @@ class ViewController: UIViewController {
         if player.state == .playing {
             player.pause()
             resumeButton.setTitle("Resume", for: .normal)
+            stopDisplayLink(resetLabels: false)
         } else if player.state == .paused {
             player.resume()
             resumeButton.setTitle("Pause", for: .normal)
+            startDisplayLink()
         }
     }
     
@@ -183,6 +219,56 @@ class ViewController: UIViewController {
         muteButton.setTitle(player.muted ? "Unmute" : "Mute", for: .normal)
     }
     
+    private func startDisplayLink() {
+        displayLink?.invalidate()
+        displayLink = UIScreen.main.displayLink(withTarget: self, selector: #selector(tick))
+        displayLink?.add(to: .current, forMode: .default)
+    }
+    
+    private func stopDisplayLink(resetLabels: Bool) {
+        displayLink?.invalidate()
+        displayLink = nil
+        if resetLabels {
+            self.resetLabelsAndSlider()
+        }
+    }
+    
+    private func resetLabelsAndSlider() {
+        elapsedPlayTimeLabel.text = nil
+        remainingPlayTimeLabel.text = nil
+        slider.value = 0
+        slider.maximumValue = 0
+    }
+    
+    @objc
+    private func tick() {
+        if player.duration() > 0 {
+            let elapsed = Int(player.progress())
+            let remaining = Int(player.duration() - (player.progress()))
+            
+            slider.minimumValue = 0
+            slider.maximumValue = Float(player.duration())
+            slider.value = Float(player.progress())
+            
+            elapsedPlayTimeLabel.text = timeFrom(seconds: elapsed)
+            remainingPlayTimeLabel.text = timeFrom(seconds: remaining)            
+        } else {
+            let elapsed = Int(player.progress())
+            elapsedPlayTimeLabel.text = "Live broadcast"
+            remainingPlayTimeLabel.text = timeFrom(seconds: elapsed)
+        }
+    }
+    
+    private func timeFrom(seconds: Int) -> String {
+        let correctSeconds = seconds % 60
+        let minutes = (seconds / 60) % 60
+        let hours = seconds / 3600
+        
+        if hours > 0 {
+            return String(format: "%02d:%02d:%02d", hours, minutes, correctSeconds)
+        }
+        return String(format: "%02d:%02d", minutes, correctSeconds)
+    }
 }
 
 extension ViewController: AudioPlayerDelegate {
