@@ -75,7 +75,7 @@ final class MetadataStreamProcessor: MetadataStreamSource {
      ```
      Source: https://web.archive.org/web/20190521203350/https://www.smackfu.com/stuff/programming/shoutcast.html
     */
-    @inlinable
+    @inline(__always)
     func proccessFromRead(into buffer: UnsafeMutablePointer<UInt8>,
                           size: Int,
                           using stream: InputStream) -> Int {

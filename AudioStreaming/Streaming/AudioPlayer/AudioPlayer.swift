@@ -12,7 +12,7 @@ public final class AudioPlayer {
     
     public var muted: Bool {
         get { playerContext.muted }
-        set { playerContext.muted = newValue }
+        set { playerContext.$muted.write { $0 = newValue } }
     }
     
     /// The volume of the audio
@@ -89,7 +89,7 @@ public final class AudioPlayer {
         self.configuration = configuration.normalizeValues()
         
         self.rendererContext = AudioRendererContext(configuration: configuration, audioFormat: audioFormat)
-        self.playerContext = AudioPlayerContext(configuration: configuration)
+        self.playerContext = AudioPlayerContext()
         
         self.entriesQueue = PlayerQueueEntries()
         
@@ -138,11 +138,11 @@ public final class AudioPlayer {
         audioSource.delegate = self
         clearQueue()
         entriesQueue.enqueue(item: entry, type: .upcoming)
-        playerContext.internalState = .pendingNext
         
         checkRenderWaitingAndNotifyIfNeeded()
         sourceQueue.async { [weak self] in
             guard let self = self else { return }
+            self.playerContext.internalState = .pendingNext
             do {
                 try self.startEngineIfNeeded()
             } catch {
@@ -344,7 +344,7 @@ public final class AudioPlayer {
         player?.auAudioUnit.stopHardware()
         rendererContext.resetBuffers()
         playerContext.internalState = .stopped
-        playerContext.stopReason = reason
+        playerContext.$stopReason.write { $0 = reason }
         Logger.debug("engine stopped 🛑", category: .generic)
     }
     

@@ -62,6 +62,8 @@ class ViewController: UIViewController {
     
     let resumeButton = UIButton()
     
+    let muteButton = UIButton()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, policy: .longFormAudio)
@@ -85,6 +87,17 @@ class ViewController: UIViewController {
             stackView.rightAnchor.constraint(equalTo: self.view.rightAnchor, constant: -20)
         ])
         
+        muteButton.setTitle("Mute", for: .normal)
+        if #available(iOS 13.0, *) {
+            muteButton.setTitleColor(.label, for: .normal)
+            muteButton.setTitleColor(.secondaryLabel, for: .highlighted)
+            muteButton.setTitleColor(.tertiaryLabel, for: .disabled)
+        } else {
+            muteButton.setTitleColor(.black, for: .normal)
+            muteButton.setTitleColor(.gray, for: .highlighted)
+            muteButton.setTitleColor(.lightGray, for: .disabled)
+        }
+        muteButton.addTarget(self, action: #selector(toggleMute), for: .touchUpInside)
         
         resumeButton.setTitle("Pause", for: .normal)
         if #available(iOS 13.0, *) {
@@ -111,7 +124,7 @@ class ViewController: UIViewController {
         }
         stopButton.addTarget(self, action: #selector(stop), for: .touchUpInside)
         
-        let controlsStackView = UIStackView(arrangedSubviews: [resumeButton, stopButton])
+        let controlsStackView = UIStackView(arrangedSubviews: [resumeButton, stopButton, muteButton])
         controlsStackView.translatesAutoresizingMaskIntoConstraints = false
         controlsStackView.spacing = 10
         controlsStackView.axis = .horizontal
@@ -162,6 +175,12 @@ class ViewController: UIViewController {
             player.resume()
             resumeButton.setTitle("Pause", for: .normal)
         }
+    }
+    
+    @objc
+    func toggleMute() {
+        player.muted = !player.muted
+        muteButton.setTitle(player.muted ? "Unmute" : "Mute", for: .normal)
     }
     
 }

@@ -6,7 +6,6 @@
 import AVFoundation
 
 @discardableResult
-@inlinable
 func fileStreamGetProperty<Value>(value: inout Value, fileStream streamId: AudioFileStreamID, propertyId: AudioFileStreamPropertyID) -> OSStatus {
     var (size, _) = fileStreamGetPropertyInfo(fileStream: streamId, propertyId: propertyId)
     let status = AudioFileStreamGetProperty(streamId, propertyId, &size, &value)
@@ -16,7 +15,6 @@ func fileStreamGetProperty<Value>(value: inout Value, fileStream streamId: Audio
     return status
 }
 
-@inlinable
 func fileStreamGetPropertyInfo(fileStream streamId: AudioFileStreamID, propertyId: AudioFileStreamPropertyID) -> (size: UInt32, status: OSStatus) {
     var valueSize: UInt32 = 0
     let status = AudioFileStreamGetPropertyInfo(streamId, propertyId, &valueSize, nil)

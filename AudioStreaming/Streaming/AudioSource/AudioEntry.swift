@@ -10,10 +10,14 @@ public struct AudioEntryId: Equatable {
     public var id: String
 }
 
-final public class EntryFramesState {
-    public var queued: Int = 0
-    public var played: Int = 0
-    public var lastFrameQueued: Int = -1
+final class EntryFramesState {
+    var queued: Int = 0
+    var played: Int = 0
+    var lastFrameQueued: Int = -1
+    
+    var isAtEnd: Bool {
+        return played == lastFrameQueued
+    }
 }
 
 final public class ProcessedPacketsState {
@@ -44,8 +48,8 @@ public class AudioEntry {
         Float(audioStreamFormat.basicStreamDescription.mSampleRate)
     }
     
-    public var framesState: EntryFramesState
-    public var processedPacketsState: ProcessedPacketsState
+    var framesState: EntryFramesState
+    var processedPacketsState: ProcessedPacketsState
     
     public var audioDataOffset: UInt64 = 0
     public var audioDataByteCount: UInt64?

@@ -38,10 +38,8 @@ internal final class NetworkDataStream: NSObject {
     /// the underlying task of the network request
     private var task: URLSessionTask?
     
-    /// The accumulated data received from the URLSession
-    private var dataReceived = Data()
-    /// Keeps a track of the written bytes in the output stream
-    private var bytesWritten: Int = 0
+    private let outputStreamWriter: OutputStreamWriter
+    
     /// the expected content length of the audio, this is used to close the output stream.
     private var expectedContentLength = ExpectedContentLength.undefined
     
@@ -55,6 +53,7 @@ internal final class NetworkDataStream: NSObject {
     internal init(id: UUID, underlyingQueue: DispatchQueue) {
         self.id = id
         self.underlyingQueue = underlyingQueue
+        self.outputStreamWriter = OutputStreamWriter()
     }
     
     func task(for request: URLRequest, using session: URLSession) -> URLSessionTask {
@@ -118,9 +117,10 @@ internal final class NetworkDataStream: NSObject {
     internal func didReceive(data: Data, response: HTTPURLResponse?) {
         underlyingQueue.async { [weak self] in
             guard let self = self else { return }
-            self.dataReceived.append(data)
-            if let outputStream = self.streamState.outputStream {
-                self.writeData(on: outputStream)
+            self.outputStreamWriter.storeReceived(data: data)
+            if let outputStream = self.streamState.outputStream, outputStream.hasSpaceAvailable {
+                let writtenBytes = self.outputStreamWriter.writeData(on: outputStream, bufferSize: self.bufferSize)
+                self.checkEndOfFile(stream: outputStream, writtenBytes: writtenBytes)
             }
         }
         $streamState.read { state in
@@ -150,6 +150,14 @@ internal final class NetworkDataStream: NSObject {
         }
     }
     
+    fileprivate func checkEndOfFile(stream: OutputStream, writtenBytes: Int) {
+        guard self.expectedContentLength != .undefined else { return }
+        if let length = self.expectedContentLength.length, length == writtenBytes {
+            stream.close()
+            stream.unsetFromQueue()
+        }
+    }
+    
 }
 
 extension NetworkDataStream: StreamDelegate {
@@ -159,43 +167,15 @@ extension NetworkDataStream: StreamDelegate {
             case .openCompleted:
                 Logger.debug("output stream open completed", category: .networking)
             case .hasSpaceAvailable:
-                writeData(on: stream)
-                if let length = self.expectedContentLength.length {
-                    if length == self.bytesWritten {
-                        stream.close()
-                        stream.unsetFromQueue()
-                    }
+                underlyingQueue.async { [weak self] in
+                    guard let self = self else { return }
+                    let writtenBytes = self.outputStreamWriter.writeData(on: stream, bufferSize: self.bufferSize)
+                    self.checkEndOfFile(stream: stream, writtenBytes: writtenBytes)
                 }
-            case .endEncountered:
-                Logger.debug("output stream end encountered", category: .networking)
             case .errorOccurred:
                 Logger.debug("handle error! stop everything right?", category: .networking)
             default:
                 break
-        }
-    }
-    
-    /// Writes the data to the outputStream
-    private func writeData(on stream: OutputStream) {
-        underlyingQueue.async { [weak self] in
-            guard let self = self else { return }
-            guard !self.dataReceived.isEmpty else { return }
-            var bytes = self.dataReceived.getBytes { $0 }
-            bytes += self.bytesWritten
-            let dataCount = self.dataReceived.count
-            // get the count of bytes to be written, restrict to maximum of `bufferSize`
-            let count = (dataCount - self.bytesWritten >= self.bufferSize)
-                ? self.bufferSize
-                : dataCount - self.bytesWritten
-            guard count > 0 else {
-                return
-            }
-            let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: count)
-            defer { buffer.deallocate() }
-            memcpy(buffer, bytes, count)
-            
-            let writtenLength = stream.write(buffer, maxLength: count)
-            self.bytesWritten += writtenLength
         }
     }
 }

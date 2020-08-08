@@ -7,8 +7,10 @@ import Foundation
 
 internal final class AudioPlayerContext {
     
+    @Protected
     var stopReason: AudioPlayerStopReason = .none
     
+    @Protected
     var state: AudioPlayerState = .ready {
         didSet {
             stateChanged?(oldValue, state)
@@ -16,12 +18,13 @@ internal final class AudioPlayerContext {
     }
     var stateChanged: ((_ oldState: AudioPlayerState, _ newState: AudioPlayerState) -> Void)?
     
-    var muted: Bool
+    @Protected
+    var muted: Bool = false
     
     /// This is the player's internal state to use
     /// - NOTE: Do not use directly instead use the `internalState` to set and get the property
     /// or the `setInternalState(to:when:)`method
-    private let stateLock = UnfairLock()
+    @Protected
     private var __playerInternalState: PlayerInternalState = .initial
     
     var internalState: PlayerInternalState {
@@ -29,18 +32,16 @@ internal final class AudioPlayerContext {
         set { setInternalState(to: newValue) }
     }
     
+    /// Shared lock for `currentReadingEntry` and `currentPlayingEntry`
     let entriesLock = UnfairLock()
     
     var currentReadingEntry: AudioEntry?
     var currentPlayingEntry: AudioEntry?
     
-    var disposedRequested: Bool = false
+    var disposedRequested: Bool
     
-    let configuration: AudioPlayerConfiguration
-    
-    init(configuration: AudioPlayerConfiguration) {
-        self.configuration = configuration
-        self.muted = false
+    init() {
+        self.disposedRequested = false
     }
     
     /// Sets the internal state if given the `inState` will be evaluated before assignment occurs.
@@ -51,16 +52,19 @@ internal final class AudioPlayerContext {
     internal func setInternalState(to state: PlayerInternalState,
                                    when inState: ((PlayerInternalState) -> Bool)? = nil) {
         let newValues = playerStateAndStopReason(for: state)
-        stateLock.lock(); defer { stateLock.unlock() }
-        stopReason = newValues.stopReason
+        $stopReason.write { reason in
+            reason = newValues.stopReason
+        }
         guard state != internalState else { return }
         if let inState = inState, !inState(internalState) {
             return
         }
-        __playerInternalState = state
+        $__playerInternalState.write { internalState in
+            internalState = state
+        }
         let previousPlayerState = self.state
         if newValues.state != previousPlayerState {
-            self.state = newValues.state
+            $state.write { $0 = newValues.state }
         }
     }
     

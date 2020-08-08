@@ -46,11 +46,11 @@ final class AudioPlayerRenderProcessor: NSObject {
     ///
     /// - parameter inNumberFrames: An `AVAudioFrameCount` provided by the `AudioEngine` instance
     /// - returns An optional `UnsafePointer` of `AudioBufferList`
-    @inlinable
     func inRender(inNumberFrames: AVAudioFrameCount) -> UnsafePointer<AudioBufferList>? {
         playerContext.entriesLock.lock()
-        let entry = playerContext.currentPlayingEntry
+        let playingEntry = playerContext.currentPlayingEntry
         let readingEntry = playerContext.currentReadingEntry
+        let isMuted = playerContext.muted
         playerContext.entriesLock.unlock()
         
         let state = playerContext.internalState
@@ -58,7 +58,6 @@ final class AudioPlayerRenderProcessor: NSObject {
         rendererContext.lock.lock()
         
         var waitForBuffer = false
-        let isMuted = playerContext.muted
         let audioBuffer = rendererContext.audioBuffer
         var bufferList = rendererContext.outAudioBufferList[0]
         let bufferContext = rendererContext.bufferContext
@@ -68,7 +67,7 @@ final class AudioPlayerRenderProcessor: NSObject {
         let end = bufferContext.end
         let signal = rendererContext.waiting && used < bufferContext.totalFrameCount / 2
         
-        if let playingEntry = entry {
+        if let playingEntry = playingEntry {
             if state == .waitingForData {
                 var requiredFramesToStart = rendererContext.framesRequestToStartPlaying
                 if playingEntry.framesState.lastFrameQueued >= 0 {
@@ -171,8 +170,10 @@ final class AudioPlayerRenderProcessor: NSObject {
                 rendererContext.lock.unlock()
                 
             }
-            playerContext.setInternalState(to: .playing) { state -> Bool in
-                state.contains(.running) && state != .paused
+            if playerContext.internalState != .playing {
+                playerContext.setInternalState(to: .playing) { state -> Bool in
+                    state.contains(.running) && state != .paused
+                }                
             }
             
         }
@@ -184,17 +185,19 @@ final class AudioPlayerRenderProcessor: NSObject {
                        0,
                        Int(delta * frameSizeInBytes))
             }
-            if playerContext.currentPlayingEntry != nil || state == .waitingForDataAfterSeek || state == .waitingForData || state == .rebuffering {
+            if playingEntry != nil || state == .waitingForDataAfterSeek || state == .waitingForData || state == .rebuffering {
                 // buffering
-                playerContext.setInternalState(to: .rebuffering) { state -> Bool in
-                    state.contains(.running) && state != .paused
+                if playerContext.internalState != .rebuffering {
+                    playerContext.setInternalState(to: .rebuffering) { state -> Bool in
+                        state.contains(.running) && state != .paused
+                    }                    
                 }
             } else if state == .waitingForDataAfterSeek {
                 // todo: implement this
             }
         }
         
-        guard let currentPlayingEntry = entry else {
+        guard let currentPlayingEntry = playingEntry else {
             return nil
         }
         currentPlayingEntry.lock.lock()
@@ -209,13 +212,13 @@ final class AudioPlayerRenderProcessor: NSObject {
         currentPlayingEntry.framesState.played += Int(framesPlayedForCurrent)
         extraFramesPlayedNotAssigned = totalFramesCopied - framesPlayedForCurrent
         
-        let lastFramePlayed = currentPlayingEntry.framesState.played == currentPlayingEntry.framesState.lastFrameQueued
+        let lastFramePlayed = currentPlayingEntry.framesState.isAtEnd
         
         currentPlayingEntry.lock.unlock()
         if signal || lastFramePlayed {
             
-            if lastFramePlayed && entry === playerContext.currentPlayingEntry {
-                audioFinished?(entry)
+            if lastFramePlayed && playingEntry === playerContext.currentPlayingEntry {
+                audioFinished?(playingEntry)
                 
                 while extraFramesPlayedNotAssigned > 0 {
                     if let newEntry = playerContext.currentPlayingEntry {
@@ -228,11 +231,12 @@ final class AudioPlayerRenderProcessor: NSObject {
                         newEntry.lock.lock()
                         newEntry.framesState.played += Int(framesPlayedForCurrent)
                         
-                        if framesState.played == framesState.lastFrameQueued {
+                        if framesState.isAtEnd {
                             newEntry.lock.unlock()
                             audioFinished?(newEntry)
+                        } else {
+                            newEntry.lock.unlock()
                         }
-                        newEntry.lock.unlock()
                         
                         extraFramesPlayedNotAssigned -= framesPlayedForCurrent
                         
@@ -255,7 +259,6 @@ final class AudioPlayerRenderProcessor: NSObject {
         return UnsafePointer(rendererContext.inAudioBufferList)
     }
     
-    @inlinable
     func render(inNumberFrames: UInt32, ioData: UnsafeMutablePointer<AudioBufferList>, status: OSStatus) -> OSStatus {
         var status = status
 
@@ -292,7 +295,6 @@ final class AudioPlayerRenderProcessor: NSObject {
         return status
     }
     
-    @inlinable
     func renderProvider(flags: UnsafeMutablePointer<AudioUnitRenderActionFlags>, timeStamp: UnsafePointer<AudioTimeStamp>, inNumberFrames: AUAudioFrameCount, inputBusNumber: Int, inputData: UnsafeMutablePointer<AudioBufferList>) -> AUAudioUnitStatus {
         let status = noErr
         return render(inNumberFrames: inNumberFrames, ioData: inputData, status: status)
