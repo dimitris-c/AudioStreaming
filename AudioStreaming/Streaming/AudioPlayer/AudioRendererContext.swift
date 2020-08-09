@@ -8,10 +8,15 @@ import AVFoundation
 
 internal var maxFramesPerSlice: AVAudioFrameCount = 8192
 
-final class AudioRendererContext: NSObject {
+final class SeekRequest {
+    var requested: Bool = false
+    var time: Int = 0
+}
+
+final class AudioRendererContext {
     var fileFormat: String = ""
 
-    public let lock = UnfairLock()
+    let lock = UnfairLock()
     
     let readBufferSize: Int
     let readBuffer: UnsafeMutablePointer<UInt8>
@@ -88,9 +93,4 @@ private func allocateBufferList(dataByteSize: Int) -> UnsafeMutablePointer<Audio
     _bufferList[0].mNumberChannels = 2
     
     return _bufferList.unsafeMutablePointer
-}
-
-final public class SeekRequest {
-    var requested: Bool = false
-    var time: Int = 0
 }

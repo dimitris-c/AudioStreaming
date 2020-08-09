@@ -35,8 +35,8 @@ internal final class AudioPlayerContext {
     /// Shared lock for `currentReadingEntry` and `currentPlayingEntry`
     let entriesLock = UnfairLock()
     
-    var currentReadingEntry: AudioEntry?
-    var currentPlayingEntry: AudioEntry?
+    var audioReadingEntry: AudioEntry?
+    var audioPlayingEntry: AudioEntry?
     
     var disposedRequested: Bool
     

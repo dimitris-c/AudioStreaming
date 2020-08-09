@@ -20,10 +20,10 @@ final class EntryFramesState {
     }
 }
 
-final public class ProcessedPacketsState {
-    public var buferSize: UInt32 = 0
-    public var count: UInt32 = 0
-    public var sizeTotal: UInt32 = 0
+final class ProcessedPacketsState {
+    var buferSize: UInt32 = 0
+    var count: UInt32 = 0
+    var sizeTotal: UInt32 = 0
 }
 
 public class AudioEntry {
@@ -43,7 +43,7 @@ public class AudioEntry {
     var packetDuration: Double {
         return Double(audioStreamFormat.basicStreamDescription.mFramesPerPacket) / Double(sampleRate)
     }
-    /// The sample rate from the `audioStreamBasicDescription`
+    /// The sample rate from the `audioStreamFormat`
     var sampleRate: Float {
         Float(audioStreamFormat.basicStreamDescription.mSampleRate)
     }
@@ -51,8 +51,8 @@ public class AudioEntry {
     var framesState: EntryFramesState
     var processedPacketsState: ProcessedPacketsState
     
-    public var audioDataOffset: UInt64 = 0
-    public var audioDataByteCount: UInt64?
+    var audioDataOffset: UInt64 = 0
+    var audioDataByteCount: UInt64?
     
     var audioStreamFormat = AVAudioFormat()
     

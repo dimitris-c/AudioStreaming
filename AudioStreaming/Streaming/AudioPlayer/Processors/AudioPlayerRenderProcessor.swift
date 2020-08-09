@@ -48,8 +48,8 @@ final class AudioPlayerRenderProcessor: NSObject {
     /// - returns An optional `UnsafePointer` of `AudioBufferList`
     func inRender(inNumberFrames: AVAudioFrameCount) -> UnsafePointer<AudioBufferList>? {
         playerContext.entriesLock.lock()
-        let playingEntry = playerContext.currentPlayingEntry
-        let readingEntry = playerContext.currentReadingEntry
+        let playingEntry = playerContext.audioPlayingEntry
+        let readingEntry = playerContext.audioReadingEntry
         let isMuted = playerContext.muted
         playerContext.entriesLock.unlock()
         
@@ -217,11 +217,11 @@ final class AudioPlayerRenderProcessor: NSObject {
         currentPlayingEntry.lock.unlock()
         if framesConsumedSignal || lastFramePlayed {
             
-            if lastFramePlayed && playingEntry === playerContext.currentPlayingEntry {
+            if lastFramePlayed && playingEntry === playerContext.audioPlayingEntry {
                 audioFinished?(playingEntry)
                 
                 while extraFramesPlayedNotAssigned > 0 {
-                    if let newEntry = playerContext.currentPlayingEntry {
+                    if let newEntry = playerContext.audioPlayingEntry {
                         var framesPlayedForCurrent = extraFramesPlayedNotAssigned
                         
                         let framesState = newEntry.framesState

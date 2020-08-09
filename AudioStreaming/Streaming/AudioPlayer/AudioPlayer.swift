@@ -162,16 +162,16 @@ public final class AudioPlayer {
         checkRenderWaitingAndNotifyIfNeeded()
         sourceQueue.async { [weak self] in
             guard let self = self else { return }
-            self.playerContext.currentReadingEntry?.source.delegate = nil
-            self.playerContext.currentReadingEntry?.source.removeFromQueue()
-            self.playerContext.currentReadingEntry?.source.close()
-            if let playingEntry = self.playerContext.currentPlayingEntry {
+            self.playerContext.audioReadingEntry?.source.delegate = nil
+            self.playerContext.audioReadingEntry?.source.removeFromQueue()
+            self.playerContext.audioReadingEntry?.source.close()
+            if let playingEntry = self.playerContext.audioPlayingEntry {
                 self.processFinishPlaying(entry: playingEntry, with: nil)
             }
             
             self.clearQueue()
-            self.playerContext.currentReadingEntry = nil
-            self.playerContext.currentPlayingEntry = nil
+            self.playerContext.audioReadingEntry = nil
+            self.playerContext.audioPlayingEntry = nil
             
             self.processSource()
         }
@@ -212,7 +212,7 @@ public final class AudioPlayer {
     /// - Returns: A `Double` value indicating the total duration.
     public func duration() -> Double {
         guard playerContext.internalState != .pendingNext else { return 0 }
-        guard let entry = playerContext.entriesLock.around( { playerContext.currentPlayingEntry } ) else { return 0 }
+        guard let entry = playerContext.entriesLock.around( { playerContext.audioPlayingEntry } ) else { return 0 }
         
         let entryDuration = entry.duration()
         let progress = self.progress()
@@ -226,7 +226,7 @@ public final class AudioPlayer {
     public func progress() -> Double {
         // TODO: account for seek request
         guard playerContext.internalState != .pendingNext else { return 0 }
-        guard let entry = playerContext.entriesLock.around( { playerContext.currentPlayingEntry } ) else { return 0 }
+        guard let entry = playerContext.entriesLock.around( { playerContext.audioPlayingEntry } ) else { return 0 }
         
         return entry.lock.around {
             return Double(entry.seekTime) + (Double(entry.framesState.played) / outputAudioFormat.sampleRate)
@@ -400,13 +400,13 @@ public final class AudioPlayer {
             setCurrentReading(entry: entry, startPlaying: true, shouldClearQueue: true)
             rendererContext.resetBuffers()
         }
-        else if playerContext.currentReadingEntry == nil {
+        else if playerContext.audioReadingEntry == nil {
             if entriesQueue.count(for: .upcoming) > 0 {
                 let entry = entriesQueue.dequeue(type: .upcoming)
-                let shouldStartPlaying = playerContext.currentPlayingEntry == nil
+                let shouldStartPlaying = playerContext.audioPlayingEntry == nil
                 playerContext.internalState = .waitingForData
                 setCurrentReading(entry: entry, startPlaying: shouldStartPlaying, shouldClearQueue: true)
-            } else if playerContext.currentPlayingEntry == nil {
+            } else if playerContext.audioPlayingEntry == nil {
                 if playerContext.internalState != .stopped {
                     stopReadProccessFromSource()
                     stopEngine(reason: .eof)
@@ -425,24 +425,24 @@ public final class AudioPlayer {
         
         fileStreamProcessor.closeFileStreamIfNeeded()
         
-        if let readingEntry = playerContext.currentReadingEntry {
+        if let readingEntry = playerContext.audioReadingEntry {
             readingEntry.source.delegate = nil
             readingEntry.source.removeFromQueue()
             readingEntry.source.close()
         }
         
         playerContext.entriesLock.around {
-            playerContext.currentReadingEntry = entry
+            playerContext.audioReadingEntry = entry
         }
-        playerContext.currentReadingEntry?.source.delegate = self
-        playerContext.currentReadingEntry?.source.setup()
-        playerContext.currentReadingEntry?.source.seek(at: 0)
+        playerContext.audioReadingEntry?.source.delegate = self
+        playerContext.audioReadingEntry?.source.setup()
+        playerContext.audioReadingEntry?.source.seek(at: 0)
         
         if startPlaying {
             if shouldClearQueue {
                 clearQueue()
             }
-            processFinishPlaying(entry: playerContext.currentPlayingEntry, with: entry)
+            processFinishPlaying(entry: playerContext.audioPlayingEntry, with: entry)
             startPlayer(resetBuffers: true)
         } else {
             entriesQueue.enqueue(item: entry, type: .buffering)
@@ -450,9 +450,9 @@ public final class AudioPlayer {
     }
     
     private func processFinishPlaying(entry: AudioEntry?, with nextEntry: AudioEntry?) {
-        guard entry == playerContext.currentPlayingEntry else { return }
+        guard entry == playerContext.audioPlayingEntry else { return }
         
-        let isPlayingSameItemProbablySeek = playerContext.currentPlayingEntry == nextEntry
+        let isPlayingSameItemProbablySeek = playerContext.audioPlayingEntry == nextEntry
         
         let notifyDelegateEntryFinishedPlaying: (AudioEntry?, Bool) -> Void = { [weak self] entry, probablySeek in
             guard let self = self else { return }
@@ -476,7 +476,7 @@ public final class AudioPlayer {
                 // seek requested no.
             }
             playerContext.entriesLock.around {
-                playerContext.currentPlayingEntry = nextEntry
+                playerContext.audioPlayingEntry = nextEntry
             }
             let playingQueueEntryId = nextEntry.id
             
@@ -492,7 +492,7 @@ public final class AudioPlayer {
         } else {
             notifyDelegateEntryFinishedPlaying(entry, isPlayingSameItemProbablySeek)
             playerContext.entriesLock.around {
-                playerContext.currentPlayingEntry = nil
+                playerContext.audioPlayingEntry = nil
             }
         }
         processSource()
@@ -532,7 +532,7 @@ public final class AudioPlayer {
 extension AudioPlayer: AudioStreamSourceDelegate {
     
     func dataAvailable(source: AudioStreamSource) {
-        guard playerContext.currentReadingEntry?.source === source else { return }
+        guard playerContext.audioReadingEntry?.source === source else { return }
         guard source.hasBytesAvailable else { return }
         
         let read = source.read(into: rendererContext.readBuffer, size: rendererContext.readBufferSize)
@@ -554,41 +554,41 @@ extension AudioPlayer: AudioStreamSourceDelegate {
         // TODO: check for discontinuous stream and add flag
         if fileStreamProcessor.isFileStreamOpen {
             guard fileStreamProcessor.parseFileSteamBytes(buffer: rendererContext.readBuffer, size: read) == noErr else {
-                if source === playerContext.currentPlayingEntry?.source {
+                if source === playerContext.audioPlayingEntry?.source {
                     raiseUnxpected(error: .streamParseBytesFailure)
                 }
                 return
             }
             
-            playerContext.currentReadingEntry?.lock.lock()
-            if playerContext.currentReadingEntry === nil {
+            playerContext.audioReadingEntry?.lock.lock()
+            if playerContext.audioReadingEntry === nil {
                 source.removeFromQueue()
                 source.close()
             }
-            playerContext.currentReadingEntry?.lock.unlock()
+            playerContext.audioReadingEntry?.lock.unlock()
         }
     }
     
     func errorOccured(source: AudioStreamSource) {
-        guard let entry = playerContext.currentReadingEntry, entry.source === source else { return }
+        guard let entry = playerContext.audioReadingEntry, entry.source === source else { return }
         raiseUnxpected(error: .dataNotFound)
     }
     
     func endOfFileOccured(source: AudioStreamSource) {
-        guard playerContext.currentReadingEntry != nil || playerContext.currentReadingEntry?.source === source else {
+        guard playerContext.audioReadingEntry != nil || playerContext.audioReadingEntry?.source === source else {
             source.delegate = nil
             source.removeFromQueue()
             source.close()
             return
         }
-        let queuedItemId = playerContext.currentReadingEntry?.id
+        let queuedItemId = playerContext.audioReadingEntry?.id
         asyncOnMain { [weak self] in
             guard let self = self else { return }
             guard let itemId = queuedItemId else { return }
             self.delegate?.audioPlayerDidFinishBuffering(player: self, with: itemId)
         }
         
-        guard let readingEntry = playerContext.currentReadingEntry else {
+        guard let readingEntry = playerContext.audioReadingEntry else {
             source.delegate = nil
             source.removeFromQueue()
             source.close()
@@ -602,7 +602,7 @@ extension AudioPlayer: AudioStreamSourceDelegate {
         readingEntry.source.close()
         
         playerContext.entriesLock.lock()
-        playerContext.currentReadingEntry = nil
+        playerContext.audioReadingEntry = nil
         playerContext.entriesLock.unlock()
         processSource()
     }
