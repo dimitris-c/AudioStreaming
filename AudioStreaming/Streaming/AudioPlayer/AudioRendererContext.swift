@@ -26,8 +26,7 @@ final class AudioRendererContext {
     let seekRequest: SeekRequest
     
     var audioBuffer: AudioBuffer
-    var inAudioBufferList: UnsafeMutablePointer<AudioBufferList>
-    var outAudioBufferList: UnsafeMutablePointer<AudioBufferList>
+    var inOutAudioBufferList: UnsafeMutablePointer<AudioBufferList>
     
     let packetsSemaphore = DispatchSemaphore(value: 1)
     
@@ -51,10 +50,9 @@ final class AudioRendererContext {
         self.framesRequiredAfterRebuffering = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.secondsRequiredToStartPlayingAfterBufferUnderun)
         
         let dataByteSize = Int(canonicalStream.mSampleRate * configuration.bufferSizeInSeconds) * Int(canonicalStream.mBytesPerFrame)
-        inAudioBufferList = allocateBufferList(dataByteSize: dataByteSize)
-        outAudioBufferList = allocateBufferList(dataByteSize: dataByteSize)
+        inOutAudioBufferList = allocateBufferList(dataByteSize: dataByteSize)
         
-        audioBuffer = outAudioBufferList[0].mBuffers
+        audioBuffer = inOutAudioBufferList[0].mBuffers
         
         let bufferTotalFrameCount = UInt32(dataByteSize) / canonicalStream.mBytesPerFrame
         
@@ -66,8 +64,7 @@ final class AudioRendererContext {
     /// Deallocates buffer resources
     public func clean() {
         readBuffer.deallocate()
-        inAudioBufferList.deallocate()
-        outAudioBufferList.deallocate()
+        inOutAudioBufferList.deallocate()
         audioBuffer.mData?.deallocate()
     }
     

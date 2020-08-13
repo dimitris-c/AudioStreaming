@@ -98,11 +98,11 @@ public final class AudioPlayer {
         
         self.fileStreamProcessor = AudioFileStreamProcessor(playerContext: playerContext,
                                                             rendererContext: rendererContext,
-                                                            outputAudioFormat: outputAudioFormat)
+                                                            outputAudioFormat: outputAudioFormat.basicStreamDescription)
         
         self.playerRenderProcessor = AudioPlayerRenderProcessor(playerContext: playerContext,
                                                                 rendererContext: rendererContext,
-                                                                outputAudioFormat: outputAudioFormat)
+                                                                outputAudioFormat: outputAudioFormat.basicStreamDescription)
         
         self.configPlayerContext()
         self.configPlayerNode()
@@ -513,8 +513,9 @@ public final class AudioPlayer {
     
     /// Signals the packet process
     private func checkRenderWaitingAndNotifyIfNeeded() {
-        guard rendererContext.waiting else { return }
-        rendererContext.packetsSemaphore.signal()
+        if rendererContext.waiting {
+            rendererContext.packetsSemaphore.signal()
+        }
     }
     
     private func raiseUnxpected(error: AudioPlayerError) {
@@ -560,12 +561,12 @@ extension AudioPlayer: AudioStreamSourceDelegate {
                 return
             }
             
-            playerContext.audioReadingEntry?.lock.lock()
+            playerContext.entriesLock.lock()
             if playerContext.audioReadingEntry === nil {
                 source.removeFromQueue()
                 source.close()
             }
-            playerContext.audioReadingEntry?.lock.unlock()
+            playerContext.entriesLock.unlock()
         }
     }
     
@@ -575,7 +576,7 @@ extension AudioPlayer: AudioStreamSourceDelegate {
     }
     
     func endOfFileOccured(source: AudioStreamSource) {
-        guard playerContext.audioReadingEntry != nil || playerContext.audioReadingEntry?.source === source else {
+        if playerContext.audioReadingEntry == nil || playerContext.audioReadingEntry?.source !== source {
             source.delegate = nil
             source.removeFromQueue()
             source.close()

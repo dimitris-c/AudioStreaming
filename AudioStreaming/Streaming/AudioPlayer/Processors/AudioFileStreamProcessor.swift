@@ -25,7 +25,7 @@ final class AudioFileStreamProcessor {
     
     private let playerContext: AudioPlayerContext
     private let rendererContext: AudioRendererContext
-    private let outputAudioFormat: AVAudioFormat
+    private let outputAudioFormat: AudioStreamBasicDescription
     
     internal var audioFileStream: AudioFileStreamID? = nil
     internal var audioConverter: AudioConverterRef? = nil
@@ -37,7 +37,7 @@ final class AudioFileStreamProcessor {
     
     init(playerContext: AudioPlayerContext,
          rendererContext: AudioRendererContext,
-         outputAudioFormat: AVAudioFormat) {
+         outputAudioFormat: AudioStreamBasicDescription) {
         self.playerContext = playerContext
         self.rendererContext = rendererContext
         self.outputAudioFormat = outputAudioFormat
@@ -76,10 +76,10 @@ final class AudioFileStreamProcessor {
     
     /// Creates an `AudioConverter` instance to be used for converting the remote audio data to the canonical audio format
     ///
-    /// - parameter fromFormat: An `AVAudioFormat` indicating the format of the remote audio
-    /// - parameter toFormat: An `AVAudioFormat` indicating the local format in which the fromFormat will be converted to.
-    func createAudioConverter(from fromFormat: AVAudioFormat, to toFormat: AVAudioFormat) {
-        var inputFormat = fromFormat.basicStreamDescription
+    /// - parameter fromFormat: An `AudioStreamBasicDescription` indicating the format of the remote audio
+    /// - parameter toFormat: An `AudioStreamBasicDescription` indicating the local format in which the fromFormat will be converted to.
+    func createAudioConverter(from fromFormat: AudioStreamBasicDescription, to toFormat: AudioStreamBasicDescription) {
+        var inputFormat = fromFormat
         if let converter = audioConverter,
            memcmp(&inputFormat, &inputFormat, MemoryLayout.size(ofValue: AudioStreamBasicDescription.self)) != 0 {
             AudioConverterReset(converter)
@@ -88,7 +88,7 @@ final class AudioFileStreamProcessor {
         
         
         var classDesc = AudioClassDescription()
-        var outputFormat = toFormat.basicStreamDescription
+        var outputFormat = toFormat
         if getHardwareCodecClassDescripition(formatId: inputFormat.mFormatID, classDesc: &classDesc) {
             AudioConverterNewSpecific(&inputFormat, &outputFormat, 1, &classDesc, &audioConverter)
         }
@@ -179,10 +179,10 @@ final class AudioFileStreamProcessor {
     }
     
     private func processDataFormat(fileStream: AudioFileStreamID) {
-        var description = AudioStreamBasicDescription()
+        var audioStreamFormat = AudioStreamBasicDescription()
         guard let entry = playerContext.audioReadingEntry else { return }
         if !entry.parsedHeader {
-            fileStreamGetProperty(value: &description, fileStream: fileStream, propertyId: kAudioFileStreamProperty_DataFormat)
+            fileStreamGetProperty(value: &audioStreamFormat, fileStream: fileStream, propertyId: kAudioFileStreamProperty_DataFormat)
             var packetBufferSize: UInt32 = 0
             var status = fileStreamGetProperty(value: &packetBufferSize, fileStream: fileStream, propertyId: kAudioFileStreamProperty_PacketSizeUpperBound)
             if status != 0 || packetBufferSize == 0 {
@@ -192,10 +192,8 @@ final class AudioFileStreamProcessor {
                 }
             }
             playerContext.entriesLock.lock()
-            if playerContext.audioReadingEntry?.audioStreamFormat.basicStreamDescription.mFormatID == 0 {
-                if let audioFormat = AVAudioFormat(streamDescription: &description) {
-                    playerContext.audioReadingEntry?.audioStreamFormat = audioFormat
-                }
+            if playerContext.audioReadingEntry?.audioStreamFormat.mFormatID == 0 {
+                playerContext.audioReadingEntry?.audioStreamFormat = audioStreamFormat
             }
             playerContext.entriesLock.unlock()
             playerContext.audioReadingEntry?.lock.around {
@@ -223,12 +221,10 @@ final class AudioFileStreamProcessor {
         let step = MemoryLayout<AudioFormatListItem>.size
         var i = 0
         while i * step < size {
-            var asbd = list[i].mASBD
+            let asbd = list[i].mASBD
             let formatId = asbd.mFormatID
             if formatId == kAudioFormatMPEG4AAC_HE || formatId == kAudioFormatMPEG4AAC_HE_V2 || formatId == kAudioFileAAC_ADTSType {
-                if let audioFormat = AVAudioFormat(streamDescription: &asbd) {
-                    playerContext.audioPlayingEntry?.audioStreamFormat = audioFormat
-                }
+                playerContext.audioPlayingEntry?.audioStreamFormat = asbd
                 break
             }
             i += step
