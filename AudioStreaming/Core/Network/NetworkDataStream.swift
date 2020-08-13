@@ -97,7 +97,6 @@ internal final class NetworkDataStream: NSObject {
                                    outputStream: &state.outputStream)
             state.outputStream?.delegate = self
             state.outputStream?.set(on: underlyingQueue)
-            state.outputStream?.open()
         }
         
         underlyingQueue.async { [weak self] in
@@ -112,15 +111,18 @@ internal final class NetworkDataStream: NSObject {
         if let contentLength = response?.expectedContentLength, contentLength > 0 {
             self.expectedContentLength = .length(value: contentLength)
         }
+        streamState.outputStream?.open()
     }
     
     internal func didReceive(data: Data, response: HTTPURLResponse?) {
         underlyingQueue.async { [weak self] in
             guard let self = self else { return }
             self.outputStreamWriter.storeReceived(data: data)
-            if let outputStream = self.streamState.outputStream, outputStream.hasSpaceAvailable {
-                let writtenBytes = self.outputStreamWriter.writeData(on: outputStream, bufferSize: self.bufferSize)
-                self.checkEndOfFile(stream: outputStream, writtenBytes: writtenBytes)
+            if let outputStream = self.streamState.outputStream, outputStream.streamStatus == .open {
+                if outputStream.hasSpaceAvailable {
+                    let writtenBytes = self.outputStreamWriter.writeData(on: outputStream, bufferSize: self.bufferSize)
+                    self.checkEndOfFile(stream: outputStream, writtenBytes: writtenBytes)
+                }
             }
         }
         $streamState.read { state in

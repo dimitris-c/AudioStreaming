@@ -41,11 +41,11 @@ public class AudioEntry {
     
     var packetCount: Double = 0
     var packetDuration: Double {
-        return Double(audioStreamFormat.basicStreamDescription.mFramesPerPacket) / Double(sampleRate)
+        return Double(audioStreamFormat.mFramesPerPacket) / Double(sampleRate)
     }
     /// The sample rate from the `audioStreamFormat`
     var sampleRate: Float {
-        Float(audioStreamFormat.basicStreamDescription.mSampleRate)
+        Float(audioStreamFormat.mSampleRate)
     }
     
     var framesState: EntryFramesState
@@ -54,7 +54,7 @@ public class AudioEntry {
     var audioDataOffset: UInt64 = 0
     var audioDataByteCount: UInt64?
     
-    var audioStreamFormat = AVAudioFormat()
+    var audioStreamFormat = AudioStreamBasicDescription()
     
     private var avaragePacketByteSize: Double {
         let packets = processedPacketsState
@@ -78,19 +78,20 @@ public class AudioEntry {
     }
     
     func calculatedBitrate() -> Double {
+        lock.lock(); defer { lock.unlock() }
         let packets = processedPacketsState
         if packetDuration > 0 {
             if packets.count > estimationMinPacketsPreferred ||
-                (audioStreamFormat.basicStreamDescription.mBytesPerFrame == 0 && packets.count > estimationMinPackets) {
+                (audioStreamFormat.mBytesPerFrame == 0 && packets.count > estimationMinPackets) {
                 return avaragePacketByteSize / packetDuration * 8
             }
         }
-        return (Double(audioStreamFormat.basicStreamDescription.mBytesPerFrame) * audioStreamFormat.basicStreamDescription.mSampleRate) * 8
+        return (Double(audioStreamFormat.mBytesPerFrame) * audioStreamFormat.mSampleRate) * 8
     }
     
     func progressInFrames() -> Float {
         lock.lock(); defer { lock.unlock() }
-        return (seekTime + Float(audioStreamFormat.basicStreamDescription.mSampleRate)) + Float(framesState.played)
+        return (seekTime + Float(audioStreamFormat.mSampleRate)) + Float(framesState.played)
     }
     
     func duration() -> Double {

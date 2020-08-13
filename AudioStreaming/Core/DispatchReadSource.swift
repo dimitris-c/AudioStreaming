@@ -31,7 +31,8 @@ final class DispatchTimerSource {
     deinit {
         timer.setEventHandler(handler: nil)
         timer.cancel()
-        activate()
+        // balance called of cancel/resume to avoid crashes
+        timer.resume()
     }
     
     /// Adds an event handler to the timer.

@@ -208,6 +208,7 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
     private func buildUrlRequest(with url: URL, seekIfNeeded seekOffset: Int) -> URLRequest {
         var urlRequest = URLRequest(url: self.url)
         urlRequest.networkServiceType = .avStreaming
+        urlRequest.cachePolicy = .reloadIgnoringLocalCacheData
         
         for header in self.additionalRequestHeaders {
             urlRequest.addValue(header.value, forHTTPHeaderField: header.key)

@@ -7,8 +7,10 @@
 final class OutputStreamWriter {
     /// The accumulated data received from the URLSession
     private var dataReceived = Data()
-    /// Keeps a track of the written bytes in the output stream
-    private var bytesWritten: Int = 0
+    /// Keeps track of the total written bytes in the output stream
+    private var totalBytesWritten: Int = 0
+    /// Keeps tracks of the index that bytes were written in the output stream
+    private var byteIndex: Int = 0
     
     /// Write the data on the `OutputStream`
     ///
@@ -20,12 +22,12 @@ final class OutputStreamWriter {
         guard !dataReceived.isEmpty else { return 0 }
         var bytes = dataReceived.getBytes { $0 }
         /// offset the buffer by the number of written bytes
-        bytes += bytesWritten
+        bytes += byteIndex
         let dataCount = dataReceived.count
         // get the count of bytes to be written, restrict to maximum of `bufferSize`
-        let count = (dataCount - bytesWritten >= bufferSize)
+        let count = (dataCount - byteIndex >= bufferSize)
             ? bufferSize
-            : dataCount - bytesWritten
+            : dataCount - byteIndex
         guard count > 0 else {
             return 0
         }
@@ -34,10 +36,20 @@ final class OutputStreamWriter {
         defer { buffer.deallocate() }
         memcpy(buffer, bytes, count)
         
-        bytesWritten += stream.write(buffer, maxLength: count)
-        return bytesWritten
+        let written = stream.write(buffer, maxLength: count)
+        byteIndex += written
+        if written > 0 && dataReceived.count > written {
+            dataReceived.removeFirst(written)
+            byteIndex -= written
+        }
+        
+        totalBytesWritten += written
+        return totalBytesWritten
     }
     
+    /// Stores the given data
+    ///
+    /// - parameter data: A `Data` object as received from a network request.
     func storeReceived(data: Data) {
         self.dataReceived.append(data)
     }
