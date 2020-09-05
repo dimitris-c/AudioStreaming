@@ -9,8 +9,6 @@ final class OutputStreamWriter {
     private var dataReceived = Data()
     /// Keeps track of the total written bytes in the output stream
     private var totalBytesWritten: Int = 0
-    /// Keeps tracks of the index that bytes were written in the output stream
-    private var byteIndex: Int = 0
     
     /// Write the data on the `OutputStream`
     ///
@@ -20,27 +18,21 @@ final class OutputStreamWriter {
     /// - returns: An `Int` value indicating the accumulated written bytes.
     func writeData(on stream: OutputStream, bufferSize: Int) -> Int {
         guard !dataReceived.isEmpty else { return 0 }
-        var bytes = dataReceived.getBytes { $0 }
-        /// offset the buffer by the number of written bytes
-        bytes += byteIndex
-        let dataCount = dataReceived.count
-        // get the count of bytes to be written, restrict to maximum of `bufferSize`
-        let count = (dataCount - byteIndex >= bufferSize)
-            ? bufferSize
-            : dataCount - byteIndex
-        guard count > 0 else {
-            return 0
+        
+        // gets the underlying byte buffer and writes to the stream
+        let sliceCount = min(bufferSize, dataReceived.count)
+        let slice = dataReceived[..<sliceCount]
+        let written = slice.withUnsafeBytes { buffer -> Int in
+            guard slice.count > 0 else { return 0 }
+            // "safe" to force unwrap here as we check if the count is not 0
+            let base = buffer.baseAddress!.assumingMemoryBound(to: UInt8.self)
+            return stream.write(base, maxLength: buffer.count)
         }
+        // check if `stream.write` returns an error and return
+        guard written > 0 else { return -1 }
         
-        let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: count)
-        defer { buffer.deallocate() }
-        memcpy(buffer, bytes, count)
-        
-        let written = stream.write(buffer, maxLength: count)
-        byteIndex += written
-        if written > 0 && dataReceived.count > written {
-            dataReceived.removeFirst(written)
-            byteIndex -= written
+        if dataReceived.count >= written {
+            dataReceived.removeSubrange(..<written)
         }
         
         totalBytesWritten += written

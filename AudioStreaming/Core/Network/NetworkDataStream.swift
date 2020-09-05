@@ -111,7 +111,7 @@ internal final class NetworkDataStream: NSObject {
         if let contentLength = response?.expectedContentLength, contentLength > 0 {
             self.expectedContentLength = .length(value: contentLength)
         }
-        streamState.outputStream?.open()
+        self.streamState.outputStream?.open()
     }
     
     internal func didReceive(data: Data, response: HTTPURLResponse?) {
@@ -169,11 +169,8 @@ extension NetworkDataStream: StreamDelegate {
             case .openCompleted:
                 Logger.debug("output stream open completed", category: .networking)
             case .hasSpaceAvailable:
-                underlyingQueue.async { [weak self] in
-                    guard let self = self else { return }
-                    let writtenBytes = self.outputStreamWriter.writeData(on: stream, bufferSize: self.bufferSize)
-                    self.checkEndOfFile(stream: stream, writtenBytes: writtenBytes)
-                }
+                let writtenBytes = self.outputStreamWriter.writeData(on: stream, bufferSize: self.bufferSize)
+                self.checkEndOfFile(stream: stream, writtenBytes: writtenBytes)
             case .errorOccurred:
                 Logger.debug("handle error! stop everything right?", category: .networking)
             default:

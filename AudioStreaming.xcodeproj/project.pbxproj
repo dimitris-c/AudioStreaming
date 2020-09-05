@@ -36,7 +36,6 @@
 		B59DF10424916FD50043C498 /* DispatchQueue+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B59DF10324916FD50043C498 /* DispatchQueue+Helpers.swift */; };
 		B59DF1A32493E90C0043C498 /* AudioFileStream+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B59DF1A22493E90C0043C498 /* AudioFileStream+Helpers.swift */; };
 		B5A1254C24DD92C600862F64 /* OutputStreamWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5A1254B24DD92C600862F64 /* OutputStreamWriter.swift */; };
-		B5A5FA8B24AE371C00870E2F /* Data+Bytes.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5A5FA8A24AE371C00870E2F /* Data+Bytes.swift */; };
 		B5AEDBB824744153007D8101 /* AudioStreaming.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5AEDBAE24744153007D8101 /* AudioStreaming.framework */; };
 		B5AEDBBF24744153007D8101 /* AudioStreaming.h in Headers */ = {isa = PBXBuildFile; fileRef = B5AEDBB124744153007D8101 /* AudioStreaming.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		B5B3B7CC248647ED00656828 /* AudioPlayerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5B3B7CB248647ED00656828 /* AudioPlayerState.swift */; };
@@ -106,7 +105,6 @@
 		B59DF10324916FD50043C498 /* DispatchQueue+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DispatchQueue+Helpers.swift"; sourceTree = "<group>"; };
 		B59DF1A22493E90C0043C498 /* AudioFileStream+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AudioFileStream+Helpers.swift"; sourceTree = "<group>"; };
 		B5A1254B24DD92C600862F64 /* OutputStreamWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutputStreamWriter.swift; sourceTree = "<group>"; };
-		B5A5FA8A24AE371C00870E2F /* Data+Bytes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Data+Bytes.swift"; sourceTree = "<group>"; };
 		B5AEDBAE24744153007D8101 /* AudioStreaming.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = AudioStreaming.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5AEDBB124744153007D8101 /* AudioStreaming.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AudioStreaming.h; sourceTree = "<group>"; };
 		B5AEDBB224744153007D8101 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -191,7 +189,6 @@
 			children = (
 				B55CE97724813BCA0001C498 /* UnsafeMutablePointer+Helpers.swift */,
 				B59DF10324916FD50043C498 /* DispatchQueue+Helpers.swift */,
-				B5A5FA8A24AE371C00870E2F /* Data+Bytes.swift */,
 				B5E1DE2224B706A500955BFB /* Stream+DispatchQueue.swift */,
 				B55F77D024D82CD50057F431 /* AVAudioUnit+Convenience.swift */,
 				B51B9F9924DBE5BF00BDEAA2 /* AVAudioFormat+Convenience.swift */,
@@ -390,6 +387,8 @@
 			dependencies = (
 			);
 			name = AudioStreaming;
+			packageProductDependencies = (
+			);
 			productName = AudioStreaming;
 			productReference = B5AEDBAE24744153007D8101 /* AudioStreaming.framework */;
 			productType = "com.apple.product-type.framework";
@@ -462,6 +461,8 @@
 				Base,
 			);
 			mainGroup = B5AEDBA424744153007D8101;
+			packageReferences = (
+			);
 			productRefGroup = B5AEDBAF24744153007D8101 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -525,7 +526,6 @@
 				B5E1DE2524B70B4200955BFB /* AudioPlayerConfiguration.swift in Sources */,
 				B5F883C32477DC4400D277C1 /* NetworkDataStream.swift in Sources */,
 				B54D876F2490E4DD00C361A0 /* AudioRendererContext.swift in Sources */,
-				B5A5FA8B24AE371C00870E2F /* Data+Bytes.swift in Sources */,
 				B55F77CF24D82ADE0057F431 /* AudioPlayerDelegate.swift in Sources */,
 				B55A736C247FCB420050C53D /* HTTPHeaderParser.swift in Sources */,
 				B55F77D124D82CD50057F431 /* AVAudioUnit+Convenience.swift in Sources */,

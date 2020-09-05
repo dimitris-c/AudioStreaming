@@ -71,7 +71,7 @@ final class AudioFileStreamProcessor {
     /// - Returns: An `OSStatus` value indicating if an error occurred or not.
     func parseFileSteamBytes(buffer: UnsafeMutablePointer<UInt8>, size: Int) -> OSStatus {
         guard let stream = audioFileStream else { return 0 }
-        return AudioFileStreamParseBytes(stream, UInt32(size), buffer, .init())
+        return AudioFileStreamParseBytes(stream, UInt32(size), buffer, [])
     }
     
     /// Creates an `AudioConverter` instance to be used for converting the remote audio data to the canonical audio format

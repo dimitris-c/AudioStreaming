@@ -279,13 +279,13 @@ final class AudioPlayerRenderProcessor: NSObject {
                 case .insufficientDataFromInputNode:
                     return noErr
                 case .cannotDoInCurrentContext:
-                    print("report error")
+                    Logger.error("cannotDoInCurrentContext", category: .audioRendering)
                     return 0
                 case .error:
-                    print("report error")
+                    Logger.error("generic error", category: .audioRendering)
                     return 0
                 @unknown default:
-                    print("report error")
+                    Logger.error("unknown error", category: .audioRendering)
                     return 0
             }
         }
