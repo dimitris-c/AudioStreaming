@@ -72,6 +72,7 @@ class ViewController: UIViewController {
     let slider = UISlider()
     let elapsedPlayTimeLabel = UILabel()
     let remainingPlayTimeLabel = UILabel()
+    let metadataLabel = UILabel()
     
     private var displayLink: CADisplayLink?
     
@@ -160,7 +161,7 @@ class ViewController: UIViewController {
         playbackTimeLabelsStack.axis = .horizontal
         playbackTimeLabelsStack.distribution = .fillEqually
         
-        let controlsAndSliderStack = UIStackView(arrangedSubviews: [controlsStackView, slider, playbackTimeLabelsStack])
+        let controlsAndSliderStack = UIStackView(arrangedSubviews: [controlsStackView, slider, playbackTimeLabelsStack, metadataLabel])
         controlsAndSliderStack.translatesAutoresizingMaskIntoConstraints = false
         controlsAndSliderStack.spacing = 10
         controlsAndSliderStack.setCustomSpacing(5, after: slider)
@@ -284,6 +285,7 @@ extension ViewController: AudioPlayerDelegate {
     
     func audioPlayerDidStartPlaying(player: AudioPlayer, with entryId: AudioEntryId) {
         print("did start playing: \(entryId)")
+        metadataLabel.text = ""
     }
     
     func audioPlayerDidFinishBuffering(player: AudioPlayer, with entryId: AudioEntryId) {
@@ -308,6 +310,12 @@ extension ViewController: AudioPlayerDelegate {
     func audioPlayerDidReadMetadata(player: AudioPlayer, metadata: [String : String]) {
         print("player did read metadata")
         print("metadata: \(metadata)")
+        guard !metadata.isEmpty else { return }
+        if let title = metadata["StreamTitle"] {
+            metadataLabel.text = "Now Playing: \(title)"
+        } else {
+            metadataLabel.text = ""
+        }
     }
     
     
