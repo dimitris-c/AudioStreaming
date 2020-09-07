@@ -148,14 +148,14 @@ final class AudioPlayerRenderProcessor: NSObject {
                     moreFramesToCopy = min(delta, end)
                     bufferList.mBuffers.mNumberChannels = 2
                     bufferList.mBuffers.mDataByteSize += frameSizeInBytes * moreFramesToCopy
-                    if let mDataBuffer = bufferList.mBuffers.mData {
+                    if let ioBufferData = bufferList.mBuffers.mData {
                         if isMuted {
-                            memset(mDataBuffer + Int(frameToCopy * frameSizeInBytes),
+                            memset(ioBufferData + Int(frameToCopy * frameSizeInBytes),
                                    0,
                                    Int(frameSizeInBytes * moreFramesToCopy))
                         } else {
                             if let mDataBuffer = audioBuffer.mData {
-                                memcpy(mDataBuffer + Int(frameToCopy * frameSizeInBytes),
+                                memcpy(ioBufferData + Int(frameToCopy * frameSizeInBytes),
                                        mDataBuffer,
                                        Int(frameSizeInBytes * moreFramesToCopy))
                             }
@@ -265,6 +265,7 @@ final class AudioPlayerRenderProcessor: NSObject {
         rendererContext.inOutAudioBufferList[0].mBuffers.mNumberChannels = mChannelsPerFrame
         
         let renderStatus = renderBlock?(inNumberFrames, rendererContext.inOutAudioBufferList, &status)
+        
         
         // Regardless of the returned status code, the output buffer's
         // `mDataByteSize` field will indicate the amount of PCM data bytes

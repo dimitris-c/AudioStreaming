@@ -85,7 +85,7 @@ private func allocateBufferList(dataByteSize: Int) -> UnsafeMutablePointer<Audio
     
     _bufferList[0].mDataByteSize = UInt32(dataByteSize)
     let alingment = MemoryLayout<UInt8>.alignment
-    let mData = UnsafeMutableRawPointer.allocate(byteCount: Int(dataByteSize), alignment: alingment)
+    let mData = UnsafeMutableRawPointer.allocate(byteCount: dataByteSize, alignment: alingment)
     _bufferList[0].mData = mData
     _bufferList[0].mNumberChannels = 2
     
