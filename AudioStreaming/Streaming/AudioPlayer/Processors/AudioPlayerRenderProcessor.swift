@@ -259,10 +259,9 @@ final class AudioPlayerRenderProcessor: NSObject {
     func render(inNumberFrames: UInt32, ioData: UnsafeMutablePointer<AudioBufferList>, status: OSStatus) -> OSStatus {
         var status = status
 
-        let mChannelsPerFrame = outputAudioFormat.mChannelsPerFrame
         rendererContext.inOutAudioBufferList[0].mBuffers.mData = ioData.pointee.mBuffers.mData
         rendererContext.inOutAudioBufferList[0].mBuffers.mDataByteSize = ioData.pointee.mBuffers.mDataByteSize
-        rendererContext.inOutAudioBufferList[0].mBuffers.mNumberChannels = mChannelsPerFrame
+        rendererContext.inOutAudioBufferList[0].mBuffers.mNumberChannels = outputAudioFormat.mChannelsPerFrame
         
         let renderStatus = renderBlock?(inNumberFrames, rendererContext.inOutAudioBufferList, &status)
         

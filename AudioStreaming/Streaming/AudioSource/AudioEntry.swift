@@ -53,6 +53,7 @@ public class AudioEntry {
     
     var audioDataOffset: UInt64 = 0
     var audioDataByteCount: UInt64?
+    var audioDataPacketOffset: UInt64?
     
     var audioStreamFormat = AudioStreamBasicDescription()
     
@@ -96,6 +97,13 @@ public class AudioEntry {
     
     func duration() -> Double {
         guard sampleRate > 0 else { return 0 }
+        
+        if let audioDataPacketOffset = audioDataPacketOffset {
+            let packetsPerPacket = UInt64(audioStreamFormat.mFramesPerPacket)
+            if audioDataPacketOffset > 0 && packetsPerPacket > 0 {
+                return Double(audioDataPacketOffset * packetsPerPacket) / audioStreamFormat.mSampleRate
+            }
+        }
         
         let calculatedBitrate = self.calculatedBitrate()
         if calculatedBitrate < 1.0 || source.length == 0 {

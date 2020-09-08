@@ -18,7 +18,7 @@ extension URLSessionConfiguration {
     static var networkingConfiguration: URLSessionConfiguration {
         let configuration = URLSessionConfiguration.default
         configuration.networkServiceType = .avStreaming
-        configuration.requestCachePolicy = .reloadIgnoringCacheData
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
         configuration.urlCache = nil
         configuration.httpCookieStorage = nil
         return configuration
