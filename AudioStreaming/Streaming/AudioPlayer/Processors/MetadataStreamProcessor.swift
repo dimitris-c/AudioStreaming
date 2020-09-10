@@ -16,18 +16,12 @@ protocol MetadataStreamSource {
     /// Returns `true` when the stream header has indicated that we can proccess metadata, otherwise `false`.
     var canProccessMetadata: Bool { get }
     
+    /// Assigns the metadata step of the metadata
     func metadataAvailable(step: Int)
     
-    /// Proccess the received `buffer` of `size` on the given `InputStream` for the stream metadata
-    /// - parameter buffer: `UnsafeMutablePointer<UInt8>`
-    /// - parameter size: `Int`
-    /// - parameter stream: InputStream to read the buffer
-    /// - parameter updatePosition: A block that updates the relative position, if needed
-    /// - returns: The read buffer
-    func proccessFromRead(into buffer: UnsafeMutablePointer<UInt8>,
-                          size: Int,
-                          using stream: InputStream) -> Int
-    
+    /// Proccess the received data and extract the metadata if any, returns audio data only.
+    /// - parameter data: A `Data` object for parsing any metadata
+    /// - returns: The extracted audio `Data`
     func proccessMetadata(data: Data) -> Data
 }
 
@@ -49,8 +43,7 @@ final class MetadataStreamProcessor: MetadataStreamSource {
     /// Temporary bytes to hold the metadata from the stream buffer
     private var tempBytes: UnsafeMutablePointer<UInt8>?
     
-    /// The `Data` to write from the `tempBytes` buffer
-    /// The `Data` to write from the `tempBytes` buffer
+    /// The `Data` to write the metadata
     private var metadataData = Data()
     
     private var dataBytesRead = 0
@@ -70,6 +63,18 @@ final class MetadataStreamProcessor: MetadataStreamSource {
     
     // MARK: Proccess Metadata
     
+    /**
+     Metadata from Shoutcast/Icecast servers are included in the audio stream.
+     There's a header value which you get on the HTTP headers *Icy-metaint* this value is the audio bytes between
+     the metadata.
+     ```
+     =========================================
+     [ audio data ][b][metadata][ audio data ]
+     =========================================
+     ```
+     Source: https://web.archive.org/web/20190521203350/https://www.smackfu.com/stuff/programming/shoutcast.html
+    */
+    @inline(__always)
     func proccessMetadata(data: Data) -> Data {
         var audioData = Data()
         let _data = data as NSData
@@ -115,79 +120,4 @@ final class MetadataStreamProcessor: MetadataStreamSource {
         return audioData
     }
     
-    /**
-     Metadata from Shoutcast/Icecast servers are included in the audio stream.
-     There's a header value which you get on the HTTP headers *Icy-metaint* this value is the audio bytes between
-     the metadata.
-     ```
-     =========================================
-     [ audio data ][b][metadata][ audio data ]
-     =========================================
-     ```
-     Source: https://web.archive.org/web/20190521203350/https://www.smackfu.com/stuff/programming/shoutcast.html
-    */
-//    @inline(__always)
-//    func proccessFromRead(into buffer: UnsafeMutablePointer<UInt8>,
-//                          size: Int,
-//                          using stream: InputStream) -> Int {
-//        var read: Int
-//        if dataOffset > 0 {
-//            // read the audio data
-//            read = stream.read(buffer, maxLength: min(dataOffset, size))
-//            dataOffset -= max(0, read)
-//        } else {
-//            if dataLength == 0 {
-//                let metadataLengthByte = UnsafeMutablePointer<UInt8>.uint8pointer(of: 1)
-//                defer { metadataLengthByte.deallocate() }
-//                read = stream.read(metadataLengthByte, maxLength: 1)
-//
-//                if read > 0 {
-//                    // get the metadata length
-//                    dataLength = Int(metadataLengthByte.pointee) * 16
-//                    if dataLength > 0 {
-//                        metaData = Data(count: dataLength)
-//                        tempBytes = UnsafeMutablePointer<UInt8>.uint8pointer(of: dataLength)
-//                        dataBytesRead = 0
-//                    } else {
-//                        metaData = nil
-//                        dataOffset = metadataStep
-//                        dataLength = 0
-//                        tempBytes?.deallocate()
-//                        tempBytes = nil
-//                    }
-//                    read = 0
-//                }
-//            } else {
-//                guard let tempBytes = tempBytes else { return 0 }
-//
-//                let bytes = tempBytes + dataBytesRead
-//                let length = dataLength - dataBytesRead
-//                read = stream.read(bytes, maxLength: length)
-//
-//                if read > 0 {
-//                    metaData?.append(tempBytes, count: read)
-//                    dataBytesRead += read
-//
-//                    if dataBytesRead == dataLength {
-//                        let processedMetadata = parser.parse(input: metaData)
-//                        delegate?.didReceiveMetadata(metadata: processedMetadata)
-//
-//                        self.reset()
-//                    }
-//
-//                    read = 0
-//                }
-//            }
-//        }
-//        return read
-//    }
-//
-//    private func reset() {
-//        metaData = nil
-//        dataOffset = metadataStep
-//        dataLength = 0
-//        dataBytesRead = 0
-//        tempBytes?.deallocate()
-//        tempBytes = nil
-//    }
 }
