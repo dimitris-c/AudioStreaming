@@ -308,9 +308,9 @@ final class AudioFileStreamProcessor {
                     return
                 }
                 // TODO: check for seek time and proccess
-                rendererContext.waiting = true
+                rendererContext.$waiting.write { $0 = true }
                 rendererContext.packetsSemaphore.wait()
-                rendererContext.waiting = false
+                rendererContext.$waiting.write { $0 = false }
             }
             
             let localBufferList = AudioBufferList.allocate(maximumBuffers: 1)
