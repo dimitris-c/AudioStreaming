@@ -94,7 +94,7 @@ public final class AudioPlayer {
         self.entriesQueue = PlayerQueueEntries()
         
         self.sourceQueue = DispatchQueue(label: "source.queue", qos: .userInitiated, target: underlyingQueue)
-        self.audioReadSource = DispatchTimerSource(interval: .milliseconds(500), queue: sourceQueue)
+        self.audioReadSource = DispatchTimerSource(interval: .milliseconds(500), queue: underlyingQueue)
         
         self.fileStreamProcessor = AudioFileStreamProcessor(playerContext: playerContext,
                                                             rendererContext: rendererContext,
@@ -532,12 +532,9 @@ public final class AudioPlayer {
 
 extension AudioPlayer: AudioStreamSourceDelegate {
     
-    func dataAvailable(source: AudioStreamSource) {
+    
+    func dataAvailable(source: AudioStreamSource, data: Data) {
         guard playerContext.audioReadingEntry?.source === source else { return }
-        guard source.hasBytesAvailable else { return }
-        
-        let read = source.read(into: rendererContext.readBuffer, size: rendererContext.readBufferSize)
-        guard read != 0 else { return }
         
         if !fileStreamProcessor.isFileStreamOpen {
             guard fileStreamProcessor.openFileStream(with: source.audioFileHint) == noErr else {
@@ -545,16 +542,11 @@ extension AudioPlayer: AudioStreamSourceDelegate {
                 return
             }
         }
-        guard read > 0 else {
-            // ios will shutdown network connections when on background
-            let position = source.position
-            source.seek(at: position)
-            return
-        }
         
         // TODO: check for discontinuous stream and add flag
         if fileStreamProcessor.isFileStreamOpen {
-            guard fileStreamProcessor.parseFileSteamBytes(buffer: rendererContext.readBuffer, size: read) == noErr else {
+            guard fileStreamProcessor.parseFileStreamBytes(data: data) == noErr else {
+            //parseFileSteamBytes(buffer: rendererContext.readBuffer, size: read) == noErr else {
                 if source === playerContext.audioPlayingEntry?.source {
                     raiseUnxpected(error: .streamParseBytesFailure)
                 }

@@ -74,6 +74,13 @@ final class AudioFileStreamProcessor {
         return AudioFileStreamParseBytes(stream, UInt32(size), buffer, [])
     }
     
+    func parseFileStreamBytes(data: Data) -> OSStatus {
+        guard let stream = audioFileStream else { return 0 }
+        let bytesCount = UInt32(data.count)
+        let bytes = Array(data)
+        return AudioFileStreamParseBytes(stream, bytesCount, bytes, .init())
+    }
+    
     /// Creates an `AudioConverter` instance to be used for converting the remote audio data to the canonical audio format
     ///
     /// - parameter fromFormat: An `AudioStreamBasicDescription` indicating the format of the remote audio
@@ -81,7 +88,7 @@ final class AudioFileStreamProcessor {
     func createAudioConverter(from fromFormat: AudioStreamBasicDescription, to toFormat: AudioStreamBasicDescription) {
         var inputFormat = fromFormat
         if let converter = audioConverter,
-           memcmp(&inputFormat, &inputFormat, MemoryLayout.size(ofValue: AudioStreamBasicDescription.self)) != 0 {
+           memcmp(&inputFormat, &self.inputFormat, MemoryLayout.size(ofValue: AudioStreamBasicDescription.self)) != 0 {
             AudioConverterReset(converter)
         }
         disposeAudioConverter()
@@ -459,14 +466,13 @@ private func _converterCallback(inAudioConverter: AudioConverterRef,
     // calculate the input buffer
     ioData.pointee.mNumberBuffers = 1
     ioData.pointee.mBuffers = convertInfo.pointee.audioBuffer
-    convertInfo.pointee.audioBuffer.mData = nil
-    convertInfo.pointee.audioBuffer.mDataByteSize = 0
 
     // output the packet descriptions
-    ioNumberDataPackets.pointee = convertInfo.pointee.numberOfPackets
     if outDataPacketDescription != nil {
         outDataPacketDescription?.pointee = convertInfo.pointee.packDescription
     }
+    
+    ioNumberDataPackets.pointee = convertInfo.pointee.numberOfPackets
     convertInfo.pointee.done = true
 
     return AudioConvertStatus.proccessed.rawValue

@@ -5,7 +5,7 @@
 
 import Foundation
 
-internal final class NetworkDataStream: NSObject {
+internal final class NetworkDataStream {
     typealias StreamResult = Result<StreamResponse, Error>
     typealias StreamCompletion = (queue: DispatchQueue, event: (_ event: NetworkDataStream.StreamEvent) -> Void)
     struct StreamResponse {
@@ -24,12 +24,13 @@ internal final class NetworkDataStream: NSObject {
     }
     
     struct StreamState {
-        var outputStream: OutputStream?
         var streams: StreamCompletion?
     }
     
     @Protected
     private var streamState = StreamState()
+    
+    private var streamCompletion: StreamCompletion?
     
     /// The serial queue for all internal async actions.
     private let underlyingQueue: DispatchQueue
@@ -38,8 +39,6 @@ internal final class NetworkDataStream: NSObject {
     /// the underlying task of the network request
     private var task: URLSessionTask?
     
-    private let outputStreamWriter: OutputStreamWriter
-    
     /// the expected content length of the audio, this is used to close the output stream.
     private var expectedContentLength = ExpectedContentLength.undefined
     
@@ -47,13 +46,9 @@ internal final class NetworkDataStream: NSObject {
         task?.response as? HTTPURLResponse
     }
     
-    // The Buffer size to read/write in the InputStream/OutputStream
-    private var bufferSize: Int = 1024
-    
     internal init(id: UUID, underlyingQueue: DispatchQueue) {
         self.id = id
         self.underlyingQueue = underlyingQueue
-        self.outputStreamWriter = OutputStreamWriter()
     }
     
     func task(for request: URLRequest, using session: URLSession) -> URLSessionTask {
@@ -65,9 +60,7 @@ internal final class NetworkDataStream: NSObject {
     @discardableResult
     func responseStream(on queue: DispatchQueue = .main,
                         completion: @escaping (_ event: NetworkDataStream.StreamEvent) -> Void) -> Self {
-        $streamState.write { state in
-            state.streams = (queue, completion)
-        }
+        self.streamCompletion = (queue, completion)
         return self
     }
     
@@ -80,57 +73,23 @@ internal final class NetworkDataStream: NSObject {
     func cancel() {
         self.task?.cancel()
         self.task = nil
-        $streamState.write { state in
-            state.outputStream?.delegate = nil
-            state.outputStream?.unsetFromQueue()
-            state.outputStream?.close()
-            state.outputStream = nil
-        }
     }
-    
-    func asInputStream(bufferSize: Int = 1024) -> InputStream? {
-        var inputStream: InputStream?
-        self.bufferSize = bufferSize
-        $streamState.write { state in
-            Stream.getBoundStreams(withBufferSize: bufferSize,
-                                   inputStream: &inputStream,
-                                   outputStream: &state.outputStream)
-            state.outputStream?.delegate = self
-            state.outputStream?.set(on: underlyingQueue)
-        }
-        
-        underlyingQueue.async { [weak self] in
-            self?.resume()
-        }
-        return inputStream
-    }
-    
+
     // MARK: Internal
     
     internal func didReceive(response: HTTPURLResponse?) {
         if let contentLength = response?.expectedContentLength, contentLength > 0 {
             self.expectedContentLength = .length(value: contentLength)
         }
-        self.streamState.outputStream?.open()
     }
     
     internal func didReceive(data: Data, response: HTTPURLResponse?) {
         underlyingQueue.async { [weak self] in
             guard let self = self else { return }
-            self.outputStreamWriter.storeReceived(data: data)
-            if let outputStream = self.streamState.outputStream, outputStream.streamStatus == .open {
-                if outputStream.hasSpaceAvailable {
-                    let writtenBytes = self.outputStreamWriter.writeData(on: outputStream, bufferSize: self.bufferSize)
-                    self.checkEndOfFile(stream: outputStream, writtenBytes: writtenBytes)
-                }
-            }
-        }
-        $streamState.read { state in
-            underlyingQueue.async {
-                state.streams?.queue.async {
-                    let streamResponse = StreamResponse(response: response, data: data)
-                    state.streams?.event(.stream(.success(streamResponse)))
-                }
+            guard let stream = self.streamCompletion else { return }
+            stream.queue.async {
+                let streamResponse = StreamResponse(response: response, data: data)
+                stream.event(.stream(.success(streamResponse)))
             }
         }
     }
@@ -155,27 +114,23 @@ internal final class NetworkDataStream: NSObject {
     fileprivate func checkEndOfFile(stream: OutputStream, writtenBytes: Int) {
         guard self.expectedContentLength != .undefined else { return }
         if let length = self.expectedContentLength.length, length == writtenBytes {
-            stream.close()
-            stream.unsetFromQueue()
+
         }
     }
     
 }
 
-extension NetworkDataStream: StreamDelegate {
-    func stream(_ aStream: Stream, handle eventCode: Stream.Event) {
-        guard let stream = streamState.outputStream, aStream == stream else { return }
-        switch eventCode {
-            case .openCompleted:
-                Logger.debug("output stream open completed", category: .networking)
-            case .hasSpaceAvailable:
-                let writtenBytes = self.outputStreamWriter.writeData(on: stream, bufferSize: self.bufferSize)
-                self.checkEndOfFile(stream: stream, writtenBytes: writtenBytes)
-            case .errorOccurred:
-                Logger.debug("handle error! stop everything right?", category: .networking)
-            default:
-                break
-        }
+// MARK: Equatable & Hashable
+
+extension NetworkDataStream: Equatable {
+    static func == (lhs: NetworkDataStream, rhs: NetworkDataStream) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
+extension NetworkDataStream: Hashable {
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 }
 

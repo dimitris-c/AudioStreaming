@@ -93,8 +93,8 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
         guard let stream = inputStream else {
             return
         }
-        stream.delegate = self
-        stream.set(on: sourceQueue)
+//        stream.delegate = self
+//        stream.set(on: sourceQueue)
     }
     
     func removeFromQueue() {
@@ -114,7 +114,7 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
     }
     
     func seek(at offset: Int) {
-        dispatchPrecondition(condition: .onQueue(sourceQueue))
+//        dispatchPrecondition(condition: .onQueue(sourceQueue))
         
         close()
         
@@ -157,19 +157,44 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
     private func performOpen(seek seekOffset: Int) {
         let urlRequest = buildUrlRequest(with: url, seekIfNeeded: seekOffset)
         
-        let request = networking.stream(request: urlRequest)
-        streamRequest = request
-        inputStream = request.asInputStream(bufferSize: readBufferSize)
-        guard let inputStream = inputStream else {
-            delegate?.errorOccured(source: self)
-            return
+        streamRequest = networking.stream(request: urlRequest)
+            .responseStream(on: sourceQueue) { [weak self] event in
+                guard let self = self else { return }
+                self.handleResponse(event: event)
         }
-        
+        streamRequest?.resume()
         metadataStreamProccessor.delegate = self
-        inputStream.delegate = self
-        inputStream.set(on: sourceQueue)
-        inputStream.open()
-        
+    }
+    
+    private func handleResponse(event: NetworkDataStream.StreamEvent) {
+        switch event {
+            case .complete(let completion):
+                self.delegate?.endOfFileOccured(source: self)
+            case .stream(let event):
+                self.handleStreamEvent(event: event)
+        }
+    }
+    
+    private func handleStreamEvent(event: NetworkDataStream.StreamResult) {
+        switch event {
+            case .success(let responseValue):
+                if let response = responseValue.response, httpStatusCode == 0 {
+                    self.parseResponseHeader(response: response)
+                }
+                if let data = responseValue.data {
+                    if metadataStreamProccessor.canProccessMetadata {
+                        let extractedAudioData = metadataStreamProccessor.proccessMetadata(data: data)
+                        self.delegate?.dataAvailable(source: self, data: extractedAudioData)
+                    } else {
+                        self.delegate?.dataAvailable(source: self, data: data)
+                    }
+                    relativePosition += data.count
+                }
+            case .failure(let error):
+                print(error)
+                self.delegate?.errorOccured(source: self)
+                break
+        }
     }
     
     private func performSoftSetup() {
@@ -179,6 +204,7 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
         stream.set(on: sourceQueue)
     }
     
+    @discardableResult
     private func parseResponseHeader(response: HTTPURLResponse?) -> Bool {
         guard let response = response else { return false }
         guard httpStatusCode == 0 else { return false }
@@ -224,32 +250,6 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
     }
     
 }
-
-extension RemoteAudioSource: StreamDelegate {
-    
-    public func stream(_ aStream: Stream, handle eventCode: Stream.Event) {
-        switch eventCode {
-            case .openCompleted:
-                Logger.debug("input stream open completed", category: .networking)
-            case .hasBytesAvailable:
-                if httpStatusCode == 0 {
-                    if self.parseResponseHeader(response: httpResponse) {
-                        self.delegate?.dataAvailable(source: self)
-                    }
-                } else {
-                    self.delegate?.dataAvailable(source: self)
-                }
-            case .endEncountered:
-                self.delegate?.endOfFileOccured(source: self)
-            case .errorOccurred:
-                self.delegate?.errorOccured(source: self)
-            default:
-                break
-        }
-    }
-    
-}
-
 
 extension RemoteAudioSource: MetadataStreamSourceDelegate {
     func didReceiveMetadata(metadata: Result<[String : String], MetadataParsingError>) {

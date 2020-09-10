@@ -28,9 +28,14 @@ protocol MetadataStreamSource {
                           size: Int,
                           using stream: InputStream) -> Int
     
+    func proccessMetadata(data: Data) -> Data
 }
 
 final class MetadataStreamProcessor: MetadataStreamSource {
+    func proccessFromRead(into buffer: UnsafeMutablePointer<UInt8>, size: Int, using stream: InputStream) -> Int {
+        return 0
+    }
+    
     
     weak var delegate: MetadataStreamSourceDelegate?
     
@@ -45,11 +50,12 @@ final class MetadataStreamProcessor: MetadataStreamSource {
     private var tempBytes: UnsafeMutablePointer<UInt8>?
     
     /// The `Data` to write from the `tempBytes` buffer
-    private var data: Data?
+    /// The `Data` to write from the `tempBytes` buffer
+    private var metadataData = Data()
     
     private var dataBytesRead = 0
-    private var dataOffset = 0
-    private var dataLength = 0
+    private var metadataOffset = 0
+    private var metadataLength: Int = 0
     
     private let parser: AnyParser<Data?, MetadataOutput>
     
@@ -59,10 +65,55 @@ final class MetadataStreamProcessor: MetadataStreamSource {
 
     func metadataAvailable(step: Int) {
         metadataStep = step
-        dataOffset = step
+        metadataOffset = step
     }
     
     // MARK: Proccess Metadata
+    
+    func proccessMetadata(data: Data) -> Data {
+        var audioData = Data()
+        let _data = data as NSData
+        _data.enumerateBytes { (bytes, range, _) in
+            var bytesRead = 0
+
+            while bytesRead < range.length {
+                let remainingBytes = range.length - bytesRead
+                let pointer = bytes + bytesRead
+                if metadataLength > 0 {
+                    let remainingMetaBytes = metadataLength - metadataData.count
+                    let bytesToAppend = min(remainingMetaBytes, remainingBytes)
+                    metadataData.append(pointer.assumingMemoryBound(to: UInt8.self), count: bytesToAppend)
+
+                    if metadataData.count == metadataLength {
+                        let processedMetadata = parser.parse(input: metadataData)
+                        delegate?.didReceiveMetadata(metadata: processedMetadata)
+
+                        metadataData.count = 0
+                        metadataLength = 0
+                        dataBytesRead = 0
+                    }
+
+                    bytesRead += bytesToAppend
+                } else if dataBytesRead == metadataStep {
+                    let metaLength = Int(pointer.assumingMemoryBound(to: UInt8.self).pointee) * 16
+                    if metaLength > 0 {
+                        metadataLength = Int(metaLength)
+                    } else {
+                        dataBytesRead = 0
+                    }
+                    bytesRead += 1
+                } else {
+                    let audioBytesToRead = min(metadataStep - dataBytesRead, remainingBytes)
+                    audioData.append(pointer.assumingMemoryBound(to: UInt8.self), count: audioBytesToRead)
+
+                    dataBytesRead += audioBytesToRead
+                    bytesRead += audioBytesToRead
+                }
+            }
+        }
+
+        return audioData
+    }
     
     /**
      Metadata from Shoutcast/Icecast servers are included in the audio stream.
@@ -75,68 +126,68 @@ final class MetadataStreamProcessor: MetadataStreamSource {
      ```
      Source: https://web.archive.org/web/20190521203350/https://www.smackfu.com/stuff/programming/shoutcast.html
     */
-    @inline(__always)
-    func proccessFromRead(into buffer: UnsafeMutablePointer<UInt8>,
-                          size: Int,
-                          using stream: InputStream) -> Int {
-        var read: Int
-        if dataOffset > 0 {
-            // read the audio data
-            read = stream.read(buffer, maxLength: min(dataOffset, size))
-            dataOffset -= max(0, read)
-        } else {
-            if dataLength == 0 {
-                let metadataLengthByte = UnsafeMutablePointer<UInt8>.uint8pointer(of: 1)
-                defer { metadataLengthByte.deallocate() }
-                read = stream.read(metadataLengthByte, maxLength: 1)
-                
-                if read > 0 {
-                    // get the metadata length
-                    dataLength = Int(metadataLengthByte.pointee) * 16
-                    if dataLength > 0 {
-                        data = Data(count: dataLength)
-                        tempBytes = UnsafeMutablePointer<UInt8>.uint8pointer(of: dataLength)
-                        dataBytesRead = 0
-                    } else {
-                        data = nil
-                        dataOffset = metadataStep
-                        dataLength = 0
-                        tempBytes?.deallocate()
-                        tempBytes = nil
-                    }
-                    read = 0
-                }
-            } else {
-                guard let tempBytes = tempBytes else { return 0 }
-                
-                let bytes = tempBytes + dataBytesRead
-                let length = dataLength - dataBytesRead
-                read = stream.read(bytes, maxLength: length)
-                
-                if read > 0 {
-                    data?.append(tempBytes, count: read)
-                    dataBytesRead += read
-                    
-                    if dataBytesRead == dataLength {
-                        let processedMetadata = parser.parse(input: data)
-                        delegate?.didReceiveMetadata(metadata: processedMetadata)
-                        
-                        self.reset()
-                    }
-                    
-                    read = 0
-                }
-            }
-        }
-        return read
-    }
-    
-    private func reset() {
-        data = nil
-        dataOffset = metadataStep
-        dataLength = 0
-        dataBytesRead = 0
-        tempBytes?.deallocate()
-        tempBytes = nil
-    }
+//    @inline(__always)
+//    func proccessFromRead(into buffer: UnsafeMutablePointer<UInt8>,
+//                          size: Int,
+//                          using stream: InputStream) -> Int {
+//        var read: Int
+//        if dataOffset > 0 {
+//            // read the audio data
+//            read = stream.read(buffer, maxLength: min(dataOffset, size))
+//            dataOffset -= max(0, read)
+//        } else {
+//            if dataLength == 0 {
+//                let metadataLengthByte = UnsafeMutablePointer<UInt8>.uint8pointer(of: 1)
+//                defer { metadataLengthByte.deallocate() }
+//                read = stream.read(metadataLengthByte, maxLength: 1)
+//
+//                if read > 0 {
+//                    // get the metadata length
+//                    dataLength = Int(metadataLengthByte.pointee) * 16
+//                    if dataLength > 0 {
+//                        metaData = Data(count: dataLength)
+//                        tempBytes = UnsafeMutablePointer<UInt8>.uint8pointer(of: dataLength)
+//                        dataBytesRead = 0
+//                    } else {
+//                        metaData = nil
+//                        dataOffset = metadataStep
+//                        dataLength = 0
+//                        tempBytes?.deallocate()
+//                        tempBytes = nil
+//                    }
+//                    read = 0
+//                }
+//            } else {
+//                guard let tempBytes = tempBytes else { return 0 }
+//
+//                let bytes = tempBytes + dataBytesRead
+//                let length = dataLength - dataBytesRead
+//                read = stream.read(bytes, maxLength: length)
+//
+//                if read > 0 {
+//                    metaData?.append(tempBytes, count: read)
+//                    dataBytesRead += read
+//
+//                    if dataBytesRead == dataLength {
+//                        let processedMetadata = parser.parse(input: metaData)
+//                        delegate?.didReceiveMetadata(metadata: processedMetadata)
+//
+//                        self.reset()
+//                    }
+//
+//                    read = 0
+//                }
+//            }
+//        }
+//        return read
+//    }
+//
+//    private func reset() {
+//        metaData = nil
+//        dataOffset = metadataStep
+//        dataLength = 0
+//        dataBytesRead = 0
+//        tempBytes?.deallocate()
+//        tempBytes = nil
+//    }
 }
