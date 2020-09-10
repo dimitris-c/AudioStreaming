@@ -76,9 +76,10 @@ final class AudioFileStreamProcessor {
     
     func parseFileStreamBytes(data: Data) -> OSStatus {
         guard let stream = audioFileStream else { return 0 }
-        let bytesCount = UInt32(data.count)
-        let bytes = Array(data)
-        return AudioFileStreamParseBytes(stream, bytesCount, bytes, .init())
+        guard data.count > 0 else { return 0 }
+        return data.withUnsafeBytes { buffer -> OSStatus in
+            return AudioFileStreamParseBytes(stream, UInt32(buffer.count), buffer.baseAddress, .init())
+        }
     }
     
     /// Creates an `AudioConverter` instance to be used for converting the remote audio data to the canonical audio format
