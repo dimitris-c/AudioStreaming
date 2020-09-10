@@ -18,9 +18,6 @@ final class AudioRendererContext {
 
     let lock = UnfairLock()
     
-    let readBufferSize: Int
-    let readBuffer: UnsafeMutablePointer<UInt8>
-    
     let bufferContext: BufferContext
 
     let seekRequest: SeekRequest
@@ -41,8 +38,6 @@ final class AudioRendererContext {
     let configuration: AudioPlayerConfiguration
     init(configuration: AudioPlayerConfiguration, outputAudioFormat: AVAudioFormat) {
         self.configuration = configuration
-        self.readBufferSize = configuration.readBufferSize
-        self.readBuffer = UnsafeMutablePointer<UInt8>.uint8pointer(of: readBufferSize)
         self.seekRequest = SeekRequest()
         
         let canonicalStream = outputAudioFormat.basicStreamDescription
@@ -64,7 +59,6 @@ final class AudioRendererContext {
     
     /// Deallocates buffer resources
     public func clean() {
-        readBuffer.deallocate()
         inOutAudioBufferList.deallocate()
         audioBuffer.mData?.deallocate()
     }

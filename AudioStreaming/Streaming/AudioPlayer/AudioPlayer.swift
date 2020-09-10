@@ -131,7 +131,6 @@ public final class AudioPlayer {
         let audioSource = RemoteAudioSource(networking: self.networking,
                                             url: url,
                                             sourceQueue: sourceQueue,
-                                            readBufferSize: configuration.readBufferSize,
                                             httpHeaders: headers)
         let entry = AudioEntry(source: audioSource,
                                entryId: AudioEntryId(id: url.absoluteString))
@@ -163,7 +162,6 @@ public final class AudioPlayer {
         sourceQueue.async { [weak self] in
             guard let self = self else { return }
             self.playerContext.audioReadingEntry?.source.delegate = nil
-            self.playerContext.audioReadingEntry?.source.removeFromQueue()
             self.playerContext.audioReadingEntry?.source.close()
             if let playingEntry = self.playerContext.audioPlayingEntry {
                 self.processFinishPlaying(entry: playingEntry, with: nil)
@@ -427,7 +425,6 @@ public final class AudioPlayer {
         
         if let readingEntry = playerContext.audioReadingEntry {
             readingEntry.source.delegate = nil
-            readingEntry.source.removeFromQueue()
             readingEntry.source.close()
         }
         
@@ -435,7 +432,6 @@ public final class AudioPlayer {
             playerContext.audioReadingEntry = entry
         }
         playerContext.audioReadingEntry?.source.delegate = self
-        playerContext.audioReadingEntry?.source.setup()
         playerContext.audioReadingEntry?.source.seek(at: 0)
         
         if startPlaying {
@@ -555,7 +551,6 @@ extension AudioPlayer: AudioStreamSourceDelegate {
             
             playerContext.entriesLock.lock()
             if playerContext.audioReadingEntry === nil {
-                source.removeFromQueue()
                 source.close()
             }
             playerContext.entriesLock.unlock()
@@ -570,7 +565,6 @@ extension AudioPlayer: AudioStreamSourceDelegate {
     func endOfFileOccured(source: AudioStreamSource) {
         if playerContext.audioReadingEntry == nil || playerContext.audioReadingEntry?.source !== source {
             source.delegate = nil
-            source.removeFromQueue()
             source.close()
             return
         }
@@ -583,7 +577,6 @@ extension AudioPlayer: AudioStreamSourceDelegate {
         
         guard let readingEntry = playerContext.audioReadingEntry else {
             source.delegate = nil
-            source.removeFromQueue()
             source.close()
             return
         }
@@ -591,7 +584,6 @@ extension AudioPlayer: AudioStreamSourceDelegate {
         readingEntry.framesState.lastFrameQueued = readingEntry.framesState.queued
         
         readingEntry.source.delegate = nil
-        readingEntry.source.removeFromQueue()
         readingEntry.source.close()
         
         playerContext.entriesLock.lock()

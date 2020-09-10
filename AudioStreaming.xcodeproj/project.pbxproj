@@ -35,12 +35,10 @@
 		B5667B3E249BC43100D93F85 /* AudioPlayerRenderProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5667B3D249BC43000D93F85 /* AudioPlayerRenderProcessor.swift */; };
 		B59DF10424916FD50043C498 /* DispatchQueue+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B59DF10324916FD50043C498 /* DispatchQueue+Helpers.swift */; };
 		B59DF1A32493E90C0043C498 /* AudioFileStream+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B59DF1A22493E90C0043C498 /* AudioFileStream+Helpers.swift */; };
-		B5A1254C24DD92C600862F64 /* OutputStreamWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5A1254B24DD92C600862F64 /* OutputStreamWriter.swift */; };
 		B5AEDBB824744153007D8101 /* AudioStreaming.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5AEDBAE24744153007D8101 /* AudioStreaming.framework */; };
 		B5AEDBBF24744153007D8101 /* AudioStreaming.h in Headers */ = {isa = PBXBuildFile; fileRef = B5AEDBB124744153007D8101 /* AudioStreaming.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		B5B3B7CC248647ED00656828 /* AudioPlayerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5B3B7CB248647ED00656828 /* AudioPlayerState.swift */; };
 		B5B3B7D72486993B00656828 /* AudioStreamingMac.h in Headers */ = {isa = PBXBuildFile; fileRef = B5B3B7D52486993B00656828 /* AudioStreamingMac.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		B5E1DE2324B706A500955BFB /* Stream+DispatchQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5E1DE2224B706A500955BFB /* Stream+DispatchQueue.swift */; };
 		B5E1DE2524B70B4200955BFB /* AudioPlayerConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5E1DE2424B70B4200955BFB /* AudioPlayerConfiguration.swift */; };
 		B5EF954E247DA5AC003E8FF8 /* NetworkingClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5EF954D247DA5AC003E8FF8 /* NetworkingClientTests.swift */; };
 		B5EF9555247E9393003E8FF8 /* AudioEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5EF9554247E9393003E8FF8 /* AudioEntry.swift */; };
@@ -104,7 +102,6 @@
 		B5667B3D249BC43000D93F85 /* AudioPlayerRenderProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerRenderProcessor.swift; sourceTree = "<group>"; };
 		B59DF10324916FD50043C498 /* DispatchQueue+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DispatchQueue+Helpers.swift"; sourceTree = "<group>"; };
 		B59DF1A22493E90C0043C498 /* AudioFileStream+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AudioFileStream+Helpers.swift"; sourceTree = "<group>"; };
-		B5A1254B24DD92C600862F64 /* OutputStreamWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutputStreamWriter.swift; sourceTree = "<group>"; };
 		B5AEDBAE24744153007D8101 /* AudioStreaming.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = AudioStreaming.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5AEDBB124744153007D8101 /* AudioStreaming.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AudioStreaming.h; sourceTree = "<group>"; };
 		B5AEDBB224744153007D8101 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -114,7 +111,6 @@
 		B5B3B7D32486993B00656828 /* AudioStreamingMac.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = AudioStreamingMac.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5B3B7D52486993B00656828 /* AudioStreamingMac.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AudioStreamingMac.h; sourceTree = "<group>"; };
 		B5B3B7D62486993B00656828 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		B5E1DE2224B706A500955BFB /* Stream+DispatchQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Stream+DispatchQueue.swift"; sourceTree = "<group>"; };
 		B5E1DE2424B70B4200955BFB /* AudioPlayerConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerConfiguration.swift; sourceTree = "<group>"; };
 		B5EF954D247DA5AC003E8FF8 /* NetworkingClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkingClientTests.swift; sourceTree = "<group>"; };
 		B5EF9554247E9393003E8FF8 /* AudioEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEntry.swift; sourceTree = "<group>"; };
@@ -159,7 +155,6 @@
 				B5276B73247D4D9F00D2F56A /* NetworkSessionDelegate.swift */,
 				B5F883C22477DC4400D277C1 /* NetworkDataStream.swift */,
 				B5276B71247D4D5B00D2F56A /* NetworkTasksMap.swift */,
-				B5A1254B24DD92C600862F64 /* OutputStreamWriter.swift */,
 			);
 			path = Network;
 			sourceTree = "<group>";
@@ -189,7 +184,6 @@
 			children = (
 				B55CE97724813BCA0001C498 /* UnsafeMutablePointer+Helpers.swift */,
 				B59DF10324916FD50043C498 /* DispatchQueue+Helpers.swift */,
-				B5E1DE2224B706A500955BFB /* Stream+DispatchQueue.swift */,
 				B55F77D024D82CD50057F431 /* AVAudioUnit+Convenience.swift */,
 				B51B9F9924DBE5BF00BDEAA2 /* AVAudioFormat+Convenience.swift */,
 			);
@@ -504,7 +498,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				B5EF955D247ECBB1003E8FF8 /* RemoteAudioSource.swift in Sources */,
-				B5E1DE2324B706A500955BFB /* Stream+DispatchQueue.swift in Sources */,
 				B59DF10424916FD50043C498 /* DispatchQueue+Helpers.swift in Sources */,
 				B5B3B7CC248647ED00656828 /* AudioPlayerState.swift in Sources */,
 				B51B9F9A24DBE5BF00BDEAA2 /* AVAudioFormat+Convenience.swift in Sources */,
@@ -535,7 +528,6 @@
 				B5276B74247D4D9F00D2F56A /* NetworkSessionDelegate.swift in Sources */,
 				B55F77D624DACE140057F431 /* BufferContext.swift in Sources */,
 				B55CE97824813BCA0001C498 /* UnsafeMutablePointer+Helpers.swift in Sources */,
-				B5A1254C24DD92C600862F64 /* OutputStreamWriter.swift in Sources */,
 				B5F883B62476DADB00D277C1 /* Protected.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

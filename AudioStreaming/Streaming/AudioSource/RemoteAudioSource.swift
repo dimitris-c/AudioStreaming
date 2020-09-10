@@ -6,10 +6,7 @@
 import Foundation
 import AudioToolbox
 
-public class RemoteAudioSource: NSObject, AudioStreamSource {
-    
-    var inputStream: InputStream?
-    var readBufferSize: Int = 0
+public class RemoteAudioSource: AudioStreamSource {
     
     weak var delegate: AudioStreamSourceDelegate?
     
@@ -50,7 +47,6 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
          metadataStreamSource: MetadataStreamSource,
          url: URL,
          sourceQueue: DispatchQueue,
-         readBufferSize: Int,
          httpHeaders: [String: String]) {
         self.networking = networking
         self.metadataStreamProccessor = metadataStreamSource
@@ -60,13 +56,11 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
         self.httpStatusCode = 0
         self.relativePosition = 0
         self.seekOffset = 0
-        self.readBufferSize = readBufferSize
     }
     
     convenience init(networking: NetworkingClient,
                      url: URL,
                      sourceQueue: DispatchQueue,
-                     readBufferSize: Int,
                      httpHeaders: [String: String]) {
         let metadataParser = MetadataParser()
         let metadataProccessor = MetadataStreamProcessor(parser: metadataParser.eraseToAnyParser())
@@ -74,38 +68,19 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
                   metadataStreamSource: metadataProccessor,
                   url: url,
                   sourceQueue: sourceQueue,
-                  readBufferSize: readBufferSize,
                   httpHeaders: httpHeaders)
     }
     
     convenience init(networking: NetworkingClient,
                      url: URL,
-                     sourceQueue: DispatchQueue,
-                     readBufferSize: Int) {
+                     sourceQueue: DispatchQueue) {
         self.init(networking: networking,
                   url: url,
                   sourceQueue: sourceQueue,
-                  readBufferSize: readBufferSize,
                   httpHeaders: [:])
     }
     
-    func setup() {
-        guard let stream = inputStream else {
-            return
-        }
-//        stream.delegate = self
-//        stream.set(on: sourceQueue)
-    }
-    
-    func removeFromQueue() {
-        guard let stream = inputStream else { return }
-        stream.delegate = nil
-        stream.unsetFromQueue()
-    }
-    
     func close() {
-        inputStream?.close()
-        inputStream = nil
         streamRequest?.cancel()
         if let streamTask = streamRequest {
             networking.remove(task: streamTask)
@@ -114,8 +89,6 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
     }
     
     func seek(at offset: Int) {
-//        dispatchPrecondition(condition: .onQueue(sourceQueue))
-        
         close()
         
         relativePosition = 0
@@ -129,30 +102,7 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
         performOpen(seek: offset)
     }
     
-    func read(into buffer: UnsafeMutablePointer<UInt8>, size: Int) -> Int {
-        performRead(into: buffer, size: size)
-    }
-    
-    
     // MARK: Private
-    
-    private func performRead(into buffer: UnsafeMutablePointer<UInt8>, size: Int) -> Int {
-        guard size != 0 else { return 0 }
-        guard let stream = inputStream else { return 0 }
-        
-        var read: Int = 0
-        // Metadata parsing
-        if metadataStreamProccessor.canProccessMetadata {
-            read = metadataStreamProccessor.proccessFromRead(into: buffer, size: size, using: stream)
-        } else {
-            read = stream.read(buffer, maxLength: size)
-        }
-        
-        guard read > 0 else { return read }
-        relativePosition += read
-        
-        return read
-    }
     
     private func performOpen(seek seekOffset: Int) {
         let urlRequest = buildUrlRequest(with: url, seekIfNeeded: seekOffset)
@@ -195,13 +145,6 @@ public class RemoteAudioSource: NSObject, AudioStreamSource {
                 self.delegate?.errorOccured(source: self)
                 break
         }
-    }
-    
-    private func performSoftSetup() {
-        guard let stream = inputStream else {
-            return
-        }
-        stream.set(on: sourceQueue)
     }
     
     @discardableResult
