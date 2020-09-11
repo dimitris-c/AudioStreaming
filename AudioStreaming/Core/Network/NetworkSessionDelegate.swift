@@ -39,11 +39,3 @@ internal final class NetworkSessionDelegate: NSObject, URLSessionDataDelegate {
     }
     
 }
-
-//extension NetworkSessionDelegate: URLSessionTaskDelegate {
-//
-//    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
-//        completionHandler(.performDefaultHandling, nil)
-//    }
-//
-//}

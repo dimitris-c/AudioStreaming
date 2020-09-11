@@ -69,7 +69,7 @@ final class AudioPlayerRenderProcessor: NSObject {
         
         if let playingEntry = playingEntry {
             if state == .waitingForData {
-                var requiredFramesToStart = rendererContext.framesRequestToStartPlaying
+                var requiredFramesToStart = rendererContext.framesRequiredToStartPlaying
                 if playingEntry.framesState.lastFrameQueued >= 0 {
                     requiredFramesToStart = min(requiredFramesToStart, UInt32(playingEntry.framesState.lastFrameQueued))
                 }
@@ -246,7 +246,9 @@ final class AudioPlayerRenderProcessor: NSObject {
                 }
             }
             
-            rendererContext.packetsSemaphore.signal()
+            if rendererContext.waiting {
+                rendererContext.packetsSemaphore.signal()
+            }
         }
 
         rendererContext.inOutAudioBufferList[0].mBuffers.mData = bufferList.mBuffers.mData
@@ -264,7 +266,6 @@ final class AudioPlayerRenderProcessor: NSObject {
         rendererContext.inOutAudioBufferList[0].mBuffers.mNumberChannels = outputAudioFormat.mChannelsPerFrame
         
         let renderStatus = renderBlock?(inNumberFrames, rendererContext.inOutAudioBufferList, &status)
-        
         
         // Regardless of the returned status code, the output buffer's
         // `mDataByteSize` field will indicate the amount of PCM data bytes

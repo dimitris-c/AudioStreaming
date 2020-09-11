@@ -78,14 +78,14 @@ internal final class NetworkingClient {
     /// - parameter stream: The `NetworkDataStream` object to be performed
     /// - parameter request: The `URLRequest` for the `stream`
     private func setupRequest(_ stream: NetworkDataStream, request: URLRequest) {
-//        networkQueue.async { [weak self] in
-//            guard let self = self else { return }
+        networkQueue.async { [weak self] in
+            guard let self = self else { return }
             
             self.activeTasks.insert(stream)
             let task = stream.task(for: request, using: self.session)
             self.tasks[stream] = task
             
-//        }
+        }
     }
 
 }

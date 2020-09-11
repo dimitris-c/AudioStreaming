@@ -118,7 +118,7 @@ public class RemoteAudioSource: AudioStreamSource {
     
     private func handleResponse(event: NetworkDataStream.StreamEvent) {
         switch event {
-            case .complete(let completion):
+            case .complete(let _):
                 self.delegate?.endOfFileOccured(source: self)
             case .stream(let event):
                 self.handleStreamEvent(event: event)

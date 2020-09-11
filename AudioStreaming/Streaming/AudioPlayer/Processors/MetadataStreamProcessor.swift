@@ -25,11 +25,19 @@ protocol MetadataStreamSource {
     func proccessMetadata(data: Data) -> Data
 }
 
+/**
+ Metadata from Shoutcast/Icecast servers are included in the audio stream.
+ There's a header value which you get on the HTTP headers *Icy-metaint* this value is the audio bytes between
+ the metadata.
+ ```
+ =========================================
+ [ audio data ][b][metadata][ audio data ]
+ =========================================
+ ```
+ Source: https://web.archive.org/web/20190521203350/https://www.smackfu.com/stuff/programming/shoutcast.html
+*/
+
 final class MetadataStreamProcessor: MetadataStreamSource {
-    func proccessFromRead(into buffer: UnsafeMutablePointer<UInt8>, size: Int, using stream: InputStream) -> Int {
-        return 0
-    }
-    
     
     weak var delegate: MetadataStreamSourceDelegate?
     
@@ -44,11 +52,10 @@ final class MetadataStreamProcessor: MetadataStreamSource {
     private var tempBytes: UnsafeMutablePointer<UInt8>?
     
     /// The `Data` to write the metadata
-    private var metadataData = Data()
-    
-    private var dataBytesRead = 0
-    private var metadataOffset = 0
+    private var metadata = Data()
     private var metadataLength: Int = 0
+    
+    private var audioDataBytesRead: Int = 0    
     
     private let parser: AnyParser<Data?, MetadataOutput>
     
@@ -58,65 +65,54 @@ final class MetadataStreamProcessor: MetadataStreamSource {
 
     func metadataAvailable(step: Int) {
         metadataStep = step
-        metadataOffset = step
     }
     
     // MARK: Proccess Metadata
-    
-    /**
-     Metadata from Shoutcast/Icecast servers are included in the audio stream.
-     There's a header value which you get on the HTTP headers *Icy-metaint* this value is the audio bytes between
-     the metadata.
-     ```
-     =========================================
-     [ audio data ][b][metadata][ audio data ]
-     =========================================
-     ```
-     Source: https://web.archive.org/web/20190521203350/https://www.smackfu.com/stuff/programming/shoutcast.html
-    */
+        
     @inline(__always)
     func proccessMetadata(data: Data) -> Data {
         var audioData = Data()
-        let _data = data as NSData
-        _data.enumerateBytes { (bytes, range, _) in
+        
+        data.withUnsafeBytes { buffer in
+            guard buffer.count > 0 else { return }
             var bytesRead = 0
-
-            while bytesRead < range.length {
-                let remainingBytes = range.length - bytesRead
+            let bytes = buffer.baseAddress!.assumingMemoryBound(to: UInt8.self)
+            while bytesRead < buffer.count {
+                let remainingBytes = buffer.count - bytesRead
                 let pointer = bytes + bytesRead
                 if metadataLength > 0 {
-                    let remainingMetaBytes = metadataLength - metadataData.count
+                    let remainingMetaBytes = metadataLength - metadata.count
                     let bytesToAppend = min(remainingMetaBytes, remainingBytes)
-                    metadataData.append(pointer.assumingMemoryBound(to: UInt8.self), count: bytesToAppend)
+                    metadata.append(pointer, count: bytesToAppend)
 
-                    if metadataData.count == metadataLength {
-                        let processedMetadata = parser.parse(input: metadataData)
+                    if metadata.count == metadataLength {
+                        let processedMetadata = parser.parse(input: metadata)
                         delegate?.didReceiveMetadata(metadata: processedMetadata)
 
-                        metadataData.count = 0
+                        metadata.count = 0
                         metadataLength = 0
-                        dataBytesRead = 0
+                        audioDataBytesRead = 0
                     }
 
                     bytesRead += bytesToAppend
-                } else if dataBytesRead == metadataStep {
-                    let metaLength = Int(pointer.assumingMemoryBound(to: UInt8.self).pointee) * 16
+                } else if audioDataBytesRead == metadataStep {
+                    let metaLength = Int(pointer.pointee) * 16
                     if metaLength > 0 {
                         metadataLength = Int(metaLength)
                     } else {
-                        dataBytesRead = 0
+                        audioDataBytesRead = 0
                     }
                     bytesRead += 1
                 } else {
-                    let audioBytesToRead = min(metadataStep - dataBytesRead, remainingBytes)
-                    audioData.append(pointer.assumingMemoryBound(to: UInt8.self), count: audioBytesToRead)
+                    let audioBytesToRead = min(metadataStep - audioDataBytesRead, remainingBytes)
+                    audioData.append(pointer, count: audioBytesToRead)
 
-                    dataBytesRead += audioBytesToRead
+                    audioDataBytesRead += audioBytesToRead
                     bytesRead += audioBytesToRead
                 }
             }
         }
-
+        
         return audioData
     }
     

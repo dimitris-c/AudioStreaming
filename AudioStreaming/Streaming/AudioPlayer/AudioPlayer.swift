@@ -157,8 +157,8 @@ public final class AudioPlayer {
         guard playerContext.internalState != .stopped else { return }
         
         stopEngine(reason: .userAction)
-        stopReadProccessFromSource()
         checkRenderWaitingAndNotifyIfNeeded()
+        stopReadProccessFromSource()
         sourceQueue.async { [weak self] in
             guard let self = self else { return }
             self.playerContext.audioReadingEntry?.source.delegate = nil
@@ -182,6 +182,7 @@ public final class AudioPlayer {
             playerContext.setInternalState(to: .paused)
             
             pauseEngine()
+            checkRenderWaitingAndNotifyIfNeeded()
             sourceQueue.async { [weak self] in
                 self?.processSource()
             }
@@ -199,6 +200,7 @@ public final class AudioPlayer {
             Logger.debug("resuming audio engine failed: %@", category: .generic, args: error.localizedDescription)
         }
         
+        checkRenderWaitingAndNotifyIfNeeded()
         startPlayer(resetBuffers: false)
         startReadProcessFromSourceIfNeeded()
     }
@@ -542,7 +544,6 @@ extension AudioPlayer: AudioStreamSourceDelegate {
         // TODO: check for discontinuous stream and add flag
         if fileStreamProcessor.isFileStreamOpen {
             guard fileStreamProcessor.parseFileStreamBytes(data: data) == noErr else {
-            //parseFileSteamBytes(buffer: rendererContext.readBuffer, size: read) == noErr else {
                 if source === playerContext.audioPlayingEntry?.source {
                     raiseUnxpected(error: .streamParseBytesFailure)
                 }

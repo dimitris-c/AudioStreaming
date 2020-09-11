@@ -260,6 +260,9 @@ final class AudioFileStreamProcessor {
         if let playingEntry = playerContext.audioPlayingEntry,
            rendererContext.seekRequest.requested && playingEntry.calculatedBitrate() > 0 {
             // TODO call proccess source on player...
+            if rendererContext.waiting {
+                rendererContext.packetsSemaphore.signal()
+            }
             return
         }
         
@@ -316,9 +319,18 @@ final class AudioFileStreamProcessor {
                     return
                 }
                 // TODO: check for seek time and proccess
-                rendererContext.$waiting.write { $0 = true }
+                if let playingEntry = playerContext.audioPlayingEntry,
+                   rendererContext.seekRequest.requested && playingEntry.calculatedBitrate() > 0 {
+                    // TODO call proccess source on player...
+                    if rendererContext.waiting {
+                        rendererContext.packetsSemaphore.signal()
+                    }
+                    return
+                }
+                
+                rendererContext.waiting = true
                 rendererContext.packetsSemaphore.wait()
-                rendererContext.$waiting.write { $0 = false }
+                rendererContext.waiting = false
             }
             
             let localBufferList = AudioBufferList.allocate(maximumBuffers: 1)
@@ -338,7 +350,7 @@ final class AudioFileStreamProcessor {
                 framesAdded = framesToDecode
                 
                 if status == AudioConvertStatus.done.rawValue {
-                    filUsedFrames(framesCount: framesAdded)
+                    fillUsedFrames(framesCount: framesAdded)
                     return
                 } else if status != 0 {
                     /// raise undexpected error... codec error
@@ -347,7 +359,7 @@ final class AudioFileStreamProcessor {
                 
                 framesToDecode = start
                 if framesToDecode == 0 {
-                    filUsedFrames(framesCount: framesAdded)
+                    fillUsedFrames(framesCount: framesAdded)
                     continue packetProccess
                 }
                 prefillLocalBufferList(list: localBufferList,
@@ -359,10 +371,10 @@ final class AudioFileStreamProcessor {
                 framesAdded += framesToDecode
                 
                 if status == AudioConvertStatus.done.rawValue {
-                    filUsedFrames(framesCount: framesAdded)
+                    fillUsedFrames(framesCount: framesAdded)
                     return
                 } else if status == AudioConvertStatus.proccessed.rawValue {
-                    filUsedFrames(framesCount: framesAdded)
+                    fillUsedFrames(framesCount: framesAdded)
                     continue packetProccess
                 } else if status != 0 {
                     /// raise undexpected error... codec error
@@ -382,10 +394,10 @@ final class AudioFileStreamProcessor {
                 
                 framesAdded = framesToDecode
                 if status == AudioConvertStatus.done.rawValue {
-                    filUsedFrames(framesCount: framesAdded)
+                    fillUsedFrames(framesCount: framesAdded)
                     return
                 } else if status == AudioConvertStatus.proccessed.rawValue {
-                    filUsedFrames(framesCount: framesAdded)
+                    fillUsedFrames(framesCount: framesAdded)
                     continue packetProccess
                 } else if status != 0 {
                     /// raise undexpected error... codec error
@@ -417,7 +429,7 @@ final class AudioFileStreamProcessor {
     ///
     /// - parameter frameCount: An `UInt32` value to be added to the used count of the buffers.
     @inline(__always)
-    private func filUsedFrames(framesCount: UInt32) {
+    private func fillUsedFrames(framesCount: UInt32) {
         rendererContext.lock.around {
             rendererContext.bufferContext.frameUsedCount += framesCount
         }

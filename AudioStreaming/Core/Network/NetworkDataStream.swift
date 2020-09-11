@@ -8,13 +8,14 @@ import Foundation
 internal final class NetworkDataStream {
     typealias StreamResult = Result<StreamResponse, Error>
     typealias StreamCompletion = (queue: DispatchQueue, event: (_ event: NetworkDataStream.StreamEvent) -> Void)
+    
     struct StreamResponse {
         let response: HTTPURLResponse?
         let data: Data?
     }
     
     enum StreamEvent {
-        case stream(Result<StreamResponse, Error>)
+        case stream(StreamResult)
         case complete(Completion)
     }
     
@@ -23,14 +24,7 @@ internal final class NetworkDataStream {
         let error: Error?
     }
     
-    struct StreamState {
-        var streams: StreamCompletion?
-    }
-    
-    @Protected
-    private var streamState = StreamState()
-    
-    private var streamCompletion: StreamCompletion?
+    private var streamCallback: StreamCompletion?
     
     /// The serial queue for all internal async actions.
     private let underlyingQueue: DispatchQueue
@@ -60,13 +54,15 @@ internal final class NetworkDataStream {
     @discardableResult
     func responseStream(on queue: DispatchQueue = .main,
                         completion: @escaping (_ event: NetworkDataStream.StreamEvent) -> Void) -> Self {
-        self.streamCompletion = (queue, completion)
+        self.streamCallback = (queue, completion)
         return self
     }
-    
+
     @discardableResult
     func resume() -> Self {
-        self.task?.resume()
+        underlyingQueue.async { [weak self] in
+            self?.task?.resume()
+        }
         return self
     }
     
@@ -86,7 +82,7 @@ internal final class NetworkDataStream {
     internal func didReceive(data: Data, response: HTTPURLResponse?) {
         underlyingQueue.async { [weak self] in
             guard let self = self else { return }
-            guard let stream = self.streamCompletion else { return }
+            guard let stream = self.streamCallback else { return }
             stream.queue.async {
                 let streamResponse = StreamResponse(response: response, data: data)
                 stream.event(.stream(.success(streamResponse)))
@@ -95,26 +91,18 @@ internal final class NetworkDataStream {
     }
     
     internal func didComplete(with error: Error?) {
-        $streamState.read { state in
-            underlyingQueue.async { [weak self] in
-                guard let self = self else { return }
-                state.streams?.queue.async {
-                    if let error = error {
-                        state.streams?.event(.stream(.failure(error)))
-                    } else {
-                        let completion = Completion(response: self.task?.response as? HTTPURLResponse,
-                                                    error: error)
-                        state.streams?.event(.complete(completion))
-                    }
+        underlyingQueue.async { [weak self] in
+            guard let self = self else { return }
+            guard let stream = self.streamCallback else { return }
+            stream.queue.async {
+                if let error = error {
+                    stream.event(.stream(.failure(error)))
+                } else {
+                    let completion = Completion(response: self.task?.response as? HTTPURLResponse,
+                                                error: error)
+                    stream.event(.complete(completion))
                 }
             }
-        }
-    }
-    
-    fileprivate func checkEndOfFile(stream: OutputStream, writtenBytes: Int) {
-        guard self.expectedContentLength != .undefined else { return }
-        if let length = self.expectedContentLength.length, length == writtenBytes {
-
         }
     }
     

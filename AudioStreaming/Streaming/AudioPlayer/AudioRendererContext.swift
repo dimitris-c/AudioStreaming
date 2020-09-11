@@ -25,14 +25,13 @@ final class AudioRendererContext {
     var audioBuffer: AudioBuffer
     var inOutAudioBufferList: UnsafeMutablePointer<AudioBufferList>
     
-    let packetsSemaphore = DispatchSemaphore(value: 0)
+    private(set) var packetsSemaphore = DispatchSemaphore(value: 0)
     
     var discontinuous: Bool = false
     
-    let framesRequestToStartPlaying: UInt32
+    let framesRequiredToStartPlaying: UInt32
     let framesRequiredAfterRebuffering: UInt32
     
-    @Protected
     var waiting: Bool = false
     
     let configuration: AudioPlayerConfiguration
@@ -42,7 +41,7 @@ final class AudioRendererContext {
         
         let canonicalStream = outputAudioFormat.basicStreamDescription
         
-        self.framesRequestToStartPlaying = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.secondsRequiredToStartPlaying)
+        self.framesRequiredToStartPlaying = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.secondsRequiredToStartPlaying)
         self.framesRequiredAfterRebuffering = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.secondsRequiredToStartPlayingAfterBufferUnderun)
         
         let dataByteSize = Int(canonicalStream.mSampleRate * configuration.bufferSizeInSeconds) * Int(canonicalStream.mBytesPerFrame)
