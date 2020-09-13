@@ -157,7 +157,6 @@ public final class AudioPlayer {
         guard playerContext.internalState != .stopped else { return }
         
         stopEngine(reason: .userAction)
-        checkRenderWaitingAndNotifyIfNeeded()
         stopReadProccessFromSource()
         sourceQueue.async { [weak self] in
             guard let self = self else { return }
@@ -173,6 +172,7 @@ public final class AudioPlayer {
             
             self.processSource()
         }
+        checkRenderWaitingAndNotifyIfNeeded()
     }
     
     /// Pauses the audio playback
@@ -182,11 +182,10 @@ public final class AudioPlayer {
             playerContext.setInternalState(to: .paused)
             
             pauseEngine()
-            checkRenderWaitingAndNotifyIfNeeded()
+            stopReadProccessFromSource()
             sourceQueue.async { [weak self] in
                 self?.processSource()
             }
-            stopReadProccessFromSource()
         }
     }
     /// Resumes the audio playback, if previous paused
@@ -200,7 +199,6 @@ public final class AudioPlayer {
             Logger.debug("resuming audio engine failed: %@", category: .generic, args: error.localizedDescription)
         }
         
-        checkRenderWaitingAndNotifyIfNeeded()
         startPlayer(resetBuffers: false)
         startReadProcessFromSourceIfNeeded()
     }

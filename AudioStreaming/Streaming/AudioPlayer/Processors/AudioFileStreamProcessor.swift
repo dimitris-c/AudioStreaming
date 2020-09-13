@@ -63,22 +63,16 @@ final class AudioFileStreamProcessor {
         audioFileStream = nil
     }
     
-    /// Parses the given buffer using `AudioFileStreamParseBytes` for the opened `AudioFileStream`
+    /// Parses the given data using `AudioFileStreamParseBytes`
     ///
-    /// - parameter buffer: An `UnsafeMutablePointer<UInt8>` containing the audio data to be parsed.
-    /// - parameter size: An `Int` value indicating the read bytes size from the network input stream
+    /// - parameter data: A `Data` object containing the audio data to be parsed.
     ///
     /// - Returns: An `OSStatus` value indicating if an error occurred or not.
-    func parseFileSteamBytes(buffer: UnsafeMutablePointer<UInt8>, size: Int) -> OSStatus {
-        guard let stream = audioFileStream else { return 0 }
-        return AudioFileStreamParseBytes(stream, UInt32(size), buffer, [])
-    }
-    
     func parseFileStreamBytes(data: Data) -> OSStatus {
         guard let stream = audioFileStream else { return 0 }
         guard data.count > 0 else { return 0 }
         return data.withUnsafeBytes { buffer -> OSStatus in
-            return AudioFileStreamParseBytes(stream, UInt32(buffer.count), buffer.baseAddress, .init())
+            AudioFileStreamParseBytes(stream, UInt32(buffer.count), buffer.baseAddress, .init())
         }
     }
     
@@ -139,6 +133,7 @@ final class AudioFileStreamProcessor {
     /// - parameter fileStream: An instance of `AudioFileStreamID` that is used to get information from.
     /// - parameter propertyId: A value of `AudioFileStreamPropertyID` indicating the file stream property.
     /// - parameter flags: A value of `UnsafeMutablePointer<AudioFileStreamPropertyFlags>`
+    
     func propertyListenerProc(fileStream: AudioFileStreamID,
                               propertyId: AudioFileStreamPropertyID,
                               flags: UnsafeMutablePointer<AudioFileStreamPropertyFlags>) {
@@ -250,6 +245,7 @@ final class AudioFileStreamProcessor {
     }
     
     // MARK: Packets Proc
+    
     func propertyPacketsProc(inNumberBytes: UInt32,
                              inNumberPackets: UInt32,
                              inInputData: UnsafeRawPointer,
@@ -266,14 +262,19 @@ final class AudioFileStreamProcessor {
             return
         }
         
-        guard let converter = self.audioConverter else { return }
+        guard let converter = self.audioConverter else {
+            Logger.error("Couldn't find audio converter", category: .audioRendering)
+            return
+        }
         
         var convertInfo = AudioConvertInfo(done: false,
                                            numberOfPackets: inNumberPackets,
                                            packDescription: inPacketDescriptions)
         convertInfo.audioBuffer.mData = UnsafeMutableRawPointer(mutating: inInputData)
         convertInfo.audioBuffer.mDataByteSize = inNumberBytes
-        convertInfo.audioBuffer.mNumberChannels = inputFormat.mChannelsPerFrame
+        if let playingAudioStreamFormat = playerContext.audioPlayingEntry?.audioStreamFormat {
+            convertInfo.audioBuffer.mNumberChannels = playingAudioStreamFormat.mChannelsPerFrame
+        }
         
         if let readingEntry = playerContext.audioReadingEntry, let inPacketDescriptions = inPacketDescriptions {
             let processedPackCount = readingEntry.processedPacketsState.count
@@ -328,9 +329,9 @@ final class AudioFileStreamProcessor {
                     return
                 }
                 
-                rendererContext.waiting = true
+                rendererContext.$waiting.write { $0 = true }
                 rendererContext.packetsSemaphore.wait()
-                rendererContext.waiting = false
+                rendererContext.$waiting.write { $0 = false }
             }
             
             let localBufferList = AudioBufferList.allocate(maximumBuffers: 1)

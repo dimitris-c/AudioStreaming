@@ -99,9 +99,9 @@ public class AudioEntry {
         guard sampleRate > 0 else { return 0 }
         
         if let audioDataPacketOffset = audioDataPacketOffset {
-            let packetsPerPacket = UInt64(audioStreamFormat.mFramesPerPacket)
-            if audioDataPacketOffset > 0 && packetsPerPacket > 0 {
-                return Double(audioDataPacketOffset * packetsPerPacket) / audioStreamFormat.mSampleRate
+            let franesPerPacket = UInt64(audioStreamFormat.mFramesPerPacket)
+            if audioDataPacketOffset > 0 && franesPerPacket > 0 {
+                return Double(audioDataPacketOffset * franesPerPacket) / audioStreamFormat.mSampleRate
             }
         }
         

@@ -25,18 +25,20 @@ protocol MetadataStreamSource {
     func proccessMetadata(data: Data) -> Data
 }
 
-/**
- Metadata from Shoutcast/Icecast servers are included in the audio stream.
- There's a header value which you get on the HTTP headers *Icy-metaint* this value is the audio bytes between
- the metadata.
- ```
- =========================================
- [ audio data ][b][metadata][ audio data ]
- =========================================
- ```
- Source: https://web.archive.org/web/20190521203350/https://www.smackfu.com/stuff/programming/shoutcast.html
-*/
-
+///
+///
+/// Metadata from Shoutcast/Icecast servers are included in the audio stream.
+/// There's a header value which you get on the HTTP headers *Icy-metaint* this value is the audio bytes between
+/// the metadata.
+/// ```
+/// ============================================
+/// [ audio data ][byte][metadata][ audio data ]
+/// ============================================
+/// ```
+///
+/// Reference:
+/// [SmackFu Shoutcast](https://web.archive.org/web/20190521203350/https://www.smackfu.com/stuff/programming/shoutcast.html)
+///
 final class MetadataStreamProcessor: MetadataStreamSource {
     
     weak var delegate: MetadataStreamSourceDelegate?

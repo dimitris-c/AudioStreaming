@@ -50,7 +50,7 @@ enum AudioContent: Int, CaseIterable {
                 return URL(string: "https://media-ssl.musicradio.com/RadioXLondon")!
             case .khruangbin:
 //                return URL(string: "https://p.scdn.co/mp3-preview/cab4b09c23ffc11774d879977131df9d150fcef4?cid=d8a5ed958d274c2e8ee717e6a4b0971d")!
-                return URL(string: "https://t4.bcbits.com/stream/fdb938c3d5eb62c9ff8587af2725c9d3/mp3-128/2809605460?p=0&ts=1599833677&t=a009097dd0968ae23b619e639e28726772c3875b&token=1599833677_3bf55c415b5412c133c9da03648381e77329f1db")!
+                return URL(string: "https://t4.bcbits.com/stream/fdb938c3d5eb62c9ff8587af2725c9d3/mp3-128/2809605460?p=0&ts=1602925705&t=cc2125ee9a8c171f5cf5a95608a52ee5b23f168d&token=1602925705_8d8d3f897e9a0e2df0757f041c620d79fe770a4a")!
             case .flac:
                 return URL(string: "http://www.lindberg.no/hires/test/2L-145_01_stereo_01.cd.flac")!
             case .piano:

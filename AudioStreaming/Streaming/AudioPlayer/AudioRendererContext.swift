@@ -32,6 +32,7 @@ final class AudioRendererContext {
     let framesRequiredToStartPlaying: UInt32
     let framesRequiredAfterRebuffering: UInt32
     
+    @Protected
     var waiting: Bool = false
     
     let configuration: AudioPlayerConfiguration
