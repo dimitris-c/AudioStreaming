@@ -7,7 +7,7 @@ import Foundation
 
 internal final class NetworkDataStream {
     typealias StreamResult = Result<StreamResponse, Error>
-    typealias StreamCompletion = (queue: DispatchQueue, event: (_ event: NetworkDataStream.StreamEvent) -> Void)
+    typealias StreamCompletion = (queue: OperationQueue, event: (_ event: NetworkDataStream.StreamEvent) -> Void)
     
     struct StreamResponse {
         let response: HTTPURLResponse?
@@ -17,6 +17,7 @@ internal final class NetworkDataStream {
     enum StreamEvent {
         case stream(StreamResult)
         case complete(Completion)
+        case response(HTTPURLResponse?)
     }
     
     struct Completion {
@@ -32,9 +33,6 @@ internal final class NetworkDataStream {
     
     /// the underlying task of the network request
     private var task: URLSessionTask?
-    
-    /// the expected content length of the audio, this is used to close the output stream.
-    private var expectedContentLength = ExpectedContentLength.undefined
     
     var urlResponse: HTTPURLResponse? {
         task?.response as? HTTPURLResponse
@@ -52,7 +50,7 @@ internal final class NetworkDataStream {
     }
     
     @discardableResult
-    func responseStream(on queue: DispatchQueue = .main,
+    func responseStream(on queue: OperationQueue,
                         completion: @escaping (_ event: NetworkDataStream.StreamEvent) -> Void) -> Self {
         self.streamCallback = (queue, completion)
         return self
@@ -74,8 +72,12 @@ internal final class NetworkDataStream {
     // MARK: Internal
     
     internal func didReceive(response: HTTPURLResponse?) {
-        if let contentLength = response?.expectedContentLength, contentLength > 0 {
-            self.expectedContentLength = .length(value: contentLength)
+        underlyingQueue.async { [weak self] in
+            guard let self = self else { return }
+            guard let stream = self.streamCallback else { return }
+            stream.queue.addOperation {
+                stream.event(.response(response))
+            }
         }
     }
     
@@ -83,10 +85,11 @@ internal final class NetworkDataStream {
         underlyingQueue.async { [weak self] in
             guard let self = self else { return }
             guard let stream = self.streamCallback else { return }
-            stream.queue.async {
+            let operation = BlockOperation {
                 let streamResponse = StreamResponse(response: response, data: data)
                 stream.event(.stream(.success(streamResponse)))
             }
+            stream.queue.addOperation(operation)
         }
     }
     
@@ -94,7 +97,7 @@ internal final class NetworkDataStream {
         underlyingQueue.async { [weak self] in
             guard let self = self else { return }
             guard let stream = self.streamCallback else { return }
-            stream.queue.async {
+            let operation = BlockOperation {
                 if let error = error {
                     stream.event(.stream(.failure(error)))
                 } else {
@@ -103,6 +106,10 @@ internal final class NetworkDataStream {
                     stream.event(.complete(completion))
                 }
             }
+            if let lastOp = stream.queue.operations.last {
+                operation.addDependency(lastOp)
+            }
+            stream.queue.addOperation(operation)
         }
     }
     
@@ -121,27 +128,3 @@ extension NetworkDataStream: Hashable {
         hasher.combine(id)
     }
 }
-
-// MARK: - Internal Convenience
-
-/// An enum defining the content length of a network request
-internal enum ExpectedContentLength: Equatable {
-    /// Content length is undefined, eg the audio stream is a live broadcast
-    case undefined
-    /// Content length is specified, eg the audio stream is of fixed duration
-    case length(value: Int64)
-    
-    var isUndefined: Bool {
-        self == .undefined
-    }
-    
-    var length: Int64? {
-        switch self {
-            case .length(let value):
-                return value
-            case .undefined:
-                return nil
-        }
-    }
-}
-

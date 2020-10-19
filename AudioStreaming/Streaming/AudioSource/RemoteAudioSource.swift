@@ -25,7 +25,7 @@ public class RemoteAudioSource: AudioStreamSource {
     private var streamRequest: NetworkDataStream?
     
     private var additionalRequestHeaders: [String: String]
-    private var httpStatusCode: Int
+    private var httpHeaderParsed: Bool
     
     private var httpResponse: HTTPURLResponse? {
         streamRequest?.urlResponse
@@ -41,42 +41,47 @@ public class RemoteAudioSource: AudioStreamSource {
         return audioFileType(fileExtension: self.url.pathExtension)
     }
     
-    let sourceQueue: DispatchQueue
+    internal let underlyingQueue: DispatchQueue
+    internal let networkStreamQueue: OperationQueue
     
     init(networking: NetworkingClient,
          metadataStreamSource: MetadataStreamSource,
          url: URL,
-         sourceQueue: DispatchQueue,
+         underlyingQueue: DispatchQueue,
          httpHeaders: [String: String]) {
         self.networking = networking
         self.metadataStreamProccessor = metadataStreamSource
         self.url = url
-        self.sourceQueue = sourceQueue
         self.additionalRequestHeaders = httpHeaders
-        self.httpStatusCode = 0
+        self.httpHeaderParsed = false
         self.relativePosition = 0
         self.seekOffset = 0
+        self.underlyingQueue = underlyingQueue
+        self.networkStreamQueue = OperationQueue()
+        self.networkStreamQueue.underlyingQueue = underlyingQueue
+        self.networkStreamQueue.maxConcurrentOperationCount = 1
+        self.networkStreamQueue.isSuspended = true
     }
     
     convenience init(networking: NetworkingClient,
                      url: URL,
-                     sourceQueue: DispatchQueue,
+                     underlyingQueue: DispatchQueue,
                      httpHeaders: [String: String]) {
         let metadataParser = MetadataParser()
         let metadataProccessor = MetadataStreamProcessor(parser: metadataParser.eraseToAnyParser())
         self.init(networking: networking,
                   metadataStreamSource: metadataProccessor,
                   url: url,
-                  sourceQueue: sourceQueue,
+                  underlyingQueue: underlyingQueue,
                   httpHeaders: httpHeaders)
     }
     
     convenience init(networking: NetworkingClient,
                      url: URL,
-                     sourceQueue: DispatchQueue) {
+                     underlyingQueue: DispatchQueue) {
         self.init(networking: networking,
                   url: url,
-                  sourceQueue: sourceQueue,
+                  underlyingQueue: underlyingQueue,
                   httpHeaders: [:])
     }
     
@@ -86,6 +91,7 @@ public class RemoteAudioSource: AudioStreamSource {
             networking.remove(task: streamTask)
         }
         streamRequest = nil
+        networkStreamQueue.cancelAllOperations()
     }
     
     func seek(at offset: Int) {
@@ -99,7 +105,16 @@ public class RemoteAudioSource: AudioStreamSource {
             return
         }
         
+        resume()
         performOpen(seek: offset)
+    }
+    
+    func suspend() {
+        networkStreamQueue.isSuspended = true
+    }
+    
+    func resume() {
+        networkStreamQueue.isSuspended = false
     }
     
     // MARK: Private
@@ -108,29 +123,28 @@ public class RemoteAudioSource: AudioStreamSource {
         let urlRequest = buildUrlRequest(with: url, seekIfNeeded: seekOffset)
         
         streamRequest = networking.stream(request: urlRequest)
-            .responseStream(on: sourceQueue) { [weak self] event in
+            .responseStream(on: networkStreamQueue) { [weak self] event in
                 guard let self = self else { return }
                 self.handleResponse(event: event)
-        }
+            }
         streamRequest?.resume()
         metadataStreamProccessor.delegate = self
     }
     
     private func handleResponse(event: NetworkDataStream.StreamEvent) {
         switch event {
-            case .complete(let _):
-                self.delegate?.endOfFileOccured(source: self)
+            case .response(let urlResponse):
+                self.parseResponseHeader(response: urlResponse)
             case .stream(let event):
                 self.handleStreamEvent(event: event)
+            case .complete:
+                self.delegate?.endOfFileOccured(source: self)
         }
     }
     
     private func handleStreamEvent(event: NetworkDataStream.StreamResult) {
         switch event {
             case .success(let responseValue):
-                if let response = responseValue.response, httpStatusCode == 0 {
-                    self.parseResponseHeader(response: response)
-                }
                 if let data = responseValue.data {
                     if metadataStreamProccessor.canProccessMetadata {
                         let extractedAudioData = metadataStreamProccessor.proccessMetadata(data: data)
@@ -147,12 +161,10 @@ public class RemoteAudioSource: AudioStreamSource {
         }
     }
     
-    @discardableResult
-    private func parseResponseHeader(response: HTTPURLResponse?) -> Bool {
-        guard let response = response else { return false }
-        guard httpStatusCode == 0 else { return false }
+    private func parseResponseHeader(response: HTTPURLResponse?) {
+        guard let response = response else { return }
         // TODO: Parse Icy header
-        httpStatusCode = response.statusCode
+        let httpStatusCode = response.statusCode
         let parser = HTTPHeaderParser()
         parsedHeaderOutput = parser.parse(input: response)
         // parse the header response
@@ -164,14 +176,11 @@ public class RemoteAudioSource: AudioStreamSource {
         if httpStatusCode == 416 { // range not satisfied error
             if length >= 0 { seekOffset = self.length }
             delegate?.endOfFileOccured(source: self)
-            return false
         }
         else if httpStatusCode >= 300 {
             delegate?.errorOccured(source: self)
-            return false
         }
         
-        return true
     }
     
     private func buildUrlRequest(with url: URL, seekIfNeeded seekOffset: Int) -> URLRequest {

@@ -130,7 +130,7 @@ public final class AudioPlayer {
     public func play(url: URL, headers: [String: String]) {
         let audioSource = RemoteAudioSource(networking: self.networking,
                                             url: url,
-                                            sourceQueue: sourceQueue,
+                                            underlyingQueue: sourceQueue,
                                             httpHeaders: headers)
         let entry = AudioEntry(source: audioSource,
                                entryId: AudioEntryId(id: url.absoluteString))
@@ -183,6 +183,7 @@ public final class AudioPlayer {
             
             pauseEngine()
             stopReadProccessFromSource()
+            playerContext.audioPlayingEntry?.source.suspend()
             sourceQueue.async { [weak self] in
                 self?.processSource()
             }
@@ -199,6 +200,7 @@ public final class AudioPlayer {
             Logger.debug("resuming audio engine failed: %@", category: .generic, args: error.localizedDescription)
         }
         
+        playerContext.audioPlayingEntry?.source.resume()
         startPlayer(resetBuffers: false)
         startReadProcessFromSourceIfNeeded()
     }
@@ -527,7 +529,6 @@ public final class AudioPlayer {
 }
 
 extension AudioPlayer: AudioStreamSourceDelegate {
-    
     
     func dataAvailable(source: AudioStreamSource, data: Data) {
         guard playerContext.audioReadingEntry?.source === source else { return }

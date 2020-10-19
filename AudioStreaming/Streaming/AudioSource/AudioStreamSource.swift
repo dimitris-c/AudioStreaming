@@ -29,6 +29,12 @@ protocol CoreAudioStreamSource: class {
     /// Closes the underlying stream
     func close()
     
+    /// Suspends the underlying stream
+    func suspend()
+    
+    // Resumes the underlying stream
+    func resume()
+    
     /// Seeks the stream at the specified offset
     func seek(at offset: Int)
     
@@ -39,7 +45,7 @@ protocol CoreAudioStreamSource: class {
 protocol AudioStreamSource: CoreAudioStreamSource {
     
     /// The `DispatchQueue` network object will receive data
-    var sourceQueue: DispatchQueue { get }
+    var underlyingQueue: DispatchQueue { get }
     
     /// A `MetadataStreamSource` object that handles the metadata parsing
     var metadataStreamProccessor: MetadataStreamSource { get }
