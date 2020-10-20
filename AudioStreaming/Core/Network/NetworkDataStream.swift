@@ -7,7 +7,7 @@ import Foundation
 
 internal final class NetworkDataStream {
     typealias StreamResult = Result<StreamResponse, Error>
-    typealias StreamCompletion = (queue: OperationQueue, event: (_ event: NetworkDataStream.StreamEvent) -> Void)
+    typealias StreamCompletion = (_ event: NetworkDataStream.StreamEvent) -> Void
     
     struct StreamResponse {
         let response: HTTPURLResponse?
@@ -50,9 +50,8 @@ internal final class NetworkDataStream {
     }
     
     @discardableResult
-    func responseStream(on queue: OperationQueue,
-                        completion: @escaping (_ event: NetworkDataStream.StreamEvent) -> Void) -> Self {
-        self.streamCallback = (queue, completion)
+    func responseStream(completion: @escaping (_ event: NetworkDataStream.StreamEvent) -> Void) -> Self {
+        self.streamCallback = completion
         return self
     }
 
@@ -74,42 +73,30 @@ internal final class NetworkDataStream {
     internal func didReceive(response: HTTPURLResponse?) {
         underlyingQueue.async { [weak self] in
             guard let self = self else { return }
-            guard let stream = self.streamCallback else { return }
-            stream.queue.addOperation {
-                stream.event(.response(response))
-            }
+            guard let streamCallback = self.streamCallback else { return }
+            streamCallback(.response(response))
         }
     }
     
     internal func didReceive(data: Data, response: HTTPURLResponse?) {
         underlyingQueue.async { [weak self] in
             guard let self = self else { return }
-            guard let stream = self.streamCallback else { return }
-            let operation = BlockOperation {
-                let streamResponse = StreamResponse(response: response, data: data)
-                stream.event(.stream(.success(streamResponse)))
-            }
-            stream.queue.addOperation(operation)
+            guard let streamCallback = self.streamCallback else { return }
+            let streamResponse = StreamResponse(response: response, data: data)
+            streamCallback(.stream(.success(streamResponse)))
         }
     }
     
-    internal func didComplete(with error: Error?) {
+    internal func didComplete(with error: Error?, response: HTTPURLResponse?) {
         underlyingQueue.async { [weak self] in
             guard let self = self else { return }
             guard let stream = self.streamCallback else { return }
-            let operation = BlockOperation {
-                if let error = error {
-                    stream.event(.stream(.failure(error)))
-                } else {
-                    let completion = Completion(response: self.task?.response as? HTTPURLResponse,
-                                                error: error)
-                    stream.event(.complete(completion))
-                }
+            if let error = error {
+                stream(.stream(.failure(error)))
+            } else {
+                let completion = Completion(response: response, error: error)
+                stream(.complete(completion))
             }
-            if let lastOp = stream.queue.operations.last {
-                operation.addDependency(lastOp)
-            }
-            stream.queue.addOperation(operation)
         }
     }
     

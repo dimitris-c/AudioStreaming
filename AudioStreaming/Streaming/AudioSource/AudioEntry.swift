@@ -21,9 +21,18 @@ final class EntryFramesState {
 }
 
 final class ProcessedPacketsState {
-    var buferSize: UInt32 = 0
+    var bufferSize: UInt32 = 0
     var count: UInt32 = 0
     var sizeTotal: UInt32 = 0
+}
+
+final class AudioStreamState {
+    var processedDataFormat: Bool = false
+    var dataOffset: UInt64 = 0
+    var dataByteCount: UInt64? = nil
+    var dataPacketOffset: UInt64? = nil
+    var dataPacketCount: Double = 0
+    var streamFormat = AudioStreamBasicDescription()
 }
 
 public class AudioEntry {
@@ -32,36 +41,38 @@ public class AudioEntry {
     
     let lock = UnfairLock()
     
-    let source: AudioStreamSource
+    weak var delegate: AudioStreamSourceDelegate?
+    
     let id: AudioEntryId
     
     var seekTime: Float
     
-    var parsedHeader: Bool = false
-    
-    var packetCount: Double = 0
-    var packetDuration: Double {
-        return Double(audioStreamFormat.mFramesPerPacket) / Double(sampleRate)
-    }
     /// The sample rate from the `audioStreamFormat`
     var sampleRate: Float {
         Float(audioStreamFormat.mSampleRate)
     }
     
-    var framesState: EntryFramesState
-    var processedPacketsState: ProcessedPacketsState
-    
-    var audioDataOffset: UInt64 = 0
-    var audioDataByteCount: UInt64?
-    var audioDataPacketOffset: UInt64?
+    var audioFileHint: AudioFileTypeID {
+        source.audioFileHint
+    }
     
     var audioStreamFormat = AudioStreamBasicDescription()
+    
+    private(set) var audioStreamState: AudioStreamState
+    private(set) var framesState: EntryFramesState
+    private(set) var processedPacketsState: ProcessedPacketsState
+    
+    private var packetDuration: Double {
+        return Double(audioStreamFormat.mFramesPerPacket) / Double(sampleRate)
+    }
     
     private var avaragePacketByteSize: Double {
         let packets = processedPacketsState
         guard packets.count > 0 else { return 0 }
         return Double(packets.sizeTotal / packets.count)
     }
+    
+    private let source: AudioStreamSource
     
     init(source: AudioStreamSource, entryId: AudioEntryId) {
         self.source = source
@@ -71,11 +82,34 @@ public class AudioEntry {
         
         self.processedPacketsState = ProcessedPacketsState()
         self.framesState = EntryFramesState()
+        self.audioStreamState = AudioStreamState()
+    }
+    
+    func close() {
+        source.delegate = nil
+        source.close()
+    }
+    
+    func suspend() {
+        source.suspend()
+    }
+    
+    func resume() {
+        source.resume()
+    }
+    
+    func seek(at offset: Int) {
+        source.delegate = self
+        source.seek(at: offset)
     }
     
     func reset() {
         lock.lock(); defer { lock.unlock() }
-        self.framesState = EntryFramesState()
+        framesState = EntryFramesState()
+    }
+    
+    func has(same source: AudioStreamSource) -> Bool {
+        source === self.source
     }
     
     func calculatedBitrate() -> Double {
@@ -98,7 +132,7 @@ public class AudioEntry {
     func duration() -> Double {
         guard sampleRate > 0 else { return 0 }
         
-        if let audioDataPacketOffset = audioDataPacketOffset {
+        if let audioDataPacketOffset = audioStreamState.dataPacketOffset {
             let franesPerPacket = UInt64(audioStreamFormat.mFramesPerPacket)
             if audioDataPacketOffset > 0 && franesPerPacket > 0 {
                 return Double(audioDataPacketOffset * franesPerPacket) / audioStreamFormat.mSampleRate
@@ -113,13 +147,31 @@ public class AudioEntry {
     }
     
     private func audioDataLengthBytes() -> UInt {
-        if let byteCount = audioDataByteCount {
+        if let byteCount = audioStreamState.dataByteCount {
             return UInt(byteCount)
         }
         guard source.length > 0 else { return 0 }
-        return UInt(source.length) - UInt(audioDataOffset)
+        return UInt(source.length) - UInt(audioStreamState.dataOffset)
     }
     
+}
+
+extension AudioEntry: AudioStreamSourceDelegate {
+    func dataAvailable(source: AudioStreamSource, data: Data) {
+        delegate?.dataAvailable(source: source, data: data)
+    }
+    
+    func errorOccured(source: AudioStreamSource, error: Error) {
+        delegate?.errorOccured(source: source, error: error)
+    }
+    
+    func endOfFileOccured(source: AudioStreamSource) {
+        delegate?.endOfFileOccured(source: source)
+    }
+    
+    func metadataReceived(data: [String : String]) {
+        delegate?.metadataReceived(data: data)
+    }
 }
 
 extension AudioEntry: Equatable {

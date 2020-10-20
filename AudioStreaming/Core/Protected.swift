@@ -23,7 +23,7 @@ extension Lock {
 }
 
 /// A wrapper for `os_unfair_lock`
-final public class UnfairLock {
+final public class UnfairLock: Lock {
     private let unfairLock: os_unfair_lock_t
     
     public init() {
@@ -43,16 +43,6 @@ final public class UnfairLock {
     public func unlock() {
         os_unfair_lock_unlock(unfairLock)
     }
-}
-
-extension UnfairLock: Lock { }
-
-func setLock(_ lock: os_unfair_lock_t) {
-    os_unfair_lock_lock(lock)
-}
-
-func setUnlock(_ lock: os_unfair_lock_t) {
-    os_unfair_lock_unlock(lock)
 }
 
 @propertyWrapper

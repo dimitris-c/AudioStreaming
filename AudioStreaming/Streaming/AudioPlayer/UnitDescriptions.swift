@@ -5,7 +5,6 @@
 
 import AVFoundation
 
-
 private let outputChannels: UInt32 = 2
 
 struct UnitDescriptions {

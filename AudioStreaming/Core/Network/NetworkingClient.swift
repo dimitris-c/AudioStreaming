@@ -10,6 +10,21 @@ enum DataStreamError: Error {
     case sessionDeinit
 }
 
+public enum NetworkError: Error, Equatable {
+    case failure(Error)
+    case serverError
+    public static func == (lhs: NetworkError, rhs: NetworkError) -> Bool {
+        switch (lhs, rhs) {
+            case (.failure, failure):
+                return true
+            case (.serverError, .serverError):
+                return true
+            default:
+                return false
+        }
+    }
+}
+
 protocol StreamTaskProvider: class {
     func dataStream(for request: URLSessionTask) -> NetworkDataStream?
 }

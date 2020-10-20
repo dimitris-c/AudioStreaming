@@ -40,25 +40,25 @@ final class DispatchTimerSource {
     /// - parameter handler: A closure for the event handler
     func add(handler: @escaping () -> Void) {
         let handler = handler
-        self.timer.setEventHandler(handler: handler)
+        timer.setEventHandler(handler: handler)
     }
     
     /// Removes the added event handler from the timer.
     func removeHandler() {
-        self.timer.setEventHandler(handler: nil)
+        timer.setEventHandler(handler: nil)
     }
     
     /// Activates the timer, if needed
     func activate() {
         if state == .activated { return }
         state = .activated
-        self.timer.activate()
+        timer.activate()
     }
     
     /// Suspends the timer, if needed.
     func suspend() {
         if state == .suspended { return }
         state = .suspended
-        self.timer.suspend()
+        timer.suspend()
     }
 }

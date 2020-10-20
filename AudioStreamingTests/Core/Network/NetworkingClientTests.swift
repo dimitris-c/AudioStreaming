@@ -53,6 +53,8 @@ class NetworkingClientTests: XCTestCase {
                 case .complete(let completion):
                     responseCompletion = completion
                     expectation.fulfill()
+                case .response:
+                    break
                 }
             }
             .resume()
@@ -62,35 +64,6 @@ class NetworkingClientTests: XCTestCase {
         XCTAssertEqual(responseCompletion?.response?.statusCode, 200)
         XCTAssertNotNil(responseCompletion)
         XCTAssertNotNil(receivedData)
-    }
-    
-    func testThatStreamCanProduceAnInputStream() {
-        let expect = expectation(description: "stream complete")
-        
-        let networking = NetworkingClient()
-        
-        let url = URL(string: "https://httpbin.org/xml")!
-        var request = URLRequest(url: url)
-        request.addValue("application/xml", forHTTPHeaderField: "Content-Type")
-        
-        let inputStream = networking
-            .stream(request: request)
-            .responseStream { event in
-                switch event {
-                case .complete:
-                    expect.fulfill()
-                default: break
-                }
-            }
-            .asInputStream()
-        
-        wait(for: [expect], timeout: 10)
-        
-        let xmlParser = XMLParser(stream: inputStream!)
-        let xmlParsed = xmlParser.parse()
-        XCTAssertTrue(xmlParsed)
-        XCTAssertNil(xmlParser.parserError)
-        
     }
     
     func testThatStreamCanBeCalledAndCompleteAtAGivenThread() {
@@ -103,11 +76,9 @@ class NetworkingClientTests: XCTestCase {
         
         var responseCompletion: NetworkDataStream.Completion?
         var receivedData: Data?
-        
-        let receivedDataQueue = DispatchQueue(label: "received.data.queue")
-        
+                
         networking.stream(request: request)
-            .responseStream(on: receivedDataQueue) { event in
+            .responseStream { event in
                 switch event {
                 case .stream(let result):
                     XCTAssertFalse(Thread.current.isMainThread)
@@ -120,6 +91,8 @@ class NetworkingClientTests: XCTestCase {
                     XCTAssertFalse(Thread.current.isMainThread)
                     responseCompletion = completion
                     expectation.fulfill()
+                case .response:
+                        XCTAssertFalse(Thread.current.isMainThread)
                 }
             }
             .resume()

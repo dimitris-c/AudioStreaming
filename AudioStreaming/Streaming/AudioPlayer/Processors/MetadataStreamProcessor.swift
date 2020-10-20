@@ -73,10 +73,9 @@ final class MetadataStreamProcessor: MetadataStreamSource {
         
     @inline(__always)
     func proccessMetadata(data: Data) -> Data {
-        var audioData = Data()
-        
-        data.withUnsafeBytes { buffer in
-            guard buffer.count > 0 else { return }
+        data.withUnsafeBytes { buffer -> Data in
+            guard buffer.count > 0 else { return data }
+            var audioData = Data()
             var bytesRead = 0
             let bytes = buffer.baseAddress!.assumingMemoryBound(to: UInt8.self)
             while bytesRead < buffer.count {
@@ -113,9 +112,8 @@ final class MetadataStreamProcessor: MetadataStreamSource {
                     bytesRead += audioBytesToRead
                 }
             }
+            return audioData
         }
-        
-        return audioData
     }
     
 }

@@ -25,9 +25,9 @@ internal final class AudioPlayerContext {
     /// - NOTE: Do not use directly instead use the `internalState` to set and get the property
     /// or the `setInternalState(to:when:)`method
     @Protected
-    private var __playerInternalState: PlayerInternalState = .initial
+    private var __playerInternalState: AudioPlayer.InternalState = .initial
     
-    var internalState: PlayerInternalState {
+    var internalState: AudioPlayer.InternalState {
         get { __playerInternalState }
         set { setInternalState(to: newValue) }
     }
@@ -49,8 +49,8 @@ internal final class AudioPlayerContext {
     /// - parameter state: The new `PlayerInternalState`
     /// - parameter inState: If the `inState` expression is not nil, the internalState will be set if the evaluated expression is `true`
     /// - NOTE: This sets the underlying `__playerInternalState` variable
-    internal func setInternalState(to state: PlayerInternalState,
-                                   when inState: ((PlayerInternalState) -> Bool)? = nil) {
+    internal func setInternalState(to state: AudioPlayer.InternalState,
+                                   when inState: ((AudioPlayer.InternalState) -> Bool)? = nil) {
         let newValues = playerStateAndStopReason(for: state)
         $stopReason.write { reason in
             reason = newValues.stopReason

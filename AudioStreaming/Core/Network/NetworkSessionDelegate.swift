@@ -26,7 +26,7 @@ internal final class NetworkSessionDelegate: NSObject, URLSessionDataDelegate {
 
     internal func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         if let stream = self.stream(for: task) {
-            stream.didComplete(with: error)
+            stream.didComplete(with: error, response: task.response as? HTTPURLResponse)
         }
     }
     

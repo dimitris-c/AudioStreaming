@@ -140,7 +140,10 @@ class PlayerQueueEntriesTest: XCTestCase {
 private let networkingClient = NetworkingClient(configuration: .ephemeral)
 private func audioEntry(id: String) -> AudioEntry {
     let source =
-        RemoteAudioSource(networking: networkingClient, url: URL(string: "www.a-url.com")!, sourceQueue: .main, readBufferSize: 1024)
+        RemoteAudioSource(networking: networkingClient,
+                          url: URL(string: "www.a-url.com")!,
+                          underlyingQueue: DispatchQueue(label: "some-queue"),
+                          httpHeaders: [:])
     return AudioEntry(source: source, entryId: AudioEntryId(id: id))
 }
 

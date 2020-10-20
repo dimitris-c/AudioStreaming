@@ -21,18 +21,15 @@ public class RemoteAudioSource: AudioStreamSource {
     
     private let url: URL
     private let networking: NetworkingClient
-    internal var metadataStreamProccessor: MetadataStreamSource
     private var streamRequest: NetworkDataStream?
     
     private var additionalRequestHeaders: [String: String]
-    private var httpHeaderParsed: Bool
     
-    private var httpResponse: HTTPURLResponse? {
-        streamRequest?.urlResponse
-    }
     private var parsedHeaderOutput: HTTPHeaderParserOutput?
     private var relativePosition: Int
     private var seekOffset: Int
+    
+    internal var metadataStreamProccessor: MetadataStreamSource
     
     internal var audioFileHint: AudioFileTypeID {
         if let output = parsedHeaderOutput {
@@ -53,7 +50,6 @@ public class RemoteAudioSource: AudioStreamSource {
         self.metadataStreamProccessor = metadataStreamSource
         self.url = url
         self.additionalRequestHeaders = httpHeaders
-        self.httpHeaderParsed = false
         self.relativePosition = 0
         self.seekOffset = 0
         self.underlyingQueue = underlyingQueue
@@ -100,7 +96,7 @@ public class RemoteAudioSource: AudioStreamSource {
         relativePosition = 0
         seekOffset = offset
         
-        if let supportsSeek = self.parsedHeaderOutput?.supportsSeek,
+        if let supportsSeek = parsedHeaderOutput?.supportsSeek,
            !supportsSeek && offset != relativePosition  {
             return
         }
@@ -123,7 +119,7 @@ public class RemoteAudioSource: AudioStreamSource {
         let urlRequest = buildUrlRequest(with: url, seekIfNeeded: seekOffset)
         
         streamRequest = networking.stream(request: urlRequest)
-            .responseStream(on: networkStreamQueue) { [weak self] event in
+            .responseStream { [weak self] event in
                 guard let self = self else { return }
                 self.handleResponse(event: event)
             }
@@ -131,32 +127,39 @@ public class RemoteAudioSource: AudioStreamSource {
         metadataStreamProccessor.delegate = self
     }
     
+    // MARK: - Network Handle Methods
+    
     private func handleResponse(event: NetworkDataStream.StreamEvent) {
         switch event {
             case .response(let urlResponse):
-                self.parseResponseHeader(response: urlResponse)
+                parseResponseHeader(response: urlResponse)
             case .stream(let event):
-                self.handleStreamEvent(event: event)
+                addStreamOperation { [weak self] in
+                    self?.handleStreamEvent(event: event)
+                }
             case .complete:
-                self.delegate?.endOfFileOccured(source: self)
+                addCompletionOperation { [weak self] in
+                    guard let self = self else { return }
+                    self.delegate?.endOfFileOccured(source: self)
+                }
+                
         }
     }
     
     private func handleStreamEvent(event: NetworkDataStream.StreamResult) {
         switch event {
-            case .success(let responseValue):
-                if let data = responseValue.data {
+            case .success(let value):
+                if let data = value.data {
                     if metadataStreamProccessor.canProccessMetadata {
                         let extractedAudioData = metadataStreamProccessor.proccessMetadata(data: data)
-                        self.delegate?.dataAvailable(source: self, data: extractedAudioData)
+                        delegate?.dataAvailable(source: self, data: extractedAudioData)
                     } else {
-                        self.delegate?.dataAvailable(source: self, data: data)
+                        delegate?.dataAvailable(source: self, data: data)
                     }
                     relativePosition += data.count
                 }
             case .failure(let error):
-                print(error)
-                self.delegate?.errorOccured(source: self)
+                delegate?.errorOccured(source: self, error: error)
                 break
         }
     }
@@ -178,13 +181,13 @@ public class RemoteAudioSource: AudioStreamSource {
             delegate?.endOfFileOccured(source: self)
         }
         else if httpStatusCode >= 300 {
-            delegate?.errorOccured(source: self)
+            delegate?.errorOccured(source: self, error: NetworkError.serverError)
         }
         
     }
     
     private func buildUrlRequest(with url: URL, seekIfNeeded seekOffset: Int) -> URLRequest {
-        var urlRequest = URLRequest(url: self.url)
+        var urlRequest = URLRequest(url: url)
         urlRequest.networkServiceType = .avStreaming
         urlRequest.cachePolicy = .reloadIgnoringLocalCacheData
         
@@ -201,11 +204,28 @@ public class RemoteAudioSource: AudioStreamSource {
         return urlRequest
     }
     
+    // MARK: - Network Stream Operation Queue
+    
+    private func addStreamOperation(_ block: @escaping () -> Void) {
+        let operation = BlockOperation(block: block)
+        networkStreamQueue.addOperation(operation)
+    }
+    
+    private func addCompletionOperation(_ block: @escaping () -> Void) {
+        let operation = BlockOperation(block: block)
+        operation.qualityOfService = .background
+        operation.queuePriority = .veryLow
+        if let lastOperation = networkStreamQueue.operations.last {
+            operation.addDependency(lastOperation)
+        }
+        networkStreamQueue.addOperation(operation)
+    }
+    
 }
 
 extension RemoteAudioSource: MetadataStreamSourceDelegate {
     func didReceiveMetadata(metadata: Result<[String : String], MetadataParsingError>) {
         guard case let .success(data) = metadata else { return }
-        self.delegate?.metadataReceived(data: data)
+        delegate?.metadataReceived(data: data)
     }
 }

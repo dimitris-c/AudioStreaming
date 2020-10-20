@@ -6,18 +6,18 @@
 import Foundation
 import AudioToolbox
 
-protocol AudioStreamSourceDelegate: class {
+protocol AudioStreamSourceDelegate: AnyObject {
     /// Indicates that there's data available
     func dataAvailable(source: AudioStreamSource, data: Data)
     /// Indicates an error occurred
-    func errorOccured(source: AudioStreamSource)
+    func errorOccured(source: AudioStreamSource, error: Error)
     /// Indicates end of file has occurred
     func endOfFileOccured(source: AudioStreamSource)
     /// Indicates metadata read from stream
     func metadataReceived(data: [String: String])
 }
 
-protocol CoreAudioStreamSource: class {
+protocol CoreAudioStreamSource: AnyObject {
     /// An `Int` that represents the position of the audio
     var position: Int { get }
     /// The length of the audio in bytes

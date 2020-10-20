@@ -6,30 +6,32 @@
 import Foundation
 
 // MARK: Internal State
-internal struct PlayerInternalState: OptionSet {
-    var rawValue: Int
-    
-    static let initial = PlayerInternalState([])
-    static let running = PlayerInternalState(rawValue: 1)
-    static let playing = PlayerInternalState(rawValue: 1 << 1 | PlayerInternalState.running.rawValue)
-    static let rebuffering = PlayerInternalState(rawValue: 1 << 2 | PlayerInternalState.running.rawValue)
-    static let startingThread = PlayerInternalState(rawValue: 1 << 3 | PlayerInternalState.running.rawValue)
-    static let waitingForData = PlayerInternalState(rawValue: 1 << 4 | PlayerInternalState.running.rawValue)
-    static let waitingForDataAfterSeek = PlayerInternalState(rawValue: 1 << 5 | PlayerInternalState.running.rawValue)
-    static let paused = PlayerInternalState(rawValue: 1 << 6 | PlayerInternalState.running.rawValue)
-    static let stopped = PlayerInternalState(rawValue: 1 << 9)
-    static let pendingNext = PlayerInternalState(rawValue: 1 << 10)
-    static let disposed = PlayerInternalState(rawValue: 1 << 30)
-    static let error = PlayerInternalState(rawValue: 1 << 31)
-    
-    static let isPlaying: PlayerInternalState =
-        [.running, .startingThread, .playing, .waitingForDataAfterSeek]
-    static let isBuffering: PlayerInternalState =
-        [.pendingNext, .rebuffering, .waitingForData]
-    
+extension AudioPlayer {
+    internal struct InternalState: OptionSet {
+        var rawValue: Int
+        
+        static let initial = InternalState([])
+        static let running = InternalState(rawValue: 1)
+        static let playing = InternalState(rawValue: 1 << 1 | InternalState.running.rawValue)
+        static let rebuffering = InternalState(rawValue: 1 << 2 | InternalState.running.rawValue)
+        static let startingThread = InternalState(rawValue: 1 << 3 | InternalState.running.rawValue)
+        static let waitingForData = InternalState(rawValue: 1 << 4 | InternalState.running.rawValue)
+        static let waitingForDataAfterSeek = InternalState(rawValue: 1 << 5 | InternalState.running.rawValue)
+        static let paused = InternalState(rawValue: 1 << 6 | InternalState.running.rawValue)
+        static let stopped = InternalState(rawValue: 1 << 9)
+        static let pendingNext = InternalState(rawValue: 1 << 10)
+        static let disposed = InternalState(rawValue: 1 << 30)
+        static let error = InternalState(rawValue: 1 << 31)
+        
+        static let isPlaying: InternalState =
+            [.running, .startingThread, .playing, .waitingForDataAfterSeek]
+        static let isBuffering: InternalState =
+            [.pendingNext, .rebuffering, .waitingForData]
+        
+    }
 }
 
-func playerStateAndStopReason(for internalState: PlayerInternalState) -> (state: AudioPlayerState, stopReason: AudioPlayerStopReason) {
+func playerStateAndStopReason(for internalState: AudioPlayer.InternalState) -> (state: AudioPlayerState, stopReason: AudioPlayerStopReason) {
     var playerNewState: AudioPlayerState
     var stopReason: AudioPlayerStopReason = .none
     
@@ -89,6 +91,7 @@ public enum AudioPlayerError: LocalizedError, Equatable {
     case audioSystemError(AudioSystemError)
     case codecError
     case dataNotFound
+    case networkError(NetworkError)
     case other
     
     public var errorDescription: String? {
@@ -101,6 +104,8 @@ public enum AudioPlayerError: LocalizedError, Equatable {
                 return "Codec error while parsing data packets"
             case .dataNotFound:
                 return "No data supplied from network stream"
+            case .networkError(let error):
+                return error.localizedDescription
             case .other:
                 return "Audio Player error"
         }
