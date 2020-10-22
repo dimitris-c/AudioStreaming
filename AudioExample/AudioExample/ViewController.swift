@@ -16,7 +16,6 @@ enum AudioContent: Int, CaseIterable {
     case pepper966
     case radiox
     case khruangbin
-    case flac
     case piano
     
     var title: String {
@@ -31,8 +30,6 @@ enum AudioContent: Int, CaseIterable {
                 return "Radio X (stream)"
             case .khruangbin:
                 return "Khruangbin (mp3 preview)"
-            case .flac:
-                return "Sample audio (flac)"
             case .piano:
                 return "Piano (mp3)"
         }
@@ -49,10 +46,7 @@ enum AudioContent: Int, CaseIterable {
             case .radiox:
                 return URL(string: "https://media-ssl.musicradio.com/RadioXLondon")!
             case .khruangbin:
-//                return URL(string: "https://p.scdn.co/mp3-preview/cab4b09c23ffc11774d879977131df9d150fcef4?cid=d8a5ed958d274c2e8ee717e6a4b0971d")!
-                return URL(string: "https://t4.bcbits.com/stream/8fce516db797c2496c024ef8560f1f29/mp3-128/3790863592?p=0&ts=1603280742&t=9437510cf44c5621623d38959c409d059e2b99cc&token=1603280742_5e747a280086bc47077abeba8f2eea17694882e6")!
-            case .flac:
-                return URL(string: "http://www.lindberg.no/hires/test/2L-145_01_stereo_01.cd.flac")!
+                return URL(string: "https://p.scdn.co/mp3-preview/cab4b09c23ffc11774d879977131df9d150fcef4?cid=d8a5ed958d274c2e8ee717e6a4b0971d")!
             case .piano:
                 return URL(string: "https://www.kozco.com/tech/piano2-CoolEdit.mp3")!
         }

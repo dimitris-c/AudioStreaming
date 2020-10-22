@@ -33,6 +33,11 @@
 		B5667A902499018D00D93F85 /* AudioFileStreamProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5667A8F2499018D00D93F85 /* AudioFileStreamProcessor.swift */; };
 		B5667A922499063D00D93F85 /* AudioPlayerContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5667A912499063D00D93F85 /* AudioPlayerContext.swift */; };
 		B5667B3E249BC43100D93F85 /* AudioPlayerRenderProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5667B3D249BC43000D93F85 /* AudioPlayerRenderProcessor.swift */; };
+		B59CB46C25420B4D00F8CAD0 /* MetadataStreamProcessorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B59CB46B25420B4D00F8CAD0 /* MetadataStreamProcessorTests.swift */; };
+		B59CB4BB25421F3500F8CAD0 /* raw-stream-audio-normal-metadata in Resources */ = {isa = PBXBuildFile; fileRef = B59CB4BA25421F3500F8CAD0 /* raw-stream-audio-normal-metadata */; };
+		B59CB4C225421F7A00F8CAD0 /* raw-stream-audio-empty-metadata in Resources */ = {isa = PBXBuildFile; fileRef = B59CB4B225421D8200F8CAD0 /* raw-stream-audio-empty-metadata */; };
+		B59CB4C625421FD400F8CAD0 /* raw-stream-audio-no-metadata in Resources */ = {isa = PBXBuildFile; fileRef = B59CB4C525421FD400F8CAD0 /* raw-stream-audio-no-metadata */; };
+		B59CB4CE2542204D00F8CAD0 /* raw-stream-audio-normal-metadata-alt in Resources */ = {isa = PBXBuildFile; fileRef = B59CB4CD2542204D00F8CAD0 /* raw-stream-audio-normal-metadata-alt */; };
 		B59DF10424916FD50043C498 /* DispatchQueue+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B59DF10324916FD50043C498 /* DispatchQueue+Helpers.swift */; };
 		B59DF1A32493E90C0043C498 /* AudioFileStream+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B59DF1A22493E90C0043C498 /* AudioFileStream+Helpers.swift */; };
 		B5AEDBB824744153007D8101 /* AudioStreaming.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5AEDBAE24744153007D8101 /* AudioStreaming.framework */; };
@@ -100,6 +105,11 @@
 		B5667A8F2499018D00D93F85 /* AudioFileStreamProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioFileStreamProcessor.swift; sourceTree = "<group>"; };
 		B5667A912499063D00D93F85 /* AudioPlayerContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerContext.swift; sourceTree = "<group>"; };
 		B5667B3D249BC43000D93F85 /* AudioPlayerRenderProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerRenderProcessor.swift; sourceTree = "<group>"; };
+		B59CB46B25420B4D00F8CAD0 /* MetadataStreamProcessorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataStreamProcessorTests.swift; sourceTree = "<group>"; };
+		B59CB4B225421D8200F8CAD0 /* raw-stream-audio-empty-metadata */ = {isa = PBXFileReference; lastKnownFileType = file; path = "raw-stream-audio-empty-metadata"; sourceTree = "<group>"; };
+		B59CB4BA25421F3500F8CAD0 /* raw-stream-audio-normal-metadata */ = {isa = PBXFileReference; lastKnownFileType = file; path = "raw-stream-audio-normal-metadata"; sourceTree = "<group>"; };
+		B59CB4C525421FD400F8CAD0 /* raw-stream-audio-no-metadata */ = {isa = PBXFileReference; lastKnownFileType = file; path = "raw-stream-audio-no-metadata"; sourceTree = "<group>"; };
+		B59CB4CD2542204D00F8CAD0 /* raw-stream-audio-normal-metadata-alt */ = {isa = PBXFileReference; lastKnownFileType = file; path = "raw-stream-audio-normal-metadata-alt"; sourceTree = "<group>"; };
 		B59DF10324916FD50043C498 /* DispatchQueue+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DispatchQueue+Helpers.swift"; sourceTree = "<group>"; };
 		B59DF1A22493E90C0043C498 /* AudioFileStream+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AudioFileStream+Helpers.swift"; sourceTree = "<group>"; };
 		B5AEDBAE24744153007D8101 /* AudioStreaming.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = AudioStreaming.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -193,6 +203,7 @@
 		B55CEAB5248517170001C498 /* Streaming */ = {
 			isa = PBXGroup;
 			children = (
+				B59CB4B125421D8200F8CAD0 /* Metadata Stream Processor */,
 				B55CEAB62485171E0001C498 /* Parsers */,
 				B51FE0C724892D1600F2A4D2 /* PlayerQueueEntriesTest.swift */,
 			);
@@ -233,6 +244,26 @@
 			children = (
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		B59CB4B125421D8200F8CAD0 /* Metadata Stream Processor */ = {
+			isa = PBXGroup;
+			children = (
+				B59CB4B525421D8D00F8CAD0 /* raw-audio-streams */,
+				B59CB46B25420B4D00F8CAD0 /* MetadataStreamProcessorTests.swift */,
+			);
+			path = "Metadata Stream Processor";
+			sourceTree = "<group>";
+		};
+		B59CB4B525421D8D00F8CAD0 /* raw-audio-streams */ = {
+			isa = PBXGroup;
+			children = (
+				B59CB4CD2542204D00F8CAD0 /* raw-stream-audio-normal-metadata-alt */,
+				B59CB4C525421FD400F8CAD0 /* raw-stream-audio-no-metadata */,
+				B59CB4BA25421F3500F8CAD0 /* raw-stream-audio-normal-metadata */,
+				B59CB4B225421D8200F8CAD0 /* raw-stream-audio-empty-metadata */,
+			);
+			path = "raw-audio-streams";
 			sourceTree = "<group>";
 		};
 		B5AEDBA424744153007D8101 = {
@@ -480,6 +511,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B59CB4BB25421F3500F8CAD0 /* raw-stream-audio-normal-metadata in Resources */,
+				B59CB4C225421F7A00F8CAD0 /* raw-stream-audio-empty-metadata in Resources */,
+				B59CB4C625421FD400F8CAD0 /* raw-stream-audio-no-metadata in Resources */,
+				B59CB4CE2542204D00F8CAD0 /* raw-stream-audio-normal-metadata-alt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -537,6 +572,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B5EF954E247DA5AC003E8FF8 /* NetworkingClientTests.swift in Sources */,
+				B59CB46C25420B4D00F8CAD0 /* MetadataStreamProcessorTests.swift in Sources */,
 				B51FE0C824892D1600F2A4D2 /* PlayerQueueEntriesTest.swift in Sources */,
 				B55CEABA248530C00001C498 /* MetadataParser.swift in Sources */,
 				B51FE0C22488F96A00F2A4D2 /* QueueTests.swift in Sources */,

@@ -137,15 +137,18 @@ public class RemoteAudioSource: AudioStreamSource {
                 addStreamOperation { [weak self] in
                     self?.handleStreamEvent(event: event)
                 }
-            case .complete:
+            case .complete(let event):
                 addCompletionOperation { [weak self] in
                     guard let self = self else { return }
-                    self.delegate?.endOfFileOccured(source: self)
+                    if let error = event.error {
+                        self.delegate?.errorOccured(source: self, error: error)
+                    } else {
+                        self.delegate?.endOfFileOccured(source: self)
+                    }
                 }
-                
         }
     }
-    
+
     private func handleStreamEvent(event: NetworkDataStream.StreamResult) {
         switch event {
             case .success(let value):
@@ -190,6 +193,7 @@ public class RemoteAudioSource: AudioStreamSource {
         var urlRequest = URLRequest(url: url)
         urlRequest.networkServiceType = .avStreaming
         urlRequest.cachePolicy = .reloadIgnoringLocalCacheData
+        urlRequest.timeoutInterval = 30
         
         for header in self.additionalRequestHeaders {
             urlRequest.addValue(header.value, forHTTPHeaderField: header.key)

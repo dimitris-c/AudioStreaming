@@ -552,7 +552,7 @@ extension AudioPlayer: AudioStreamSourceDelegate {
             }
             
             playerContext.entriesLock.lock()
-            if playerContext.audioReadingEntry === nil {
+            if playerContext.audioReadingEntry == nil {
                 source.close()
             }
             playerContext.entriesLock.unlock()

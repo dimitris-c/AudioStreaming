@@ -14,13 +14,11 @@ typealias MetadataOutput = Result<[String: String], MetadataParsingError>
 
 private let zeroBytesCharSet = CharacterSet(charactersIn: "\0")
 struct MetadataParser: Parser {
-    typealias Input = Data?
+    typealias Input = Data
     typealias Output = MetadataOutput
     
-    func parse(input: Data?) -> MetadataOutput {
-        guard let data = input else { return .failure(.unableToParse) }
-        
-        guard let string = String(data: data, encoding: .utf8) else { return .failure(.unableToParse) }
+    func parse(input: Data) -> MetadataOutput {
+        guard let string = String(data: input, encoding: .utf8) else { return .failure(.unableToParse) }
         // remove added bytes (zeros) and seperate the string on every ';' char
         let pairs = string.trimmingCharacters(in: zeroBytesCharSet).components(separatedBy: ";")
         let temp: [String: String] = [:]

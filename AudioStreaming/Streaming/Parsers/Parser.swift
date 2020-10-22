@@ -14,7 +14,7 @@ protocol Parser {
 
 extension Parser {
     func eraseToAnyParser() -> AnyParser<Input, Output> {
-        return AnyParser(self)
+        AnyParser(self)
     }
 }
 
@@ -27,6 +27,6 @@ struct AnyParser<Input, Output>: Parser {
     }
     
     func parse(input: Input) -> Output {
-        return _parse(input)
+        _parse(input)
     }
 }

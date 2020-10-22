@@ -59,18 +59,18 @@ final class MetadataStreamProcessor: MetadataStreamSource {
     
     private var audioDataBytesRead: Int = 0    
     
-    private let parser: AnyParser<Data?, MetadataOutput>
+    private let parser: AnyParser<Data, MetadataOutput>
     
-    init(parser: AnyParser<Data?, MetadataOutput>) {
+    init(parser: AnyParser<Data, MetadataOutput>) {
         self.parser = parser
     }
-
+    
     func metadataAvailable(step: Int) {
         metadataStep = step
     }
     
     // MARK: Proccess Metadata
-        
+
     @inline(__always)
     func proccessMetadata(data: Data) -> Data {
         data.withUnsafeBytes { buffer -> Data in
@@ -115,5 +115,4 @@ final class MetadataStreamProcessor: MetadataStreamSource {
             return audioData
         }
     }
-    
 }

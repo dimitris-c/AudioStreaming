@@ -18,7 +18,7 @@ class MetadataParserTests: XCTestCase {
     func testParserOutputsCorrectResultFromCorrectData() throws {
         
         let string = "StreamTitle='A song - Artist';StreamSong='A song';StreamArtist='Artist';"
-        let data = string.data(using: .utf8)
+        let data = string.data(using: .utf8)!
         
         let parser = MetadataParser()
         
@@ -36,22 +36,27 @@ class MetadataParserTests: XCTestCase {
         
     }
     
-    func testParserOutputsFailureOnNilData() throws {
-        let parser = MetadataParser()
+    func testParserOutputsCorrectResultFromActualRawDataOfAudioStream() throws {
+    
+        let string = "StreamTitle=\'Gramatik - In This Whole World (Original Mix)\';\0\0\0\0"
+        let data = string.data(using: .utf8)!
         
-        let output = parser.parse(input: nil)
+        let parser = MetadataParser()
+
+        let output = parser.parse(input: data)
         
         switch output {
-        case .success:
+        case .success(let values):
+            XCTAssertFalse(values.isEmpty)
+            XCTAssertEqual(values["StreamTitle"], "Gramatik - In This Whole World (Original Mix)")
+        case .failure:
             XCTFail()
-        case .failure(let error):
-            XCTAssertEqual(error, MetadataParsingError.unableToParse)
         }
     }
     
     func testParserOutputsFailureOnEmptyStringData() throws {
         
-        let data = "".data(using: .utf8)
+        let data = "".data(using: .utf8)!
         let parser = MetadataParser()
         
         let output = parser.parse(input: data)

@@ -182,6 +182,6 @@ extension AudioEntry: Equatable {
 
 extension AudioEntry: CustomDebugStringConvertible {
     public var debugDescription: String {
-        "AudioEntry: \(id), source: \(source)"
+        "[AudioEntry: \(id)]"
     }
 }
