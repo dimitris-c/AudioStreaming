@@ -3,25 +3,24 @@
 //  Copyright © 2020 Decimal. All rights reserved.
 //
 
-import XCTest
 import AudioToolbox.AudioFile
+import XCTest
 
 @testable import AudioStreaming
 
 class HTTPHeaderParserTests: XCTestCase {
-
     func testReturnNilWhenHeaderFieldsAreEmpty() throws {
         // Given
         let parser = HTTPHeaderParser()
-        
+
         // When
         let httpURLResponse = HTTPURLResponse(url: URL(string: "www.google.com")!,
                                               statusCode: 200,
                                               httpVersion: "",
                                               headerFields: [:])
-        
+
         let output = parser.parse(input: httpURLResponse!)
-        
+
         // Then
         // should return nil on empty headers
         XCTAssertNil(output)
@@ -30,21 +29,20 @@ class HTTPHeaderParserTests: XCTestCase {
     func testReturnCorrectValuesOnNormalRequest() throws {
         // Given
         let parser = HTTPHeaderParser()
-        
+
         // When
         let headers: [String: String] =
             [HeaderField.acceptRanges: "range",
              HeaderField.contentLength: "1000",
              HeaderField.contentType: "audio/mp3",
-             IcyHeaderField.icyMentaint: "16000"
-            ]
+             IcyHeaderField.icyMentaint: "16000"]
         let httpURLResponse = HTTPURLResponse(url: URL(string: "www.google.com")!,
                                               statusCode: 200,
                                               httpVersion: "",
                                               headerFields: headers)
-        
+
         let output = parser.parse(input: httpURLResponse!)
-        
+
         // Then
         XCTAssertNotNil(output)
         XCTAssertEqual(output!.fileLength, 1000)
@@ -56,21 +54,20 @@ class HTTPHeaderParserTests: XCTestCase {
     func testReturnCorrectValuesOnRequestThatSupportsSeekRanges() throws {
         // Given
         let parser = HTTPHeaderParser()
-        
+
         // When
         let headers: [String: String] =
             [HeaderField.acceptRanges: "range",
              HeaderField.contentLength: "1000",
              HeaderField.contentType: "audio/mp3",
-             HeaderField.contentRange: "100/1000"
-            ]
+             HeaderField.contentRange: "100/1000"]
         let httpURLResponse = HTTPURLResponse(url: URL(string: "www.google.com")!,
                                               statusCode: 206,
                                               httpVersion: "",
                                               headerFields: headers)
-        
+
         let output = parser.parse(input: httpURLResponse!)
-        
+
         // Then
         XCTAssertNotNil(output)
         XCTAssertEqual(output!.fileLength, 1000)

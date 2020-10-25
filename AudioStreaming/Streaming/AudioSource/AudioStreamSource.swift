@@ -3,8 +3,8 @@
 //  Copyright © 2020 Decimal. All rights reserved.
 //
 
-import Foundation
 import AudioToolbox
+import Foundation
 
 protocol AudioStreamSourceDelegate: AnyObject {
     /// Indicates that there's data available
@@ -22,32 +22,30 @@ protocol CoreAudioStreamSource: AnyObject {
     var position: Int { get }
     /// The length of the audio in bytes
     var length: Int { get }
-    
+
     /// An `AudioStreamSourceDelegate` object to listen for events from the source
     var delegate: AudioStreamSourceDelegate? { get set }
-    
+
     /// Closes the underlying stream
     func close()
-    
+
     /// Suspends the underlying stream
     func suspend()
-    
+
     // Resumes the underlying stream
     func resume()
-    
+
     /// Seeks the stream at the specified offset
     func seek(at offset: Int)
-    
+
     /// The file type, eg `mp3`, `aac`
     var audioFileHint: AudioFileTypeID { get }
 }
 
 protocol AudioStreamSource: CoreAudioStreamSource {
-    
     /// The `DispatchQueue` network object will receive data
     var underlyingQueue: DispatchQueue { get }
-    
+
     /// A `MetadataStreamSource` object that handles the metadata parsing
     var metadataStreamProccessor: MetadataStreamSource { get }
-    
 }

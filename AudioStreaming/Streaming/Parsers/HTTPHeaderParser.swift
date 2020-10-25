@@ -3,8 +3,8 @@
 //  Copyright © 2020 Decimal. All rights reserved.
 //
 
-import Foundation
 import AudioToolbox.AudioFile
+import Foundation
 
 struct HeaderField {
     public static let acceptRanges = "Accept-Ranges"
@@ -13,7 +13,7 @@ struct HeaderField {
     public static let contentRange = "Content-Range"
 }
 
-struct IcyHeaderField {
+enum IcyHeaderField {
     public static let icyMentaint = "icy-metaint"
 }
 
@@ -28,25 +28,25 @@ struct HTTPHeaderParserOutput {
 struct HTTPHeaderParser: Parser {
     typealias Input = HTTPURLResponse
     typealias Output = HTTPHeaderParserOutput?
-    
+
     func parse(input: HTTPURLResponse) -> HTTPHeaderParserOutput? {
-        
         guard let headers = input.allHeaderFields as? [String: String], !headers.isEmpty else { return nil }
 
         var supportsSeek = false
         if let acceptRanges = headers[HeaderField.acceptRanges], acceptRanges != "none" {
             supportsSeek = true
         }
-        
+
         var typeId: UInt32 = 0
         if let contentType = input.mimeType {
             typeId = audioFileType(mimeType: contentType)
         }
-        
+
         var fileLength: Int = 0
         if input.statusCode == 200 {
             if let contentLength = headers[HeaderField.contentLength],
-                let length = Int(contentLength) {
+               let length = Int(contentLength)
+            {
                 fileLength = length
             }
         } else if input.statusCode == 206 {
@@ -59,17 +59,17 @@ struct HTTPHeaderParser: Parser {
                 }
             }
         }
-        
+
         var metadataStep = 0
         if let icyMetaint = headers[IcyHeaderField.icyMentaint],
-            let intValue = Int(icyMetaint)  {
+           let intValue = Int(icyMetaint)
+        {
             metadataStep = intValue
         }
-        
+
         return HTTPHeaderParserOutput(supportsSeek: supportsSeek,
                                       fileLength: fileLength,
                                       typeId: typeId,
                                       metadataStep: metadataStep)
-        
     }
 }

@@ -8,42 +8,40 @@ import XCTest
 @testable import AudioStreaming
 
 class ProtectedTests: XCTestCase {
-    
     func testProtectedValuesAreAccessedSafely() {
         let initialValue = "aValue"
-        let protected = Protected<String>(wrappedValue: initialValue)
-        
-        DispatchQueue.concurrentPerform(iterations: 1_000) { int in
+        let protected = Atomic<String>(wrappedValue: initialValue)
+
+        DispatchQueue.concurrentPerform(iterations: 1000) { int in
             _ = protected.wrappedValue
             protected.write { value in
                 value = "\(int)"
             }
         }
-        
+
         XCTAssertNotEqual(protected.wrappedValue, initialValue)
     }
-    
+
     func testThatProtectedReadAndWriteAreSafe() {
         let initialValue = "aValue"
-        let protected = Protected<String>(wrappedValue: initialValue)
+        let protected = Atomic<String>(wrappedValue: initialValue)
 
-        DispatchQueue.concurrentPerform(iterations: 1_000) { i in
+        DispatchQueue.concurrentPerform(iterations: 1000) { i in
             _ = protected.read { $0 }
             protected.write { $0 = "\(i)" }
         }
 
         XCTAssertNotEqual(protected.wrappedValue, initialValue)
     }
-
 }
 
 final class ProtectedWrapperTests: XCTestCase {
-    @Protected var value = 100
+    @Atomic var value = 100
 
     override func setUp() {
         super.setUp()
 
-        $value.write { (value) in
+        $value.write { value in
             value = 100
         }
     }
@@ -53,7 +51,7 @@ final class ProtectedWrapperTests: XCTestCase {
         let initialValue = value
 
         // When
-        DispatchQueue.concurrentPerform(iterations: 10_000) { i in
+        DispatchQueue.concurrentPerform(iterations: 10000) { i in
             _ = $value.read { $0 }
             $value.write { $0 = i }
         }
@@ -61,5 +59,4 @@ final class ProtectedWrapperTests: XCTestCase {
         // Then
         XCTAssertNotEqual(value, initialValue)
     }
-    
 }

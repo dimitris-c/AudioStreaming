@@ -7,14 +7,13 @@ import Foundation
 
 /// A convenient type that holds tasks in a two-way manner, such as `URLSessionTask` to `NetworkDataStream` and reverved
 struct NetworkTasksMap {
-    
     private var tasks: [URLSessionTask: NetworkDataStream] = [:]
     private var streams: [NetworkDataStream: URLSessionTask] = [:]
-    
+
     var requests: [NetworkDataStream] {
         Array(tasks.values)
     }
-    
+
     subscript(_ task: URLSessionTask) -> NetworkDataStream? {
         get { tasks[task] }
         set {
@@ -26,12 +25,12 @@ struct NetworkTasksMap {
                 streams.removeValue(forKey: stream)
                 return
             }
-            
+
             tasks[task] = newValue
             streams[newValue] = task
         }
     }
-    
+
     subscript(_ stream: NetworkDataStream) -> URLSessionTask? {
         get { streams[stream] }
         set {
@@ -43,10 +42,9 @@ struct NetworkTasksMap {
                 streams.removeValue(forKey: stream)
                 return
             }
-            
+
             streams[stream] = newValue
             tasks[newValue] = stream
         }
     }
-    
 }

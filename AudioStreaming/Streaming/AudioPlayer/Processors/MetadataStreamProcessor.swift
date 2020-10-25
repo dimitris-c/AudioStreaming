@@ -5,20 +5,19 @@
 
 import AVFoundation
 
-protocol MetadataStreamSourceDelegate: class {
+protocol MetadataStreamSourceDelegate: AnyObject {
     func didReceiveMetadata(metadata: Result<[String: String], MetadataParsingError>)
 }
 
 protocol MetadataStreamSource {
-    
     var delegate: MetadataStreamSourceDelegate? { get set }
-    
+
     /// Returns `true` when the stream header has indicated that we can proccess metadata, otherwise `false`.
     var canProccessMetadata: Bool { get }
-    
+
     /// Assigns the metadata step of the metadata
     func metadataAvailable(step: Int)
-    
+
     /// Proccess the received data and extract the metadata if any, returns audio data only.
     /// - parameter data: A `Data` object for parsing any metadata
     /// - returns: The extracted audio `Data`
@@ -40,41 +39,40 @@ protocol MetadataStreamSource {
 /// [SmackFu Shoutcast](https://web.archive.org/web/20190521203350/https://www.smackfu.com/stuff/programming/shoutcast.html)
 ///
 final class MetadataStreamProcessor: MetadataStreamSource {
-    
     weak var delegate: MetadataStreamSourceDelegate?
-    
+
     var canProccessMetadata: Bool {
         return metadataStep > 0
     }
-    
+
     /// An `Int` read from http header value of `Icy-metaint` header
     private var metadataStep = 0
-    
+
     /// Temporary bytes to hold the metadata from the stream buffer
     private var tempBytes: UnsafeMutablePointer<UInt8>?
-    
+
     /// The `Data` to write the metadata
     private var metadata = Data()
     private var metadataLength: Int = 0
-    
-    private var audioDataBytesRead: Int = 0    
-    
+
+    private var audioDataBytesRead: Int = 0
+
     private let parser: AnyParser<Data, MetadataOutput>
-    
+
     init(parser: AnyParser<Data, MetadataOutput>) {
         self.parser = parser
     }
-    
+
     func metadataAvailable(step: Int) {
         metadataStep = step
     }
-    
+
     // MARK: Proccess Metadata
 
     @inline(__always)
     func proccessMetadata(data: Data) -> Data {
         data.withUnsafeBytes { buffer -> Data in
-            guard buffer.count > 0 else { return data }
+            guard !buffer.isEmpty else { return data }
             var audioData = Data()
             var bytesRead = 0
             let bytes = buffer.baseAddress!.assumingMemoryBound(to: UInt8.self)

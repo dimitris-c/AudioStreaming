@@ -6,10 +6,11 @@
 import Foundation
 
 extension UnsafeMutableRawPointer {
-    /// Converts an UnsafeMutableRawPointer to the given Object type 
-    func to<Object: AnyObject>(type: Object.Type) -> Object {
+    /// Converts an UnsafeMutableRawPointer to the given Object type
+    func to<Object: AnyObject>(type _: Object.Type) -> Object {
         return Unmanaged<Object>.fromOpaque(self).takeUnretainedValue()
     }
+
     /// Converts the given object to an UnsafeMutableRawPointer
     static func from<Object: AnyObject>(object: Object) -> UnsafeMutableRawPointer {
         return Unmanaged<Object>.passUnretained(object).toOpaque()

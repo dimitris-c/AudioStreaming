@@ -15,17 +15,17 @@ public enum NetworkError: Error, Equatable {
     case serverError
     public static func == (lhs: NetworkError, rhs: NetworkError) -> Bool {
         switch (lhs, rhs) {
-            case (.failure, failure):
-                return true
-            case (.serverError, .serverError):
-                return true
-            default:
-                return false
+        case (.failure, failure):
+            return true
+        case (.serverError, .serverError):
+            return true
+        default:
+            return false
         }
     }
 }
 
-protocol StreamTaskProvider: class {
+protocol StreamTaskProvider: AnyObject {
     func dataStream(for request: URLSessionTask) -> NetworkDataStream?
 }
 
@@ -41,18 +41,17 @@ extension URLSessionConfiguration {
 }
 
 internal final class NetworkingClient {
-    
     let session: URLSession
-    let delegate: NetworkSessionDelegate
+    weak var delegate: NetworkSessionDelegate?
     let networkQueue: DispatchQueue
-    
+
     var tasks = NetworkTasksMap()
     var activeTasks = Set<NetworkDataStream>()
-    
+
     internal init(configuration: URLSessionConfiguration = .networkingConfiguration,
-         delegate: NetworkSessionDelegate = NetworkSessionDelegate(),
-         networkQueue: DispatchQueue = DispatchQueue(label: "com.decimal.session.network.queue")) {
-        
+                  delegate: NetworkSessionDelegate = NetworkSessionDelegate(),
+                  networkQueue: DispatchQueue = DispatchQueue(label: "com.decimal.session.network.queue"))
+    {
         let delegateQueue = operationQueue(underlyingQueue: networkQueue)
         let session = URLSession(configuration: configuration, delegate: delegate, delegateQueue: delegateQueue)
         self.session = session
@@ -60,11 +59,11 @@ internal final class NetworkingClient {
         self.networkQueue = networkQueue
         delegate.taskProvider = self
     }
-    
+
     deinit {
         session.finishTasksAndInvalidate()
     }
-    
+
     /// Creates a data stream for the given `URLRequest`
     /// - parameter request: A `URLRequest` to be used for the data stream
     internal func stream(request: URLRequest) -> NetworkDataStream {
@@ -72,45 +71,44 @@ internal final class NetworkingClient {
         setupRequest(stream, request: request)
         return stream
     }
-    
+
     /// Cancels on active requests
     internal func cancelAllRequest() {
         networkQueue.async { [weak self] in
             self?.activeTasks.forEach { $0.cancel() }
         }
-        self.activeTasks.removeAll()
-        self.tasks = NetworkTasksMap()
+        activeTasks.removeAll()
+        tasks = NetworkTasksMap()
     }
-    
+
     internal func remove(task: NetworkDataStream) {
-        self.activeTasks.remove(task)
-        self.tasks[task] = nil
+        activeTasks.remove(task)
+        tasks[task] = nil
     }
-    
+
     // MARK: Private
-    
+
     /// Schedules the given `NetworkDataStream` to be performed immediatelly
     /// - parameter stream: The `NetworkDataStream` object to be performed
     /// - parameter request: The `URLRequest` for the `stream`
     private func setupRequest(_ stream: NetworkDataStream, request: URLRequest) {
         networkQueue.async { [weak self] in
             guard let self = self else { return }
-            
+
             self.activeTasks.insert(stream)
             let task = stream.task(for: request, using: self.session)
             self.tasks[stream] = task
-            
         }
     }
-
 }
 
 // MARK: StreamTaskProvider conformance
+
 extension NetworkingClient: StreamTaskProvider {
     internal func dataStream(for request: URLSessionTask) -> NetworkDataStream? {
         tasks[request] ?? nil
     }
-    
+
     internal func sessionTask(for stream: NetworkDataStream) -> URLSessionTask? {
         tasks[stream] ?? nil
     }

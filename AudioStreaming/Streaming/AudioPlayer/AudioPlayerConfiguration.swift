@@ -18,11 +18,11 @@ public struct AudioPlayerConfiguration: Equatable {
     /// Number of seconds of audio required to before playback resumes after a buffer underun
     /// - note: Must be larger that `bufferSizeInSeconds`
     let secondsRequiredToStartPlayingAfterBufferUnderun: Int
-    
+
     /// Enables the internal logs
     let enableLogs: Bool
-    
-    static public let `default` = AudioPlayerConfiguration(flushQueueOnSeek: true,
+
+    public static let `default` = AudioPlayerConfiguration(flushQueueOnSeek: true,
                                                            bufferSizeInSeconds: 10,
                                                            secondsRequiredToStartPlaying: 1,
                                                            gracePeriodAfterSeekInSeconds: 0.5,
@@ -44,7 +44,8 @@ public struct AudioPlayerConfiguration: Equatable {
                 secondsRequiredToStartPlaying: Double = 1,
                 gracePeriodAfterSeekInSeconds: Double = 0.5,
                 secondsRequiredToStartPlayingAfterBufferUnderun: Int = 1,
-                enableLogs: Bool = false) {
+                enableLogs: Bool = false)
+    {
         self.flushQueueOnSeek = flushQueueOnSeek
         self.bufferSizeInSeconds = bufferSizeInSeconds
         self.secondsRequiredToStartPlaying = secondsRequiredToStartPlaying
@@ -52,22 +53,32 @@ public struct AudioPlayerConfiguration: Equatable {
         self.secondsRequiredToStartPlayingAfterBufferUnderun = secondsRequiredToStartPlayingAfterBufferUnderun
         self.enableLogs = enableLogs
     }
+
     /// Normalize values on any zero values passed
     func normalizeValues() -> AudioPlayerConfiguration {
-        let defaultValues = AudioPlayerConfiguration.default
-        let bufferSizeInSeconds = self.bufferSizeInSeconds == 0 ? defaultValues.bufferSizeInSeconds : self.bufferSizeInSeconds
-        let secondsRequiredToStartPlaying = self.secondsRequiredToStartPlaying == 0 ? defaultValues.secondsRequiredToStartPlaying : self.secondsRequiredToStartPlaying
-        let gracePeriodAfterSeekInSeconds = self.gracePeriodAfterSeekInSeconds == 0 ? defaultValues.gracePeriodAfterSeekInSeconds : self.gracePeriodAfterSeekInSeconds
-        
-        let secondsRequiredToStartPlayingAfterBufferUnderun = self.secondsRequiredToStartPlayingAfterBufferUnderun == 0 ?
-            defaultValues.secondsRequiredToStartPlayingAfterBufferUnderun : self.secondsRequiredToStartPlayingAfterBufferUnderun
-        
-        return AudioPlayerConfiguration(flushQueueOnSeek: self.flushQueueOnSeek,
+        let defaults = AudioPlayerConfiguration.default
+
+        let bufferSizeInSeconds = self.bufferSizeInSeconds == 0
+            ? defaults.bufferSizeInSeconds
+            : self.bufferSizeInSeconds
+
+        let secondsRequiredToStartPlaying = self.secondsRequiredToStartPlaying == 0
+            ? defaults.secondsRequiredToStartPlaying
+            : self.secondsRequiredToStartPlaying
+
+        let gracePeriodAfterSeekInSeconds = self.gracePeriodAfterSeekInSeconds == 0
+            ? defaults.gracePeriodAfterSeekInSeconds
+            : self.gracePeriodAfterSeekInSeconds
+
+        let secondsRequiredToStartPlayingAfterBufferUnderun = self.secondsRequiredToStartPlayingAfterBufferUnderun == 0
+            ? defaults.secondsRequiredToStartPlayingAfterBufferUnderun
+            : self.secondsRequiredToStartPlayingAfterBufferUnderun
+
+        return AudioPlayerConfiguration(flushQueueOnSeek: flushQueueOnSeek,
                                         bufferSizeInSeconds: bufferSizeInSeconds,
                                         secondsRequiredToStartPlaying: secondsRequiredToStartPlaying,
                                         gracePeriodAfterSeekInSeconds: gracePeriodAfterSeekInSeconds,
                                         secondsRequiredToStartPlayingAfterBufferUnderun: secondsRequiredToStartPlayingAfterBufferUnderun,
-                                        enableLogs: self.enableLogs)
+                                        enableLogs: enableLogs)
     }
 }
-

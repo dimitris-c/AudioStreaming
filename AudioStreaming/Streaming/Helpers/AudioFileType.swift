@@ -3,8 +3,8 @@
 //  Copyright © 2020 Decimal. All rights reserved.
 //
 
-import Foundation
 import AudioToolbox
+import Foundation
 
 /// mapping from mime types to `AudioFileTypeID`
 internal let fileTypesFromMimeType: [String: AudioFileTypeID] =
@@ -32,7 +32,7 @@ internal let fileTypesFromMimeType: [String: AudioFileTypeID] =
         "audio/3gpp": kAudioFile3GPType,
         "video/3gpp": kAudioFile3GPType,
         "audio/3gp2": kAudioFile3GP2Type,
-        "video/3gp2": kAudioFile3GP2Type
+        "video/3gp2": kAudioFile3GP2Type,
     ]
 
 /// Method that converts mime type to AudioFileTypeID
@@ -55,7 +55,7 @@ internal let fileTypesFromFileExtension: [String: AudioFileTypeID] =
         "caf": kAudioFileCAFType,
         "aac": kAudioFileAAC_ADTSType,
         "ac3": kAudioFileAC3Type,
-        "3gp": kAudioFile3GPType
+        "3gp": kAudioFile3GPType,
     ]
 
 func audioFileType(fileExtension: String) -> AudioFileTypeID {

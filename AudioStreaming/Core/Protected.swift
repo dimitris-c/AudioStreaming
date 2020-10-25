@@ -10,12 +10,14 @@ protocol Lock {
 
 extension Lock {
     // Execute a closure while acquiring a lock and returns the closure value
-    func around<T>(_ closure: () -> T) -> T {
+    @inline(__always)
+    func around<Value>(_ closure: () -> Value) -> Value {
         lock(); defer { unlock() }
         return closure()
     }
-    
+
     // Execute a closure while acquiring a lock
+    @inline(__always)
     func around(_ closure: () -> Void) {
         lock(); defer { unlock() }
         closure()
@@ -23,50 +25,47 @@ extension Lock {
 }
 
 /// A wrapper for `os_unfair_lock`
-final public class UnfairLock: Lock {
+internal final class UnfairLock: Lock {
     private let unfairLock: os_unfair_lock_t
-    
-    public init() {
+
+    internal init() {
         unfairLock = .allocate(capacity: 1)
         unfairLock.initialize(to: os_unfair_lock())
     }
-    
+
     deinit {
         unfairLock.deinitialize(count: 1)
         unfairLock.deallocate()
     }
-    
-    public func lock() {
+
+    internal func lock() {
         os_unfair_lock_lock(unfairLock)
     }
-    
-    public func unlock() {
+
+    internal func unlock() {
         os_unfair_lock_unlock(unfairLock)
     }
 }
 
 @propertyWrapper
-final class Protected<Value> {
+internal final class Atomic<Value> {
+    var wrappedValue: Value { lock.around { value } }
+
+    var projectedValue: Atomic<Value> { self }
+
     private let lock = UnfairLock()
     private var value: Value
-    
+
     init(wrappedValue: Value) {
-        self.value = wrappedValue
-    }
-    
-    var wrappedValue: Value {
-        get { lock.around { value } }
+        value = wrappedValue
     }
 
-    var projectedValue: Protected<Value> { self }
-    
     func read<Element>(_ closure: (Value) -> Element) -> Element {
         lock.around { closure(self.value) }
     }
-    
+
     @discardableResult
     func write<Element>(_ closure: (inout Value) -> Element) -> Element {
-        lock.around { closure(&self.value)  }
+        lock.around { closure(&self.value) }
     }
-
 }

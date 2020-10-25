@@ -18,7 +18,7 @@ func fileStreamGetProperty<Value>(value: inout Value, fileStream streamId: Audio
 func fileStreamGetPropertyInfo(fileStream streamId: AudioFileStreamID, propertyId: AudioFileStreamPropertyID) -> (size: UInt32, status: OSStatus) {
     var valueSize: UInt32 = 0
     let status = AudioFileStreamGetPropertyInfo(streamId, propertyId, &valueSize, nil)
-    guard status  == noErr else {
+    guard status == noErr else {
         return (0, status)
     }
     return (valueSize, status)

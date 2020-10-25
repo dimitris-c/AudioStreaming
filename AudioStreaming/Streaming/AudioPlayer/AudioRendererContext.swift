@@ -3,72 +3,63 @@
 //  Copyright © 2020 Decimal. All rights reserved.
 //
 
-import CoreAudio
 import AVFoundation
+import CoreAudio
 
 internal var maxFramesPerSlice: AVAudioFrameCount = 8192
 
-final class SeekRequest {
-    var requested: Bool = false
-    var time: Int = 0
-}
-
 final class AudioRendererContext {
-    var fileFormat: String = ""
+    @Atomic
+    var waiting: Bool = false
 
     let lock = UnfairLock()
-    
+
     let bufferContext: BufferContext
 
-    let seekRequest: SeekRequest
-    
     var audioBuffer: AudioBuffer
     var inOutAudioBufferList: UnsafeMutablePointer<AudioBufferList>
-    
-    private(set) var packetsSemaphore = DispatchSemaphore(value: 0)
-    
+
+    let packetsSemaphore = DispatchSemaphore(value: 0)
+
     var discontinuous: Bool = false
-    
+
     let framesRequiredToStartPlaying: UInt32
     let framesRequiredAfterRebuffering: UInt32
-    
-    @Protected
-    var waiting: Bool = false
-    
+
+    var fileFormat: String = ""
+
     let configuration: AudioPlayerConfiguration
+
     init(configuration: AudioPlayerConfiguration, outputAudioFormat: AVAudioFormat) {
         self.configuration = configuration
-        self.seekRequest = SeekRequest()
-        
+
         let canonicalStream = outputAudioFormat.basicStreamDescription
-        
-        self.framesRequiredToStartPlaying = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.secondsRequiredToStartPlaying)
-        self.framesRequiredAfterRebuffering = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.secondsRequiredToStartPlayingAfterBufferUnderun)
-        
+
+        framesRequiredToStartPlaying = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.secondsRequiredToStartPlaying)
+        framesRequiredAfterRebuffering = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.secondsRequiredToStartPlayingAfterBufferUnderun)
+
         let dataByteSize = Int(canonicalStream.mSampleRate * configuration.bufferSizeInSeconds) * Int(canonicalStream.mBytesPerFrame)
         inOutAudioBufferList = allocateBufferList(dataByteSize: dataByteSize)
-        
-        audioBuffer = inOutAudioBufferList[0].mBuffers
-        
-        let bufferTotalFrameCount = UInt32(dataByteSize) / canonicalStream.mBytesPerFrame
-        
-        self.bufferContext = BufferContext(sizeInBytes: canonicalStream.mBytesPerFrame,
-                                           totalFrameCount: bufferTotalFrameCount)
 
+        audioBuffer = inOutAudioBufferList[0].mBuffers
+
+        let bufferTotalFrameCount = UInt32(dataByteSize) / canonicalStream.mBytesPerFrame
+
+        bufferContext = BufferContext(sizeInBytes: canonicalStream.mBytesPerFrame,
+                                      totalFrameCount: bufferTotalFrameCount)
     }
-    
+
     /// Deallocates buffer resources
     public func clean() {
         inOutAudioBufferList.deallocate()
         audioBuffer.mData?.deallocate()
     }
-    
+
     /// Resets the `BufferContext`
     public func resetBuffers() {
         lock.lock(); defer { lock.unlock() }
         bufferContext.reset()
     }
-    
 }
 
 /// Allocates a buffer list
@@ -77,12 +68,12 @@ final class AudioRendererContext {
 /// - Returns: An `UnsafeMutablePointer<AudioBufferList>` object
 private func allocateBufferList(dataByteSize: Int) -> UnsafeMutablePointer<AudioBufferList> {
     let _bufferList = AudioBufferList.allocate(maximumBuffers: 1)
-    
+
     _bufferList[0].mDataByteSize = UInt32(dataByteSize)
     let alingment = MemoryLayout<UInt8>.alignment
     let mData = UnsafeMutableRawPointer.allocate(byteCount: dataByteSize, alignment: alingment)
     _bufferList[0].mData = mData
     _bufferList[0].mNumberChannels = 2
-    
+
     return _bufferList.unsafeMutablePointer
 }

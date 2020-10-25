@@ -1,0 +1,53 @@
+disabled_rules: # rule identifiers to exclude from running
+  - force_try
+  - type_name
+  - identifier_name
+  - cyclomatic_complexity
+  - opening_brace
+  - trailing_comma
+  - file_length
+opt_in_rules: # some rules are only opt-in
+  # Find all the available rules by running:
+  # swiftlint rules
+included: # paths to include during linting. `--path` is ignored if present.
+  - AudioStreaming
+excluded: # paths to ignore during linting. Takes precedence over `included`.
+  - AudioExample/
+  - AudioStreaming/AudioStreamingTests
+
+# configurable rules can be customized from this configuration file
+# binary rules can set their severity level
+force_cast: warning # implicitly
+force_try:
+  severity: warning # explicitly
+# rules that have both warning and error levels, can set just the warning level
+# implicitly
+line_length:
+    warning: 150
+    error: 200
+    ignores_function_declarations: true
+    ignores_comments: true
+    ignores_urls: true
+# they can set both implicitly with an array
+type_body_length:
+  - 300 # warning
+  - 400 # error
+# or they can set both explicitly
+function_body_length:
+  warning: 200
+  error: 300
+file_length:
+  warning: 500
+  error: 1200
+cyclomatic_complexity:
+  warning: 15
+  error: 25
+# naming rules can set warnings/errors for min_length and max_length
+# additionally they can set excluded names
+identifier_name:
+  min_length: 2 # only min_length
+  excluded: # excluded via string array
+    - id
+    - URL
+  allowed_symbols: ["_"]
+reporter: "xcode" # reporter type (xcode, json, csv, checkstyle, junit, html, emoji)

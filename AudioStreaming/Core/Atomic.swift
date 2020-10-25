@@ -8,15 +8,13 @@ import Foundation
 final class Atomic<Value> {
     private let lock = UnfairLock()
     private var _value: Value
-    
+
     init(_ value: Value) {
-        self._value = value
+        _value = value
     }
-    
-    var value: Value {
-        get { lock.around { _value } }
-    }
-    
+
+    var value: Value { lock.around { _value } }
+
     func write(_ transform: (inout Value) -> Void) {
         lock.around { transform(&self._value) }
     }

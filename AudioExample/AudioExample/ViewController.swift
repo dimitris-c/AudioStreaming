@@ -6,9 +6,9 @@
 //  Copyright © 2020 Dimitrios Chatzieleftheriou. All rights reserved.
 //
 
-import UIKit
 import AudioStreaming
 import AVFoundation
+import UIKit
 
 enum AudioContent: Int, CaseIterable {
     case offradio
@@ -17,82 +17,81 @@ enum AudioContent: Int, CaseIterable {
     case radiox
     case khruangbin
     case piano
-    
+
     var title: String {
         switch self {
-            case .offradio:
-                return "Offradio (stream)"
-            case .enlefko:
-                return "Enlefko (stream)"
-            case .pepper966:
-                return "Pepper 96.6 (stream)"
-            case .radiox:
-                return "Radio X (stream)"
-            case .khruangbin:
-                return "Khruangbin (mp3 preview)"
-            case .piano:
-                return "Piano (mp3)"
+        case .offradio:
+            return "Offradio (stream)"
+        case .enlefko:
+            return "Enlefko (stream)"
+        case .pepper966:
+            return "Pepper 96.6 (stream)"
+        case .radiox:
+            return "Radio X (stream)"
+        case .khruangbin:
+            return "Khruangbin (mp3 preview)"
+        case .piano:
+            return "Piano (mp3)"
         }
     }
-    
+
     var streamUrl: URL {
         switch self {
-            case .enlefko:
-                return URL(string: "https://ample-02.radiojar.com/srzwv225e3quv?rj-ttl=5&rj-tok=AAABcmnuHngA2PJ4KSBI9k5cCw")!
-            case .offradio:
-                return URL(string: "http://s3.yesstreaming.net:7033/stream")!
-            case .pepper966:
-                return URL(string: "https://ample-09.radiojar.com/pepper.m4a?1593699983=&rj-tok=AAABcw_1KyMAIViq2XpI098ZSQ&rj-ttl=5")!
-            case .radiox:
-                return URL(string: "https://media-ssl.musicradio.com/RadioXLondon")!
-            case .khruangbin:
-                return URL(string: "https://p.scdn.co/mp3-preview/cab4b09c23ffc11774d879977131df9d150fcef4?cid=d8a5ed958d274c2e8ee717e6a4b0971d")!
-            case .piano:
-                return URL(string: "https://www.kozco.com/tech/piano2-CoolEdit.mp3")!
+        case .enlefko:
+            return URL(string: "https://ample-02.radiojar.com/srzwv225e3quv?rj-ttl=5&rj-tok=AAABcmnuHngA2PJ4KSBI9k5cCw")!
+        case .offradio:
+            return URL(string: "http://s3.yesstreaming.net:7033/stream")!
+        case .pepper966:
+            return URL(string: "https://ample-09.radiojar.com/pepper.m4a?1593699983=&rj-tok=AAABcw_1KyMAIViq2XpI098ZSQ&rj-ttl=5")!
+        case .radiox:
+            return URL(string: "https://media-ssl.musicradio.com/RadioXLondon")!
+        case .khruangbin:
+            return URL(string: "https://p.scdn.co/mp3-preview/cab4b09c23ffc11774d879977131df9d150fcef4?cid=d8a5ed958d274c2e8ee717e6a4b0971d")!
+        case .piano:
+            return URL(string: "https://www.kozco.com/tech/piano2-CoolEdit.mp3")!
         }
     }
-    
 }
+
 class ViewController: UIViewController {
-    
     let player: AudioPlayer = {
         let config = AudioPlayerConfiguration(enableLogs: true)
         return AudioPlayer(configuration: config)
     }()
-    
+
     let resumeButton = UIButton()
     let muteButton = UIButton()
-    
+
     let slider = UISlider()
     let elapsedPlayTimeLabel = UILabel()
     let remainingPlayTimeLabel = UILabel()
     let metadataLabel = UILabel()
-    
+
     private var displayLink: CADisplayLink?
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, policy: .longFormAudio)
         try? AVAudioSession.sharedInstance().setPreferredIOBufferDuration(0.1)
         try? AVAudioSession.sharedInstance().setActive(true)
-        
+
         player.delegate = self
-        
+
         let buttons = AudioContent.allCases.map(buildButton(for:))
-        
+
         let stackView = UIStackView(arrangedSubviews: buttons)
         stackView.spacing = 5
         stackView.axis = .vertical
         stackView.distribution = .fill
         stackView.alignment = .center
         stackView.translatesAutoresizingMaskIntoConstraints = false
-        self.view.addSubview(stackView)
+        view.addSubview(stackView)
         NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.topAnchor, constant: 40),
-            stackView.leftAnchor.constraint(equalTo: self.view.leftAnchor, constant: 20),
-            stackView.rightAnchor.constraint(equalTo: self.view.rightAnchor, constant: -20)
+            stackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 40),
+            stackView.leftAnchor.constraint(equalTo: view.leftAnchor, constant: 20),
+            stackView.rightAnchor.constraint(equalTo: view.rightAnchor, constant: -20),
         ])
-        
+
         muteButton.setTitle("Mute", for: .normal)
         if #available(iOS 13.0, *) {
             muteButton.setTitleColor(.label, for: .normal)
@@ -104,7 +103,7 @@ class ViewController: UIViewController {
             muteButton.setTitleColor(.lightGray, for: .disabled)
         }
         muteButton.addTarget(self, action: #selector(toggleMute), for: .touchUpInside)
-        
+
         resumeButton.setTitle("Pause", for: .normal)
         if #available(iOS 13.0, *) {
             resumeButton.setTitleColor(.label, for: .normal)
@@ -117,7 +116,7 @@ class ViewController: UIViewController {
         }
         resumeButton.addTarget(self, action: #selector(pauseResume), for: .touchUpInside)
         resumeButton.translatesAutoresizingMaskIntoConstraints = false
-        
+
         let stopButton = UIButton(type: .custom)
         stopButton.setTitle("Stop", for: .normal)
         if #available(iOS 13.0, *) {
@@ -129,14 +128,14 @@ class ViewController: UIViewController {
             stopButton.setTitleColor(.darkGray, for: .highlighted)
         }
         stopButton.addTarget(self, action: #selector(stop), for: .touchUpInside)
-        
+
         let controlsStackView = UIStackView(arrangedSubviews: [resumeButton, stopButton, muteButton])
         controlsStackView.translatesAutoresizingMaskIntoConstraints = false
         controlsStackView.spacing = 10
         controlsStackView.axis = .horizontal
         controlsStackView.distribution = .fillEqually
         controlsStackView.alignment = .center
-        
+
         if #available(iOS 13.0, *) {
             slider.tintColor = .systemGray2
             slider.thumbTintColor = .systemGray
@@ -144,32 +143,32 @@ class ViewController: UIViewController {
             slider.tintColor = .darkGray
             slider.thumbTintColor = .black
         }
-        
+
         elapsedPlayTimeLabel.font = UIFont.preferredFont(forTextStyle: .footnote)
         elapsedPlayTimeLabel.textAlignment = .left
         remainingPlayTimeLabel.font = UIFont.preferredFont(forTextStyle: .footnote)
         remainingPlayTimeLabel.textAlignment = .right
-        
+
         let playbackTimeLabelsStack = UIStackView(arrangedSubviews: [elapsedPlayTimeLabel, remainingPlayTimeLabel])
         playbackTimeLabelsStack.translatesAutoresizingMaskIntoConstraints = false
         playbackTimeLabelsStack.axis = .horizontal
         playbackTimeLabelsStack.distribution = .fillEqually
-        
+
         let controlsAndSliderStack = UIStackView(arrangedSubviews: [controlsStackView, slider, playbackTimeLabelsStack, metadataLabel])
         controlsAndSliderStack.translatesAutoresizingMaskIntoConstraints = false
         controlsAndSliderStack.spacing = 10
         controlsAndSliderStack.setCustomSpacing(5, after: slider)
         controlsAndSliderStack.axis = .vertical
         controlsAndSliderStack.distribution = .fillEqually
-        
-        self.view.addSubview(controlsAndSliderStack)
+
+        view.addSubview(controlsAndSliderStack)
         NSLayoutConstraint.activate([
             controlsAndSliderStack.topAnchor.constraint(equalTo: stackView.bottomAnchor, constant: 40),
-            controlsAndSliderStack.leftAnchor.constraint(equalTo: self.view.leftAnchor, constant: 20),
-            controlsAndSliderStack.rightAnchor.constraint(equalTo: self.view.rightAnchor, constant: -20)
+            controlsAndSliderStack.leftAnchor.constraint(equalTo: view.leftAnchor, constant: 20),
+            controlsAndSliderStack.rightAnchor.constraint(equalTo: view.rightAnchor, constant: -20),
         ])
     }
-    
+
     func buildButton(for content: AudioContent) -> UIButton {
         let button = UIButton(type: .system)
         button.titleLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
@@ -183,7 +182,7 @@ class ViewController: UIViewController {
         button.addTarget(self, action: #selector(play), for: .touchUpInside)
         return button
     }
-    
+
     @objc
     func play(button: UIButton) {
         if let content = AudioContent(rawValue: button.tag) {
@@ -193,14 +192,14 @@ class ViewController: UIViewController {
             resetLabelsAndSlider()
         }
     }
-    
+
     @objc
     func stop() {
         player.stop()
         resumeButton.setTitle("Pause", for: .normal)
         stopDisplayLink(resetLabels: true)
     }
-    
+
     @objc
     func pauseResume() {
         if player.state == .playing {
@@ -213,58 +212,58 @@ class ViewController: UIViewController {
             startDisplayLink()
         }
     }
-    
+
     @objc
     func toggleMute() {
         player.muted = !player.muted
         muteButton.setTitle(player.muted ? "Unmute" : "Mute", for: .normal)
     }
-    
+
     private func startDisplayLink() {
         displayLink?.invalidate()
         displayLink = UIScreen.main.displayLink(withTarget: self, selector: #selector(tick))
         displayLink?.add(to: .current, forMode: .default)
     }
-    
+
     private func stopDisplayLink(resetLabels: Bool) {
         displayLink?.invalidate()
         displayLink = nil
         if resetLabels {
-            self.resetLabelsAndSlider()
+            resetLabelsAndSlider()
         }
     }
-    
+
     private func resetLabelsAndSlider() {
         elapsedPlayTimeLabel.text = nil
         remainingPlayTimeLabel.text = nil
         slider.value = 0
         slider.maximumValue = 0
     }
-    
+
     @objc
     private func tick() {
         if player.duration() > 0 {
             let elapsed = Int(player.progress())
-            let remaining = Int(player.duration() - (player.progress()))
-            
+            let remaining = Int(player.duration() - player.progress())
+
             slider.minimumValue = 0
             slider.maximumValue = Float(player.duration())
             slider.value = Float(player.progress())
-            
+
             elapsedPlayTimeLabel.text = timeFrom(seconds: elapsed)
-            remainingPlayTimeLabel.text = timeFrom(seconds: remaining)            
+            remainingPlayTimeLabel.text = timeFrom(seconds: remaining)
         } else {
             let elapsed = Int(player.progress())
             elapsedPlayTimeLabel.text = "Live broadcast"
             remainingPlayTimeLabel.text = timeFrom(seconds: elapsed)
         }
     }
-    
+
     private func timeFrom(seconds: Int) -> String {
         let correctSeconds = seconds % 60
         let minutes = (seconds / 60) % 60
         let hours = seconds / 3600
-        
+
         if hours > 0 {
             return String(format: "%02d:%02d:%02d", hours, minutes, correctSeconds)
         }
@@ -273,35 +272,35 @@ class ViewController: UIViewController {
 }
 
 extension ViewController: AudioPlayerDelegate {
-    func audioPlayerDidCancel(player: AudioPlayer, queuedItems: [AudioEntryId]) {
+    func audioPlayerDidCancel(player _: AudioPlayer, queuedItems _: [AudioEntryId]) {
         print("did cancel items")
     }
-    
-    func audioPlayerDidStartPlaying(player: AudioPlayer, with entryId: AudioEntryId) {
+
+    func audioPlayerDidStartPlaying(player _: AudioPlayer, with entryId: AudioEntryId) {
         print("did start playing: \(entryId)")
         metadataLabel.text = ""
     }
-    
-    func audioPlayerDidFinishBuffering(player: AudioPlayer, with entryId: AudioEntryId) {
+
+    func audioPlayerDidFinishBuffering(player _: AudioPlayer, with entryId: AudioEntryId) {
         print("did finish buffering: \(entryId)")
     }
-    
-    func audioPlayerStateChanged(player: AudioPlayer, with newState: AudioPlayerState, previous: AudioPlayerState) {
+
+    func audioPlayerStateChanged(player _: AudioPlayer, with newState: AudioPlayerState, previous: AudioPlayerState) {
         print("player state changed from: \(previous) to: \(newState)")
     }
-    
-    func audioPlayerDidFinishPlaying(player: AudioPlayer, entryId: AudioEntryId, stopReason: AudioPlayerStopReason, progress: Double, duration: Double) {
+
+    func audioPlayerDidFinishPlaying(player _: AudioPlayer, entryId: AudioEntryId, stopReason: AudioPlayerStopReason, progress: Double, duration: Double) {
         print("player finished playing for: \(entryId)")
         print("===> stop reason: \(stopReason)")
         print("===> progress: \(progress)")
         print("===> duration: \(duration)")
     }
-    
-    func audioPlayerUnexpectedError(player: AudioPlayer, error: AudioPlayerError) {
+
+    func audioPlayerUnexpectedError(player _: AudioPlayer, error: AudioPlayerError) {
         print("player error'd unexpectedly: \(error)")
     }
-    
-    func audioPlayerDidReadMetadata(player: AudioPlayer, metadata: [String : String]) {
+
+    func audioPlayerDidReadMetadata(player _: AudioPlayer, metadata: [String: String]) {
         print("player did read metadata")
         print("metadata: \(metadata)")
         guard !metadata.isEmpty else { return }
@@ -311,6 +310,4 @@ extension ViewController: AudioPlayerDelegate {
             metadataLabel.text = ""
         }
     }
-    
-    
 }

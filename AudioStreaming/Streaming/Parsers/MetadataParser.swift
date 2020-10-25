@@ -12,24 +12,24 @@ public enum MetadataParsingError: Error, Equatable {
 
 typealias MetadataOutput = Result<[String: String], MetadataParsingError>
 
-private let zeroBytesCharSet = CharacterSet(charactersIn: "\0")
 struct MetadataParser: Parser {
     typealias Input = Data
     typealias Output = MetadataOutput
-    
+
     func parse(input: Data) -> MetadataOutput {
         guard let string = String(data: input, encoding: .utf8) else { return .failure(.unableToParse) }
         // remove added bytes (zeros) and seperate the string on every ';' char
-        let pairs = string.trimmingCharacters(in: zeroBytesCharSet).components(separatedBy: ";")
+        let pairs = string.trimmingCharacters(in: CharacterSet(charactersIn: "\0")).components(separatedBy: ";")
         let temp: [String: String] = [:]
-        let metadata = pairs.reduce(into: temp) { (result, next) in
+        let metadata = pairs.reduce(into: temp) { result, next in
             let paired = next.components(separatedBy: "=")
             if let key = paired.first,
-                let value = paired.last?.replacingOccurrences(of: "'", with: ""), !key.isEmpty {
+               let value = paired.last?.replacingOccurrences(of: "'", with: ""), !key.isEmpty
+            {
                 result[key] = value
             }
         }
-        guard !metadata.isEmpty else { return .failure(.empty)}
+        guard !metadata.isEmpty else { return .failure(.empty) }
         return .success(metadata)
     }
 }

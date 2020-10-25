@@ -11,7 +11,6 @@
 import XCTest
 
 class MetadataStreamProcessorTests: XCTestCase {
-
     var metadataDelegateSpy = MetadataDelegateSpy()
 
     func test_Processor_SendsCorrectValues_IfItCanProcessMetadata() throws {
@@ -50,7 +49,7 @@ class MetadataStreamProcessorTests: XCTestCase {
         XCTAssertFalse(audio.isEmpty)
 
         XCTAssertTrue(metadataDelegateSpy.receivedMetadata.called)
-        XCTAssertEqual(metadataDelegateSpy.receivedMetadata.result, .success(["StreamTitle":""]))
+        XCTAssertEqual(metadataDelegateSpy.receivedMetadata.result, .success(["StreamTitle": ""]))
     }
 
     func test_Processor_Outputs_Correct_Metadata_ForStep_WithMetadata() throws {
@@ -129,13 +128,11 @@ class MetadataStreamProcessorTests: XCTestCase {
         XCTAssertFalse(metadataDelegateSpy.receivedMetadata.called)
         XCTAssertNil(metadataDelegateSpy.receivedMetadata.result)
     }
-
-
 }
 
 class MetadataDelegateSpy: MetadataStreamSourceDelegate {
-    var receivedMetadata: (called: Bool, result: Result<[String : String], MetadataParsingError>?) = (false, nil)
-    func didReceiveMetadata(metadata: Result<[String : String], MetadataParsingError>) {
+    var receivedMetadata: (called: Bool, result: Result<[String: String], MetadataParsingError>?) = (false, nil)
+    func didReceiveMetadata(metadata: Result<[String: String], MetadataParsingError>) {
         receivedMetadata = (true, metadata)
     }
 }

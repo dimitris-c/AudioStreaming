@@ -13,29 +13,29 @@ enum PlayerQueueType {
 final class PlayerQueueEntries {
     private var bufferring: Queue<AudioEntry>
     private var upcoming: Queue<AudioEntry>
-    
+
     /// Returns `true` when both underlying entries are empty
     var isEmpty: Bool {
         bufferring.isEmpty && upcoming.isEmpty
     }
-    
+
     /// Returns the count of both underlying entries
     var count: Int {
         bufferring.count + upcoming.count
     }
-    
+
     init() {
-        self.bufferring = Queue<AudioEntry>()
-        self.upcoming = Queue<AudioEntry>()
+        bufferring = Queue<AudioEntry>()
+        upcoming = Queue<AudioEntry>()
     }
-    
+
     /// Adds the `item` to the underlying queue for the specified `type`
     /// - parameter item: An `AudioEntry` object to be added
     /// - parameter type: The type fo the underlying queue as expressed by `PlayerQueueType`
     func enqueue(item: AudioEntry, type: PlayerQueueType) {
         queue(for: type).enqueue(item: item)
     }
-    
+
     /// Returns and removes the `item` to the underlying queue for the specified `type`
     /// - parameter item: An `AudioEntry` object to be added
     /// - parameter type: The type fo the underlying queue as expressed by `PlayerQueueType`
@@ -43,7 +43,7 @@ final class PlayerQueueEntries {
     func dequeue(type: PlayerQueueType) -> AudioEntry? {
         queue(for: type).dequeue()
     }
-    
+
     /// Appends (skips) the `items` to the underlying queue for the specified `type`
     /// - parameter item: An `AudioEntry` object to be added
     /// - parameter type: The type fo the underlying queue as expressed by `PlayerQueueType`
@@ -57,22 +57,22 @@ final class PlayerQueueEntries {
     func skip(item: AudioEntry, type: PlayerQueueType) {
         queue(for: type).skip(item: item)
     }
-    
+
     func count(for type: PlayerQueueType) -> Int {
         queue(for: type).count
     }
-    
+
     /// Removes all elements from the specified queue type
     func removeAll(for type: PlayerQueueType) {
         queue(for: type).removeAll()
     }
-    
+
     /// Removes all elements from all queue type
     func removeAll() {
         queue(for: .buffering).removeAll()
         queue(for: .upcoming).removeAll()
     }
-    
+
     /// Returns an array of `AudioEntryId` of both underlying queues
     /// - returns: The newly constructed array of `AudioEntryId` objects
     func pendingEntriesId() -> [AudioEntryId] {
@@ -80,7 +80,7 @@ final class PlayerQueueEntries {
         let bufferingIds = bufferring.map { $0.id }
         return upcomingIds + bufferingIds
     }
-    
+
     /// - parameter type: A `PlayerQueueType`
     /// - returns: The appropriate queue for given type
     private func queue(for type: PlayerQueueType) -> Queue<AudioEntry> {
