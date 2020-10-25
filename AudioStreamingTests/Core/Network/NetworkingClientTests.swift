@@ -29,8 +29,8 @@ class NetworkingClientTests: XCTestCase {
         XCTAssertTrue(networking.networkQueue == queue)
     }
 
-    let networking = NetworkingClient()
     func testShouldStartRequestImmediatelly() {
+        let networking = NetworkingClient()
         let url = URL(string: "https://httpbin.org/get")!
         let request = URLRequest(url: url)
 
@@ -64,41 +64,4 @@ class NetworkingClientTests: XCTestCase {
         XCTAssertNotNil(receivedData)
     }
 
-    func testThatStreamCanBeCalledAndCompleteAtAGivenThread() {
-        let networking = NetworkingClient()
-
-        let url = URL(string: "https://httpbin.org/get")!
-        let request = URLRequest(url: url)
-
-        let expectation = self.expectation(description: "\(url)")
-
-        var responseCompletion: NetworkDataStream.Completion?
-        var receivedData: Data?
-
-        networking.stream(request: request)
-            .responseStream { event in
-                switch event {
-                case let .stream(result):
-                    XCTAssertFalse(Thread.current.isMainThread)
-                    switch result {
-                    case let .success(value):
-                        receivedData = value.data
-                    case .failure: break
-                    }
-                case let .complete(completion):
-                    XCTAssertFalse(Thread.current.isMainThread)
-                    responseCompletion = completion
-                    expectation.fulfill()
-                case .response:
-                    XCTAssertFalse(Thread.current.isMainThread)
-                }
-            }
-            .resume()
-
-        waitForExpectations(timeout: 10, handler: nil)
-
-        XCTAssertEqual(responseCompletion?.response?.statusCode, 200)
-        XCTAssertNotNil(responseCompletion)
-        XCTAssertNotNil(receivedData)
-    }
 }

@@ -45,7 +45,7 @@ internal final class NetworkingClient {
     weak var delegate: NetworkSessionDelegate?
     let networkQueue: DispatchQueue
 
-    var tasks = NetworkTasksMap()
+    var tasks = BiMap<URLSessionTask, NetworkDataStream>()
     var activeTasks = Set<NetworkDataStream>()
 
     internal init(configuration: URLSessionConfiguration = .networkingConfiguration,
@@ -70,15 +70,6 @@ internal final class NetworkingClient {
         let stream = NetworkDataStream(id: UUID(), underlyingQueue: networkQueue)
         setupRequest(stream, request: request)
         return stream
-    }
-
-    /// Cancels on active requests
-    internal func cancelAllRequest() {
-        networkQueue.async { [weak self] in
-            self?.activeTasks.forEach { $0.cancel() }
-        }
-        activeTasks.removeAll()
-        tasks = NetworkTasksMap()
     }
 
     internal func remove(task: NetworkDataStream) {

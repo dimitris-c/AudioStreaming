@@ -19,6 +19,10 @@ final class DispatchTimerSource {
         case suspended
     }
 
+    var isRunning: Bool {
+        state == .activated
+    }
+
     /// Initializes an new `DispatchTimerSource`
     ///
     /// - parameter interval: A `DispatchTimeInterval` value indicating the interval of te timer.

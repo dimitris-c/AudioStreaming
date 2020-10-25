@@ -50,7 +50,7 @@ internal final class NetworkDataStream {
     }
 
     @discardableResult
-    func responseStream(completion: @escaping (_ event: NetworkDataStream.StreamEvent) -> Void) -> Self {
+    func responseStream(completion: @escaping StreamCompletion) -> Self {
         streamCallback = completion
         return self
     }
