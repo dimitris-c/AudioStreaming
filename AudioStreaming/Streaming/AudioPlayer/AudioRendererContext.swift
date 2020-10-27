@@ -26,8 +26,6 @@ final class AudioRendererContext {
     let framesRequiredToStartPlaying: UInt32
     let framesRequiredAfterRebuffering: UInt32
 
-    var fileFormat: String = ""
-
     let configuration: AudioPlayerConfiguration
 
     init(configuration: AudioPlayerConfiguration, outputAudioFormat: AVAudioFormat) {

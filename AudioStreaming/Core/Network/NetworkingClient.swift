@@ -73,8 +73,10 @@ internal final class NetworkingClient {
     }
 
     internal func remove(task: NetworkDataStream) {
-        activeTasks.remove(task)
-        tasks[task] = nil
+        networkQueue.async { [weak self] in
+            self?.activeTasks.remove(task)
+            self?.tasks[task] = nil
+        }
     }
 
     // MARK: Private

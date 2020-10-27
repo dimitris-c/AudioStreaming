@@ -22,42 +22,37 @@ extension AudioPlayer {
         static let pendingNext = InternalState(rawValue: 1 << 10)
         static let disposed = InternalState(rawValue: 1 << 30)
         static let error = InternalState(rawValue: 1 << 31)
+
+        static let waiting = [.waitingForData, waitingForDataAfterSeek, .rebuffering]
     }
 }
 
-func playerStateAndStopReason(for internalState: AudioPlayer.InternalState) -> (state: AudioPlayerState, stopReason: AudioPlayerStopReason) {
-    var playerNewState: AudioPlayerState
-    var stopReason: AudioPlayerStopReason = .none
-
+/// Helper method that returns `AudioPlayerState` and `StopReason` based on the given `InternalState`
+/// - Parameter internalState: A value of `InternalState`
+/// - Returns: A tuple of `(AudioPlayerState, AudioPlayerStopReason)`
+func playerStateAndStopReason(for internalState: AudioPlayer.InternalState) -> (state: AudioPlayerState,
+                                                                                stopReason: AudioPlayerStopReason)
+{
     switch internalState {
     case .initial:
-        playerNewState = .ready
-        stopReason = .none
+        return (.ready, .none)
     case .running, .playing, .waitingForDataAfterSeek:
-        playerNewState = .playing
-        stopReason = .none
+        return (.playing, .none)
     case .pendingNext, .rebuffering, .waitingForData:
-        playerNewState = .bufferring
-        stopReason = .none
+        return (.bufferring, .none)
     case .stopped:
-        playerNewState = .stopped
-        stopReason = .userAction
+        return (.stopped, .userAction)
     case .paused:
-        playerNewState = .paused
-        stopReason = .none
+        return (.paused, .none)
     case .disposed:
-        playerNewState = .disposed
-        stopReason = .userAction
+        return (.disposed, .userAction)
     case .error:
-        playerNewState = .error
-        stopReason = .error
+        return (.error, .error)
     default:
-        playerNewState = .ready
-        stopReason = .none
+        return (.ready, .none)
     }
-
-    return (playerNewState, stopReason)
 }
+
 
 // MARK: Public States
 

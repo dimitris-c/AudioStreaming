@@ -63,5 +63,4 @@ class NetworkingClientTests: XCTestCase {
         XCTAssertNotNil(responseCompletion)
         XCTAssertNotNil(receivedData)
     }
-
 }

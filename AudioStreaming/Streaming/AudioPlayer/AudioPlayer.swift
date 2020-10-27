@@ -431,9 +431,7 @@ public final class AudioPlayer {
             readingEntry.close()
         }
 
-        //        playerContext.entriesLock.around {
         playerContext.$audioReadingEntry.write { $0 = entry }
-        //        }
         playerContext.audioReadingEntry?.delegate = self
         playerContext.audioReadingEntry?.seek(at: 0)
 
@@ -581,7 +579,9 @@ extension AudioPlayer: AudioStreamSourceDelegate {
             return
         }
 
+        readingEntry.lock.lock()
         readingEntry.framesState.lastFrameQueued = readingEntry.framesState.queued
+        readingEntry.lock.unlock()
 
         readingEntry.delegate = nil
         readingEntry.close()

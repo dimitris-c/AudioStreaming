@@ -11,29 +11,38 @@ enum PlayerQueueType {
 /// Handles the buffering and upcoming upcoming `AudioEntries`
 /// The underlying objects are defined as `Queue<AudioEntry>`
 final class PlayerQueueEntries {
+    private let syncQueue: DispatchQueue
     private var bufferring: Queue<AudioEntry>
     private var upcoming: Queue<AudioEntry>
 
     /// Returns `true` when both underlying entries are empty
     var isEmpty: Bool {
-        bufferring.isEmpty && upcoming.isEmpty
+        syncQueue.sync {
+            bufferring.isEmpty && upcoming.isEmpty
+        }
     }
 
     /// Returns the count of both underlying entries
     var count: Int {
-        bufferring.count + upcoming.count
+        syncQueue.sync {
+            bufferring.count + upcoming.count
+        }
     }
 
     init() {
         bufferring = Queue<AudioEntry>()
         upcoming = Queue<AudioEntry>()
+        syncQueue = DispatchQueue(label: "sync.qe", qos: .default, attributes: .concurrent)
     }
 
     /// Adds the `item` to the underlying queue for the specified `type`
     /// - parameter item: An `AudioEntry` object to be added
     /// - parameter type: The type fo the underlying queue as expressed by `PlayerQueueType`
     func enqueue(item: AudioEntry, type: PlayerQueueType) {
-        queue(for: type).enqueue(item: item)
+        syncQueue.async(flags: .barrier) { [weak self] in
+            guard let self = self else { return }
+            self.queue(for: type).enqueue(item: item)
+        }
     }
 
     /// Returns and removes the `item` to the underlying queue for the specified `type`
@@ -41,44 +50,62 @@ final class PlayerQueueEntries {
     /// - parameter type: The type fo the underlying queue as expressed by `PlayerQueueType`
     /// - returns: An `AudioEntry` if found
     func dequeue(type: PlayerQueueType) -> AudioEntry? {
-        queue(for: type).dequeue()
+        syncQueue.sync(flags: .barrier) {
+            queue(for: type).dequeue()
+        }
     }
 
     /// Appends (skips) the `items` to the underlying queue for the specified `type`
     /// - parameter item: An `AudioEntry` object to be added
     /// - parameter type: The type fo the underlying queue as expressed by `PlayerQueueType`
     func skip(items: [AudioEntry], type: PlayerQueueType) {
-        queue(for: type).skip(items: items)
+        syncQueue.async(flags: .barrier) { [weak self] in
+            guard let self = self else { return }
+            self.queue(for: type).skip(items: items)
+        }
     }
 
     /// Append (skip) the `item` to the underlying queue for the specified `type`
     /// - parameter item: An `AudioEntry` object to be added
     /// - parameter type: The type fo the underlying queue as expressed by `PlayerQueueType`
     func skip(item: AudioEntry, type: PlayerQueueType) {
-        queue(for: type).skip(item: item)
+        syncQueue.async(flags: .barrier) { [weak self] in
+            guard let self = self else { return }
+            self.queue(for: type).skip(item: item)
+        }
     }
 
     func count(for type: PlayerQueueType) -> Int {
-        queue(for: type).count
+        syncQueue.sync {
+            queue(for: type).count
+        }
     }
 
     /// Removes all elements from the specified queue type
     func removeAll(for type: PlayerQueueType) {
-        queue(for: type).removeAll()
+        syncQueue.async(flags: .barrier) { [weak self] in
+            guard let self = self else { return }
+            self.queue(for: type).removeAll()
+        }
     }
 
     /// Removes all elements from all queue type
     func removeAll() {
-        queue(for: .buffering).removeAll()
-        queue(for: .upcoming).removeAll()
+        syncQueue.async(flags: .barrier) { [weak self] in
+            guard let self = self else { return }
+            self.queue(for: .buffering).removeAll()
+            self.queue(for: .upcoming).removeAll()
+        }
     }
 
     /// Returns an array of `AudioEntryId` of both underlying queues
     /// - returns: The newly constructed array of `AudioEntryId` objects
     func pendingEntriesId() -> [AudioEntryId] {
-        let upcomingIds = upcoming.map { $0.id }
-        let bufferingIds = bufferring.map { $0.id }
-        return upcomingIds + bufferingIds
+        syncQueue.sync {
+            let upcomingIds = upcoming.map { $0.id }
+            let bufferingIds = bufferring.map { $0.id }
+            return upcomingIds + bufferingIds
+        }
     }
 
     /// - parameter type: A `PlayerQueueType`

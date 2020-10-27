@@ -30,6 +30,7 @@ final class AudioFileStreamProcessor {
     internal var audioFileStream: AudioFileStreamID?
     internal var audioConverter: AudioConverterRef?
     internal var inputFormat = AudioStreamBasicDescription()
+    internal var fileFormat: String = ""
 
     var isFileStreamOpen: Bool {
         audioFileStream != nil
@@ -181,7 +182,7 @@ final class AudioFileStreamProcessor {
         var size = UInt32(4)
         AudioFileStreamGetProperty(fileStream, kAudioFileStreamProperty_FileFormat, &size, &fileFormat)
         if let stringFileFormat = String(data: Data(fileFormat), encoding: .utf8) {
-            rendererContext.fileFormat = stringFileFormat
+            self.fileFormat = stringFileFormat
         }
     }
 
@@ -349,7 +350,7 @@ final class AudioFileStreamProcessor {
                 var framesToDecode: UInt32 = rendererContext.bufferContext.totalFrameCount - end
 
                 let offset = Int(end * rendererContext.bufferContext.sizeInBytes)
-                prefillLocalBufferList(list: localBufferList,
+                prefillLocalBufferList(bufferList: localBufferList,
                                        dataOffset: offset,
                                        framesToDecode: framesToDecode)
 
@@ -375,7 +376,7 @@ final class AudioFileStreamProcessor {
                     fillUsedFrames(framesCount: framesAdded)
                     continue packetProccess
                 }
-                prefillLocalBufferList(list: localBufferList,
+                prefillLocalBufferList(bufferList: localBufferList,
                                        dataOffset: 0,
                                        framesToDecode: framesToDecode)
 
@@ -404,7 +405,7 @@ final class AudioFileStreamProcessor {
                 var framesToDecode: UInt32 = start - end
 
                 let offset = Int(end * rendererContext.bufferContext.sizeInBytes)
-                prefillLocalBufferList(list: localBufferList,
+                prefillLocalBufferList(bufferList: localBufferList,
                                        dataOffset: offset,
                                        framesToDecode: framesToDecode)
 
@@ -436,16 +437,19 @@ final class AudioFileStreamProcessor {
     /// - parameter dataOffset: An `Int` value indicating any offset to be applied to the buffer data
     /// - parameter framesToDecode: An `UInt32` value indicating the frames to be decoded, used in calculating the data size of the buffer.
     @inline(__always)
-    private func prefillLocalBufferList(list: UnsafeMutableAudioBufferListPointer, dataOffset: Int, framesToDecode: UInt32) {
+    private func prefillLocalBufferList(bufferList: UnsafeMutableAudioBufferListPointer,
+                                        dataOffset: Int,
+                                        framesToDecode: UInt32)
+    {
         if let mData = rendererContext.audioBuffer.mData {
             if dataOffset > 0 {
-                list[0].mData = mData + dataOffset
+                bufferList[0].mData = mData + dataOffset
             } else {
-                list[0].mData = mData
+                bufferList[0].mData = mData
             }
         }
-        list[0].mDataByteSize = framesToDecode * rendererContext.bufferContext.sizeInBytes
-        list[0].mNumberChannels = rendererContext.audioBuffer.mNumberChannels
+        bufferList[0].mDataByteSize = framesToDecode * rendererContext.bufferContext.sizeInBytes
+        bufferList[0].mNumberChannels = rendererContext.audioBuffer.mNumberChannels
     }
 
     /// Advances the processed frames for buffer and reading entry

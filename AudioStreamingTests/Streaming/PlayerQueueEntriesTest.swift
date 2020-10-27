@@ -130,6 +130,39 @@ class PlayerQueueEntriesTest: XCTestCase {
         queue.removeAll(for: .upcoming)
         XCTAssertEqual(queue.count(for: .upcoming), 0)
     }
+
+    func testPlayerQueueThreadSafety() {
+        var queue = PlayerQueueEntries()
+
+        DispatchQueue.concurrentPerform(iterations: 100) { i in
+            queue.enqueue(item: audioEntry(id: "\(i))"), type: .buffering)
+            queue.enqueue(item: audioEntry(id: "\(i))"), type: .upcoming)
+            _ = queue.dequeue(type: .buffering)
+            _ = queue.dequeue(type: .upcoming)
+        }
+
+        XCTAssertTrue(queue.isEmpty)
+
+        queue = PlayerQueueEntries()
+
+        DispatchQueue.concurrentPerform(iterations: 100) { i in
+            let entry = audioEntry(id: "\(i))")
+            queue.enqueue(item: entry, type: .buffering)
+            _ = queue.count(for: .buffering)
+        }
+
+        XCTAssertEqual(queue.count(for: .buffering), 100)
+
+        queue = PlayerQueueEntries()
+
+        DispatchQueue.concurrentPerform(iterations: 100) { i in
+            let entry = audioEntry(id: "\(i))")
+            queue.enqueue(item: entry, type: .buffering)
+            _ = queue.pendingEntriesId()
+        }
+
+        XCTAssertEqual(queue.pendingEntriesId().count, 100)
+    }
 }
 
 private let networkingClient = NetworkingClient(configuration: .ephemeral)

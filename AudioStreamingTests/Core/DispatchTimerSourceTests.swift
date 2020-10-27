@@ -6,11 +6,10 @@
 //  Copyright © 2020 Decimal. All rights reserved.
 //
 
-@testable import AudioStreaming
 import XCTest
+@testable import AudioStreaming
 
 class DispatchTimerSourceTests: XCTestCase {
-
     let dispatchKey = DispatchSpecificKey<Int>()
 
     let dispatchQueue = DispatchQueue(label: "some.queue")
@@ -18,32 +17,30 @@ class DispatchTimerSourceTests: XCTestCase {
 
     override func setUp() {
         dispatchQueue.setSpecific(key: dispatchKey, value: 1)
-        self.timerSource = DispatchTimerSource(interval: .milliseconds(100), queue: dispatchQueue)
+        timerSource = DispatchTimerSource(interval: .milliseconds(100), queue: dispatchQueue)
     }
 
     override func tearDown() {
-        self.timerSource = nil
+        timerSource = nil
     }
 
     func test_DispatchTimerSource_Can_Be_Activated_and_Suspended() {
-
         // starts deactivated
-        XCTAssertFalse(self.timerSource!.isRunning)
+        XCTAssertFalse(timerSource!.isRunning)
 
         // when actiavated
-        self.timerSource!.activate()
+        timerSource!.activate()
         // it should run
-        XCTAssertTrue(self.timerSource!.isRunning)
+        XCTAssertTrue(timerSource!.isRunning)
 
         // when suspended
-        self.timerSource!.suspend()
+        timerSource!.suspend()
         // it should not run
-        XCTAssertFalse(self.timerSource!.isRunning)
+        XCTAssertFalse(timerSource!.isRunning)
     }
 
     func test_DispatchTimerSource_Can_Add_A_Handler_ToBe_Called() {
-
-        let expectaction = self.expectation(description: "fired")
+        let expectaction = expectation(description: "fired")
 
         timerSource?.add {
             expectaction.fulfill()
@@ -53,12 +50,10 @@ class DispatchTimerSourceTests: XCTestCase {
         wait(for: [expectaction], timeout: 1)
         // kill the timer
         timerSource?.suspend()
-
     }
 
     func test_DispatchTimerSource_Can_Remove_Handler() {
-
-        let expectaction = self.expectation(description: "fired")
+        let expectaction = expectation(description: "fired")
 
         timerSource?.add {
             expectaction.fulfill()
@@ -69,13 +64,10 @@ class DispatchTimerSourceTests: XCTestCase {
         // kill the timer
         timerSource?.suspend()
         timerSource?.removeHandler()
-
     }
 
-
     func test_HandlerIsExecuted_On_The_Specified_Queue() {
-
-        let expectaction = self.expectation(description: "fired")
+        let expectaction = expectation(description: "fired")
 
         timerSource?.add {
             XCTAssertEqual(DispatchQueue.getSpecific(key: self.dispatchKey), 1)
@@ -86,7 +78,5 @@ class DispatchTimerSourceTests: XCTestCase {
         wait(for: [expectaction], timeout: 1)
         // kill the timer
         timerSource?.suspend()
-
     }
-
 }

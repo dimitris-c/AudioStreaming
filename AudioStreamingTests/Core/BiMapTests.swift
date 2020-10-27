@@ -11,7 +11,6 @@ import XCTest
 @testable import AudioStreaming
 
 class BiMapTests: XCTestCase {
-
     func test_BiMap_Can_Store_And_Retrieve_Values() {
         var map = BiMap<SomeClass, SomeOtherClass>()
         let someClass = SomeClass(item: 0)
@@ -20,8 +19,6 @@ class BiMapTests: XCTestCase {
 
         XCTAssertEqual(map[someClass], someOtherClass)
         XCTAssertEqual(map[someOtherClass], someClass)
-
-
     }
 
     func test_BiMap_Can_Retrieve_LeftAndRight_Values() {
@@ -66,7 +63,6 @@ class BiMapTests: XCTestCase {
         XCTAssert(map.leftValues.isEmpty)
         XCTAssert(map.rightValues.isEmpty)
     }
-    
 }
 
 // For Convenience
@@ -75,6 +71,7 @@ class SomeClass: Hashable {
     static func == (lhs: SomeClass, rhs: SomeClass) -> Bool {
         lhs.item == rhs.item
     }
+
     func hash(into hasher: inout Hasher) {
         hasher.combine(item)
     }
