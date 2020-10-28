@@ -10,8 +10,8 @@ public final class AudioPlayer {
     public weak var delegate: AudioPlayerDelegate?
 
     public var muted: Bool {
-        get { playerContext.muted }
-        set { playerContext.$muted.write { $0 = newValue } }
+        get { playerContext.muted.value }
+        set { playerContext.muted.write { $0 = newValue } }
     }
 
     /// The volume of the audio
@@ -36,12 +36,12 @@ public final class AudioPlayer {
 
     /// The player's current state.
     public var state: AudioPlayerState {
-        playerContext.state
+        playerContext.state.value
     }
 
     /// Indicates the reason that the player stopped.
     public var stopReason: AudioPlayerStopReason {
-        playerContext.stopReason
+        playerContext.stopReason.value
     }
 
     /// The current configuration of the player.
@@ -167,8 +167,10 @@ public final class AudioPlayer {
             }
 
             self.clearQueue()
-            self.playerContext.$audioReadingEntry.write { $0 == nil }
-            self.playerContext.$audioPlayingEntry.write { $0 == nil }
+            self.playerContext.entriesLock.lock()
+            self.playerContext.audioReadingEntry = nil
+            self.playerContext.audioPlayingEntry = nil
+            self.playerContext.entriesLock.unlock()
 
             self.processSource()
         }
@@ -213,7 +215,10 @@ public final class AudioPlayer {
     /// - Returns: A `Double` value indicating the total duration.
     public func duration() -> Double {
         guard playerContext.internalState != .pendingNext else { return 0 }
-        guard let entry = playerContext.audioPlayingEntry else { return 0 }
+        playerContext.entriesLock.lock()
+        let playingEntry = playerContext.audioPlayingEntry
+        playerContext.entriesLock.unlock()
+        guard let entry = playingEntry else { return 0 }
 
         let entryDuration = entry.duration()
         let progress = self.progress()
@@ -227,7 +232,10 @@ public final class AudioPlayer {
     public func progress() -> Double {
         // TODO: account for seek request
         guard playerContext.internalState != .pendingNext else { return 0 }
-        guard let entry = playerContext.audioPlayingEntry else { return 0 }
+        playerContext.entriesLock.lock()
+        let playingEntry = playerContext.audioPlayingEntry
+        playerContext.entriesLock.unlock()
+        guard let entry = playingEntry else { return 0 }
 
         return entry.lock.around {
             return Double(entry.seekTime) + (Double(entry.framesState.played) / outputAudioFormat.sampleRate)
@@ -349,7 +357,7 @@ public final class AudioPlayer {
         player?.auAudioUnit.stopHardware()
         rendererContext.resetBuffers()
         playerContext.internalState = .stopped
-        playerContext.$stopReason.write { $0 = reason }
+        playerContext.stopReason.write { $0 = reason }
         Logger.debug("engine stopped 🛑", category: .generic)
     }
 
@@ -431,9 +439,11 @@ public final class AudioPlayer {
             readingEntry.close()
         }
 
-        playerContext.$audioReadingEntry.write { $0 = entry }
-        playerContext.audioReadingEntry?.delegate = self
-        playerContext.audioReadingEntry?.seek(at: 0)
+        entry.delegate = self
+        entry.seek(at: 0)
+        playerContext.entriesLock.lock()
+        playerContext.audioReadingEntry = entry
+        playerContext.entriesLock.unlock()
 
         if startPlaying {
             if shouldClearQueue {
@@ -447,7 +457,8 @@ public final class AudioPlayer {
     }
 
     private func processFinishPlaying(entry: AudioEntry?, with nextEntry: AudioEntry?) {
-        guard entry == playerContext.audioPlayingEntry else { return }
+        let playingEntry = playerContext.entriesLock.around { playerContext.audioPlayingEntry }
+        guard entry == playingEntry else { return }
 
         let isPlayingSameItemProbablySeek = playerContext.audioPlayingEntry == nextEntry
 
@@ -476,7 +487,9 @@ public final class AudioPlayer {
                 nextEntry.lock.unlock()
                 // seek requested no.
             }
-            playerContext.$audioPlayingEntry.write { $0 = nextEntry }
+            playerContext.entriesLock.lock()
+            playerContext.audioPlayingEntry = nextEntry
+            playerContext.entriesLock.unlock()
             let playingQueueEntryId = nextEntry.id
 
             notifyDelegateEntryFinishedPlaying(entry, isPlayingSameItemProbablySeek)
@@ -490,7 +503,9 @@ public final class AudioPlayer {
             }
         } else {
             notifyDelegateEntryFinishedPlaying(entry, isPlayingSameItemProbablySeek)
-            playerContext.$audioPlayingEntry.write { $0 = nil }
+            playerContext.entriesLock.lock()
+            playerContext.audioPlayingEntry = nil
+            playerContext.entriesLock.unlock()
         }
         processSource()
         checkRenderWaitingAndNotifyIfNeeded()
@@ -510,7 +525,7 @@ public final class AudioPlayer {
 
     /// Signals the packet process
     private func checkRenderWaitingAndNotifyIfNeeded() {
-        if rendererContext.waiting {
+        if rendererContext.waiting.value {
             rendererContext.packetsSemaphore.signal()
         }
     }
@@ -586,7 +601,10 @@ extension AudioPlayer: AudioStreamSourceDelegate {
         readingEntry.delegate = nil
         readingEntry.close()
 
-        playerContext.$audioReadingEntry.write { $0 = nil }
+        playerContext.entriesLock.lock()
+        playerContext.audioReadingEntry = nil
+        playerContext.entriesLock.unlock()
+        
         processSource()
     }
 

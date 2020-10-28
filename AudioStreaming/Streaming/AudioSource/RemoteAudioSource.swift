@@ -217,8 +217,6 @@ public class RemoteAudioSource: AudioStreamSource {
 
     private func addCompletionOperation(_ block: @escaping () -> Void) {
         let operation = BlockOperation(block: block)
-        operation.qualityOfService = .background
-        operation.queuePriority = .veryLow
         if let lastOperation = networkStreamQueue.operations.last {
             operation.addDependency(lastOperation)
         }

@@ -6,24 +6,20 @@
 import Foundation
 
 internal final class AudioPlayerContext {
-    @Atomic
-    var stopReason: AudioPlayerStopReason = .none
+    var stopReason = Protected<AudioPlayerStopReason>(.none)
 
-    @Atomic
-    var state: AudioPlayerState = .ready
+    var state = Protected<AudioPlayerState>(.ready)
     var stateChanged: ((_ oldState: AudioPlayerState, _ newState: AudioPlayerState) -> Void)?
 
-    @Atomic
-    var muted: Bool = false
+    var muted = Protected<Bool>(false)
 
     var internalState: AudioPlayer.InternalState {
-        get { playerInternalState }
+        get { playerInternalState.value }
         set { setInternalState(to: newValue) }
     }
 
-    @Atomic
+    let entriesLock = UnfairLock()
     var audioReadingEntry: AudioEntry?
-    @Atomic
     var audioPlayingEntry: AudioEntry?
 
     var disposedRequested: Bool
@@ -31,8 +27,7 @@ internal final class AudioPlayerContext {
     /// This is the player's internal state to use
     /// - NOTE: Do not use directly instead use the `internalState` to set and get the property
     /// or the `setInternalState(to:when:)`method
-    @Atomic
-    private var playerInternalState: AudioPlayer.InternalState = .initial
+    private var playerInternalState = Protected<AudioPlayer.InternalState>(.initial)
 
     init() {
         disposedRequested = false
@@ -47,19 +42,15 @@ internal final class AudioPlayerContext {
                                    when inState: ((AudioPlayer.InternalState) -> Bool)? = nil)
     {
         let newValues = playerStateAndStopReason(for: state)
-        $stopReason.write { reason in
-            reason = newValues.stopReason
-        }
+        stopReason.write { $0 = newValues.stopReason }
         guard state != internalState else { return }
         if let inState = inState, !inState(internalState) {
             return
         }
-        $playerInternalState.write { internalState in
-            internalState = state
-        }
-        let previousPlayerState = self.state
+        playerInternalState.write { $0 = state }
+        let previousPlayerState = self.state.value
         if newValues.state != previousPlayerState {
-            $state.write { $0 = newValues.state }
+            self.state.write { $0 = newValues.state }
             stateChanged?(previousPlayerState, newValues.state)
         }
     }

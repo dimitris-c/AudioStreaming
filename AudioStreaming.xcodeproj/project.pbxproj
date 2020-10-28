@@ -32,6 +32,7 @@
 		B5667A902499018D00D93F85 /* AudioFileStreamProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5667A8F2499018D00D93F85 /* AudioFileStreamProcessor.swift */; };
 		B5667A922499063D00D93F85 /* AudioPlayerContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5667A912499063D00D93F85 /* AudioPlayerContext.swift */; };
 		B5667B3E249BC43100D93F85 /* AudioPlayerRenderProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5667B3D249BC43000D93F85 /* AudioPlayerRenderProcessor.swift */; };
+		B57829CF2548B32B00C78D36 /* Lock.swift in Sources */ = {isa = PBXBuildFile; fileRef = B57829CE2548B32B00C78D36 /* Lock.swift */; };
 		B58386382544A2C10087A712 /* EntryFrames.swift in Sources */ = {isa = PBXBuildFile; fileRef = B58386372544A2C10087A712 /* EntryFrames.swift */; };
 		B5838640254584A50087A712 /* ProcessedPackets.swift in Sources */ = {isa = PBXBuildFile; fileRef = B583863F254584A50087A712 /* ProcessedPackets.swift */; };
 		B5838644254584BE0087A712 /* AudioStreamState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5838643254584BE0087A712 /* AudioStreamState.swift */; };
@@ -49,7 +50,6 @@
 		B5AEDBB824744153007D8101 /* AudioStreaming.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5AEDBAE24744153007D8101 /* AudioStreaming.framework */; };
 		B5AEDBBF24744153007D8101 /* AudioStreaming.h in Headers */ = {isa = PBXBuildFile; fileRef = B5AEDBB124744153007D8101 /* AudioStreaming.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		B5B3B7CC248647ED00656828 /* AudioPlayerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5B3B7CB248647ED00656828 /* AudioPlayerState.swift */; };
-		B5B3B7D72486993B00656828 /* AudioStreamingMac.h in Headers */ = {isa = PBXBuildFile; fileRef = B5B3B7D52486993B00656828 /* AudioStreamingMac.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		B5E1DE2524B70B4200955BFB /* AudioPlayerConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5E1DE2424B70B4200955BFB /* AudioPlayerConfiguration.swift */; };
 		B5EF954E247DA5AC003E8FF8 /* NetworkingClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5EF954D247DA5AC003E8FF8 /* NetworkingClientTests.swift */; };
 		B5EF9555247E9393003E8FF8 /* AudioEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5EF9554247E9393003E8FF8 /* AudioEntry.swift */; };
@@ -111,6 +111,7 @@
 		B5667A8F2499018D00D93F85 /* AudioFileStreamProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioFileStreamProcessor.swift; sourceTree = "<group>"; };
 		B5667A912499063D00D93F85 /* AudioPlayerContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerContext.swift; sourceTree = "<group>"; };
 		B5667B3D249BC43000D93F85 /* AudioPlayerRenderProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerRenderProcessor.swift; sourceTree = "<group>"; };
+		B57829CE2548B32B00C78D36 /* Lock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lock.swift; sourceTree = "<group>"; };
 		B58386372544A2C10087A712 /* EntryFrames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryFrames.swift; sourceTree = "<group>"; };
 		B583863F254584A50087A712 /* ProcessedPackets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessedPackets.swift; sourceTree = "<group>"; };
 		B5838643254584BE0087A712 /* AudioStreamState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioStreamState.swift; sourceTree = "<group>"; };
@@ -130,9 +131,6 @@
 		B5AEDBB724744153007D8101 /* AudioStreamingTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AudioStreamingTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5AEDBBE24744153007D8101 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B5B3B7CB248647ED00656828 /* AudioPlayerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerState.swift; sourceTree = "<group>"; };
-		B5B3B7D32486993B00656828 /* AudioStreamingMac.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = AudioStreamingMac.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		B5B3B7D52486993B00656828 /* AudioStreamingMac.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AudioStreamingMac.h; sourceTree = "<group>"; };
-		B5B3B7D62486993B00656828 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B5E1DE2424B70B4200955BFB /* AudioPlayerConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerConfiguration.swift; sourceTree = "<group>"; };
 		B5EF954D247DA5AC003E8FF8 /* NetworkingClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkingClientTests.swift; sourceTree = "<group>"; };
 		B5EF9554247E9393003E8FF8 /* AudioEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEntry.swift; sourceTree = "<group>"; };
@@ -142,6 +140,7 @@
 		B5F883B52476DADB00D277C1 /* Protected.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Protected.swift; sourceTree = "<group>"; };
 		B5F883B82477CBF600D277C1 /* ProtectedTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtectedTests.swift; sourceTree = "<group>"; };
 		B5F883C22477DC4400D277C1 /* NetworkDataStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkDataStream.swift; sourceTree = "<group>"; };
+		B5FFF5FD2549FA02006BBB7C /* AudioExample.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = AudioExample.xctestplan; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -157,13 +156,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				B5AEDBB824744153007D8101 /* AudioStreaming.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		B5B3B7D02486993B00656828 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -282,9 +274,10 @@
 		B592E13025460883008866FB /* Helpers */ = {
 			isa = PBXGroup;
 			children = (
-				B5F883B52476DADB00D277C1 /* Protected.swift */,
 				B514657E248E3884005C03F7 /* DispatchTimerSource.swift */,
+				B57829CE2548B32B00C78D36 /* Lock.swift */,
 				B500731F24D00BAC00BB4475 /* Logger.swift */,
+				B5F883B52476DADB00D277C1 /* Protected.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -314,7 +307,6 @@
 			children = (
 				B5AEDBB024744153007D8101 /* AudioStreaming */,
 				B5AEDBBB24744153007D8101 /* AudioStreamingTests */,
-				B5B3B7D42486993B00656828 /* AudioStreamingMac */,
 				B5AEDBAF24744153007D8101 /* Products */,
 				B57A4F7A24AB4E6C00D7EA51 /* Frameworks */,
 			);
@@ -325,7 +317,6 @@
 			children = (
 				B5AEDBAE24744153007D8101 /* AudioStreaming.framework */,
 				B5AEDBB724744153007D8101 /* AudioStreamingTests.xctest */,
-				B5B3B7D32486993B00656828 /* AudioStreamingMac.framework */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -344,20 +335,12 @@
 		B5AEDBBB24744153007D8101 /* AudioStreamingTests */ = {
 			isa = PBXGroup;
 			children = (
+				B5FFF5FD2549FA02006BBB7C /* AudioExample.xctestplan */,
 				B5F883B72477CBC900D277C1 /* Core */,
 				B55CEAB5248517170001C498 /* Streaming */,
 				B5AEDBBE24744153007D8101 /* Info.plist */,
 			);
 			path = AudioStreamingTests;
-			sourceTree = "<group>";
-		};
-		B5B3B7D42486993B00656828 /* AudioStreamingMac */ = {
-			isa = PBXGroup;
-			children = (
-				B5B3B7D52486993B00656828 /* AudioStreamingMac.h */,
-				B5B3B7D62486993B00656828 /* Info.plist */,
-			);
-			path = AudioStreamingMac;
 			sourceTree = "<group>";
 		};
 		B5E1DE2924B7179E00955BFB /* AudioPlayer */ = {
@@ -428,14 +411,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		B5B3B7CE2486993B00656828 /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				B5B3B7D72486993B00656828 /* AudioStreamingMac.h in Headers */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
@@ -479,24 +454,6 @@
 			productReference = B5AEDBB724744153007D8101 /* AudioStreamingTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		B5B3B7D22486993B00656828 /* AudioStreamingMac */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = B5B3B7D82486993B00656828 /* Build configuration list for PBXNativeTarget "AudioStreamingMac" */;
-			buildPhases = (
-				B5B3B7CE2486993B00656828 /* Headers */,
-				B5B3B7CF2486993B00656828 /* Sources */,
-				B5B3B7D02486993B00656828 /* Frameworks */,
-				B5B3B7D12486993B00656828 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = AudioStreamingMac;
-			productName = AudioStreamingMac;
-			productReference = B5B3B7D32486993B00656828 /* AudioStreamingMac.framework */;
-			productType = "com.apple.product-type.framework";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -514,9 +471,6 @@
 					B5AEDBB624744153007D8101 = {
 						CreatedOnToolsVersion = 11.4;
 						LastSwiftMigration = 1140;
-					};
-					B5B3B7D22486993B00656828 = {
-						CreatedOnToolsVersion = 11.4;
 					};
 				};
 			};
@@ -537,7 +491,6 @@
 			targets = (
 				B5AEDBAD24744153007D8101 /* AudioStreaming */,
 				B5AEDBB624744153007D8101 /* AudioStreamingTests */,
-				B5B3B7D22486993B00656828 /* AudioStreamingMac */,
 			);
 		};
 /* End PBXProject section */
@@ -558,13 +511,6 @@
 				B59CB4C225421F7A00F8CAD0 /* raw-stream-audio-empty-metadata in Resources */,
 				B59CB4C625421FD400F8CAD0 /* raw-stream-audio-no-metadata in Resources */,
 				B59CB4CE2542204D00F8CAD0 /* raw-stream-audio-normal-metadata-alt in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		B5B3B7D12486993B00656828 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -598,6 +544,7 @@
 			files = (
 				B58386382544A2C10087A712 /* EntryFrames.swift in Sources */,
 				B5EF955D247ECBB1003E8FF8 /* RemoteAudioSource.swift in Sources */,
+				B57829CF2548B32B00C78D36 /* Lock.swift in Sources */,
 				B5838640254584A50087A712 /* ProcessedPackets.swift in Sources */,
 				B59DF10424916FD50043C498 /* DispatchQueue+Helpers.swift in Sources */,
 				B5B3B7CC248647ED00656828 /* AudioPlayerState.swift in Sources */,
@@ -648,13 +595,6 @@
 				B592E134254608B4008866FB /* DispatchTimerSourceTests.swift in Sources */,
 				B55CEAB82485172D0001C498 /* HTTPHeaderParserTests.swift in Sources */,
 				B592E12925460146008866FB /* BiMapTests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		B5B3B7CF2486993B00656828 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -887,56 +827,6 @@
 			};
 			name = Release;
 		};
-		B5B3B7D92486993B00656828 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				DEFINES_MODULE = YES;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				INFOPLIST_FILE = AudioStreamingMac/Info.plist;
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@loader_path/Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 10.12;
-				PRODUCT_BUNDLE_IDENTIFIER = com.decimal.AudioStreamingMac;
-				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SDKROOT = macosx;
-				SKIP_INSTALL = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		B5B3B7DA2486993B00656828 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				DEFINES_MODULE = YES;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				INFOPLIST_FILE = AudioStreamingMac/Info.plist;
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@loader_path/Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 10.12;
-				PRODUCT_BUNDLE_IDENTIFIER = com.decimal.AudioStreamingMac;
-				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SDKROOT = macosx;
-				SKIP_INSTALL = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -963,15 +853,6 @@
 			buildConfigurations = (
 				B5AEDBC624744153007D8101 /* Debug */,
 				B5AEDBC724744153007D8101 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		B5B3B7D82486993B00656828 /* Build configuration list for PBXNativeTarget "AudioStreamingMac" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				B5B3B7D92486993B00656828 /* Debug */,
-				B5B3B7DA2486993B00656828 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

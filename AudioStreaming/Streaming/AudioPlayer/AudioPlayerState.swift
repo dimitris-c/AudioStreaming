@@ -53,7 +53,6 @@ func playerStateAndStopReason(for internalState: AudioPlayer.InternalState) -> (
     }
 }
 
-
 // MARK: Public States
 
 public enum AudioPlayerState: Equatable {

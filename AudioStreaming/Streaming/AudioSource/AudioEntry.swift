@@ -10,7 +10,7 @@ public struct AudioEntryId: Equatable {
     public var id: String
 }
 
-public class AudioEntry {
+internal class AudioEntry {
     private let estimationMinPackets = 2
     private let estimationMinPacketsPreferred = 64
 
@@ -32,6 +32,7 @@ public class AudioEntry {
     var audioStreamFormat = AudioStreamBasicDescription()
 
     var seekTime: Float
+
     private(set) var seekRequest: SeekRequest
     private(set) var audioStreamState: AudioStreamState
     private(set) var framesState: EntryFramesState
@@ -91,8 +92,9 @@ public class AudioEntry {
         lock.lock(); defer { lock.unlock() }
         let packets = processedPacketsState
         if packetDuration > 0 {
-            if packets.count > estimationMinPacketsPreferred ||
-                (audioStreamFormat.mBytesPerFrame == 0 && packets.count > estimationMinPackets)
+            let packetsCount = packets.count
+            if packetsCount > estimationMinPacketsPreferred ||
+                (audioStreamFormat.mBytesPerFrame == 0 && packetsCount > estimationMinPackets)
             {
                 return avaragePacketByteSize / packetDuration * 8
             }
@@ -109,9 +111,9 @@ public class AudioEntry {
         guard sampleRate > 0 else { return 0 }
 
         if let audioDataPacketOffset = audioStreamState.dataPacketOffset {
-            let franesPerPacket = UInt64(audioStreamFormat.mFramesPerPacket)
-            if audioDataPacketOffset > 0, franesPerPacket > 0 {
-                return Double(audioDataPacketOffset * franesPerPacket) / audioStreamFormat.mSampleRate
+            let framesPerPacket = UInt64(audioStreamFormat.mFramesPerPacket)
+            if audioDataPacketOffset > 0, framesPerPacket > 0 {
+                return Double(audioDataPacketOffset * framesPerPacket) / audioStreamFormat.mSampleRate
             }
         }
 

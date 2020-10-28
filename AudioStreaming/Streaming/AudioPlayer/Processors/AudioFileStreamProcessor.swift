@@ -255,14 +255,14 @@ final class AudioFileStreamProcessor {
                              inInputData: UnsafeRawPointer,
                              inPacketDescriptions: UnsafeMutablePointer<AudioStreamPacketDescription>?)
     {
-        guard let entry = playerContext.audioReadingEntry,
-              entry.audioStreamState.processedDataFormat, !playerContext.disposedRequested else { return }
+        guard let entry = playerContext.audioReadingEntry else { return }
+        guard entry.audioStreamState.processedDataFormat, !playerContext.disposedRequested else { return }
 
         if let playingEntry = playerContext.audioPlayingEntry,
            playingEntry.seekRequest.requested, playingEntry.calculatedBitrate() > 0
         {
             // TODO: call proccess source on player...
-            if rendererContext.waiting {
+            if rendererContext.waiting.value {
                 rendererContext.packetsSemaphore.signal()
             }
             return
@@ -282,20 +282,8 @@ final class AudioFileStreamProcessor {
             convertInfo.audioBuffer.mNumberChannels = playingAudioStreamFormat.mChannelsPerFrame
         }
 
-        if let readingEntry = playerContext.audioReadingEntry, let inPacketDescriptions = inPacketDescriptions {
-            let processedPackCount = readingEntry.processedPacketsState.count
-            if processedPackCount < maxCompressedPacketForBitrate {
-                let count = min(Int(inNumberPackets), maxCompressedPacketForBitrate - Int(processedPackCount))
-                for i in 0 ..< count {
-                    let packet = inPacketDescriptions[i]
-                    let packetSize: UInt32 = packet.mDataByteSize
-                    readingEntry.lock.lock()
-                    readingEntry.processedPacketsState.sizeTotal += packetSize
-                    readingEntry.processedPacketsState.count += 1
-                    readingEntry.lock.unlock()
-                }
-            }
-        }
+        updateProccessedPackets(inPacketDescriptions: inPacketDescriptions,
+                                inNumberPackets: inNumberPackets)
 
         var status: OSStatus = noErr
         packetProccess: while status == noErr {
@@ -331,15 +319,15 @@ final class AudioFileStreamProcessor {
                    playingEntry.seekRequest.requested, playingEntry.calculatedBitrate() > 0
                 {
                     // TODO: call proccess source on player...
-                    if rendererContext.waiting {
+                    if rendererContext.waiting.value {
                         rendererContext.packetsSemaphore.signal()
                     }
                     return
                 }
 
-                rendererContext.$waiting.write { $0 = true }
+                rendererContext.waiting.write { $0 = true }
                 rendererContext.packetsSemaphore.wait()
-                rendererContext.$waiting.write { $0 = false }
+                rendererContext.waiting.write { $0 = false }
             }
 
             let localBufferList = AudioBufferList.allocate(maximumBuffers: 1)
@@ -460,8 +448,28 @@ final class AudioFileStreamProcessor {
         rendererContext.lock.around {
             rendererContext.bufferContext.frameUsedCount += framesCount
         }
-        playerContext.audioReadingEntry?.lock.around {
-            playerContext.audioReadingEntry?.framesState.queued += Int(framesCount)
+        playerContext.audioReadingEntry?.lock.lock()
+        playerContext.audioReadingEntry?.framesState.queued += Int(framesCount)
+        playerContext.audioReadingEntry?.lock.unlock()
+    }
+
+    @inline(__always)
+    private func updateProccessedPackets(inPacketDescriptions: UnsafeMutablePointer<AudioStreamPacketDescription>?,
+                                         inNumberPackets: UInt32)
+    {
+        guard let inPacketDescriptions = inPacketDescriptions else { return }
+        guard let readingEntry = playerContext.audioReadingEntry else { return }
+        let processedPackCount = readingEntry.processedPacketsState.count
+        if processedPackCount < maxCompressedPacketForBitrate {
+            let count = min(Int(inNumberPackets), maxCompressedPacketForBitrate - Int(processedPackCount))
+            for i in 0..<count {
+                let packet = inPacketDescriptions[i]
+                let packetSize: UInt32 = packet.mDataByteSize
+                readingEntry.lock.lock()
+                readingEntry.processedPacketsState.sizeTotal += packetSize
+                readingEntry.processedPacketsState.count += 1
+                readingEntry.lock.unlock()
+            }
         }
     }
 }

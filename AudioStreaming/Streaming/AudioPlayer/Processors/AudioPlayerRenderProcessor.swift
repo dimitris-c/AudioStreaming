@@ -49,9 +49,11 @@ final class AudioPlayerRenderProcessor: NSObject {
     /// - parameter inNumberFrames: An `AVAudioFrameCount` provided by the `AudioEngine` instance
     /// - returns An optional `UnsafePointer` of `AudioBufferList`
     func inRender(inNumberFrames: AVAudioFrameCount) -> UnsafePointer<AudioBufferList>? {
+        playerContext.entriesLock.lock()
         let playingEntry = playerContext.audioPlayingEntry
         let readingEntry = playerContext.audioReadingEntry
-        let isMuted = playerContext.muted
+        playerContext.entriesLock.unlock()
+        let isMuted = playerContext.muted.value
 
         let state = playerContext.internalState
 
@@ -65,34 +67,34 @@ final class AudioPlayerRenderProcessor: NSObject {
         let used = bufferContext.frameUsedCount
         let start = bufferContext.frameStartIndex
         let end = bufferContext.end
-        let framesConsumedSignal = rendererContext.waiting && used < bufferContext.totalFrameCount / 2
+        let framesConsumedSignal = rendererContext.waiting.value && used < bufferContext.totalFrameCount / 2
 
         if let playingEntry = playingEntry {
+            playingEntry.lock.lock()
+            let framesState = playingEntry.framesState
+            playingEntry.lock.unlock()
             if state == .waitingForData {
                 var requiredFramesToStart = rendererContext.framesRequiredToStartPlaying
-                if playingEntry.framesState.lastFrameQueued >= 0 {
+                if framesState.lastFrameQueued >= 0 {
                     requiredFramesToStart = min(requiredFramesToStart, UInt32(playingEntry.framesState.lastFrameQueued))
                 }
-                if let readingEntry = readingEntry,
-                   readingEntry === playingEntry,
-                   playingEntry.framesState.queued < requiredFramesToStart
+                if let readingEntry = readingEntry, readingEntry === playingEntry,
+                   framesState.queued < requiredFramesToStart
                 {
                     waitForBuffer = true
                 }
             } else if state == .rebuffering {
                 var requiredFramesToStart = rendererContext.framesRequiredAfterRebuffering
-                let frameState = playingEntry.framesState
-                if frameState.lastFrameQueued >= 0 {
-                    requiredFramesToStart = min(requiredFramesToStart, UInt32(frameState.lastFrameQueued - frameState.queued))
+                if framesState.lastFrameQueued >= 0 {
+                    requiredFramesToStart = min(requiredFramesToStart, UInt32(framesState.lastFrameQueued - framesState.queued))
                 }
                 if used < requiredFramesToStart {
                     waitForBuffer = true
                 }
             } else if state == .waitingForDataAfterSeek {
                 var requiredFramesToStart: Int = 1024
-                let frameState = playingEntry.framesState
-                if frameState.lastFrameQueued >= 0 {
-                    requiredFramesToStart = min(requiredFramesToStart, frameState.lastFrameQueued - frameState.queued)
+                if framesState.lastFrameQueued >= 0 {
+                    requiredFramesToStart = min(requiredFramesToStart, framesState.lastFrameQueued - framesState.queued)
                 }
                 if used < requiredFramesToStart {
                     waitForBuffer = true
@@ -216,11 +218,17 @@ final class AudioPlayerRenderProcessor: NSObject {
 
         currentPlayingEntry.lock.unlock()
         if framesConsumedSignal || lastFramePlayed {
-            if lastFramePlayed, playingEntry === playerContext.audioPlayingEntry {
+            playerContext.entriesLock.lock()
+            let entry = playerContext.audioPlayingEntry
+            playerContext.entriesLock.unlock()
+            if lastFramePlayed, playingEntry === entry {
                 audioFinished?(playingEntry)
 
                 while extraFramesPlayedNotAssigned > 0 {
-                    if let newEntry = playerContext.audioPlayingEntry {
+                    playerContext.entriesLock.lock()
+                    let newEntry = playerContext.audioPlayingEntry
+                    playerContext.entriesLock.unlock()
+                    if let newEntry = newEntry {
                         var framesPlayedForCurrent = extraFramesPlayedNotAssigned
 
                         let framesState = newEntry.framesState
@@ -244,7 +252,7 @@ final class AudioPlayerRenderProcessor: NSObject {
                     }
                 }
             }
-            if rendererContext.waiting {
+            if rendererContext.waiting.value {
                 rendererContext.packetsSemaphore.signal()
             }
         }
