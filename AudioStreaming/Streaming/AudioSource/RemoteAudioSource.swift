@@ -19,7 +19,7 @@ public class RemoteAudioSource: AudioStreamSource {
     }
 
     private let url: URL
-    private let networking: NetworkingClient
+    private let networkingClient: NetworkingClient
     private var streamRequest: NetworkDataStream?
 
     private var additionalRequestHeaders: [String: String]
@@ -38,7 +38,7 @@ public class RemoteAudioSource: AudioStreamSource {
     }
 
     internal let underlyingQueue: DispatchQueue
-    internal let networkStreamQueue: OperationQueue
+    internal let streamOperationQueue: OperationQueue
 
     init(networking: NetworkingClient,
          metadataStreamSource: MetadataStreamSource,
@@ -46,17 +46,18 @@ public class RemoteAudioSource: AudioStreamSource {
          underlyingQueue: DispatchQueue,
          httpHeaders: [String: String])
     {
-        self.networking = networking
+        networkingClient = networking
         metadataStreamProccessor = metadataStreamSource
         self.url = url
         additionalRequestHeaders = httpHeaders
         relativePosition = 0
         seekOffset = 0
         self.underlyingQueue = underlyingQueue
-        networkStreamQueue = OperationQueue()
-        networkStreamQueue.underlyingQueue = underlyingQueue
-        networkStreamQueue.maxConcurrentOperationCount = 1
-        networkStreamQueue.isSuspended = true
+        streamOperationQueue = OperationQueue()
+        streamOperationQueue.underlyingQueue = underlyingQueue
+        streamOperationQueue.maxConcurrentOperationCount = 1
+        streamOperationQueue.isSuspended = true
+        streamOperationQueue.name = "remote.audio.source.data.stream.queue"
     }
 
     convenience init(networking: NetworkingClient,
@@ -86,10 +87,10 @@ public class RemoteAudioSource: AudioStreamSource {
     func close() {
         streamRequest?.cancel()
         if let streamTask = streamRequest {
-            networking.remove(task: streamTask)
+            networkingClient.remove(task: streamTask)
         }
         streamRequest = nil
-        networkStreamQueue.cancelAllOperations()
+        streamOperationQueue.cancelAllOperations()
     }
 
     func seek(at offset: Int) {
@@ -109,11 +110,11 @@ public class RemoteAudioSource: AudioStreamSource {
     }
 
     func suspend() {
-        networkStreamQueue.isSuspended = true
+        streamOperationQueue.isSuspended = true
     }
 
     func resume() {
-        networkStreamQueue.isSuspended = false
+        streamOperationQueue.isSuspended = false
     }
 
     // MARK: Private
@@ -121,12 +122,14 @@ public class RemoteAudioSource: AudioStreamSource {
     private func performOpen(seek seekOffset: Int) {
         let urlRequest = buildUrlRequest(with: url, seekIfNeeded: seekOffset)
 
-        streamRequest = networking.stream(request: urlRequest)
+        let request = networkingClient.stream(request: urlRequest)
             .responseStream { [weak self] event in
                 guard let self = self else { return }
                 self.handleResponse(event: event)
             }
-        streamRequest?.resume()
+            .resume()
+
+        streamRequest = request
         metadataStreamProccessor.delegate = self
     }
 
@@ -135,7 +138,9 @@ public class RemoteAudioSource: AudioStreamSource {
     private func handleResponse(event: NetworkDataStream.StreamEvent) {
         switch event {
         case let .response(urlResponse):
-            parseResponseHeader(response: urlResponse)
+            addStreamOperation { [weak self] in
+                self?.parseResponseHeader(response: urlResponse)
+            }
         case let .stream(event):
             addStreamOperation { [weak self] in
                 self?.handleStreamEvent(event: event)
@@ -171,11 +176,9 @@ public class RemoteAudioSource: AudioStreamSource {
 
     private func parseResponseHeader(response: HTTPURLResponse?) {
         guard let response = response else { return }
-        // TODO: Parse Icy header
         let httpStatusCode = response.statusCode
         let parser = HTTPHeaderParser()
         parsedHeaderOutput = parser.parse(input: response)
-        // parse the header response
         // check to see if we have metadata to proccess
         if let metadataStep = parsedHeaderOutput?.metadataStep {
             metadataStreamProccessor.metadataAvailable(step: metadataStep)
@@ -210,17 +213,23 @@ public class RemoteAudioSource: AudioStreamSource {
 
     // MARK: - Network Stream Operation Queue
 
+    /// Schedules the given block on the stream operation queue
+    ///
+    /// - Parameter block: A closure to be executed
     private func addStreamOperation(_ block: @escaping () -> Void) {
         let operation = BlockOperation(block: block)
-        networkStreamQueue.addOperation(operation)
+        streamOperationQueue.addOperation(operation)
     }
 
+    /// Schedules the given block on the stream operation queue as a completion
+    ///
+    /// - Parameter block: A closure to be executed
     private func addCompletionOperation(_ block: @escaping () -> Void) {
         let operation = BlockOperation(block: block)
-        if let lastOperation = networkStreamQueue.operations.last {
+        if let lastOperation = streamOperationQueue.operations.last {
             operation.addDependency(lastOperation)
         }
-        networkStreamQueue.addOperation(operation)
+        streamOperationQueue.addOperation(operation)
     }
 }
 

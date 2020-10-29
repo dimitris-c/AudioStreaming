@@ -32,7 +32,7 @@ protocol CoreAudioStreamSource: AnyObject {
     /// Suspends the underlying stream
     func suspend()
 
-    // Resumes the underlying stream
+    /// Resumes the underlying stream
     func resume()
 
     /// Seeks the stream at the specified offset

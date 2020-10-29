@@ -16,17 +16,25 @@ internal final class NetworkSessionDelegate: NSObject, URLSessionDataDelegate {
         return taskProvider.dataStream(for: task)
     }
 
-    internal func urlSession(_: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+    internal func urlSession(_: URLSession,
+                             dataTask: URLSessionDataTask,
+                             didReceive data: Data)
+    {
         guard let stream = self.stream(for: dataTask) else {
             return
         }
-        stream.didReceive(data: data, response: dataTask.response as? HTTPURLResponse)
+        stream.didReceive(data: data,
+                          response: dataTask.response as? HTTPURLResponse)
     }
 
-    internal func urlSession(_: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-        if let stream = self.stream(for: task) {
-            stream.didComplete(with: error, response: task.response as? HTTPURLResponse)
+    internal func urlSession(_: URLSession,
+                             task: URLSessionTask,
+                             didCompleteWithError error: Error?)
+    {
+        guard let stream = self.stream(for: task) else {
+            return
         }
+        stream.didComplete(with: error, response: task.response as? HTTPURLResponse)
     }
 
     func urlSession(_: URLSession,

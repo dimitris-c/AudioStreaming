@@ -143,6 +143,10 @@ class ViewController: UIViewController {
             slider.tintColor = .darkGray
             slider.thumbTintColor = .black
         }
+        slider.isContinuous = true
+        slider.addTarget(self, action: #selector(sliderTouchedDown), for: .touchDown)
+        slider.addTarget(self, action: #selector(sliderTouchedUp), for: [.touchUpInside, .touchUpOutside])
+        slider.addTarget(self, action: #selector(sliderValueChanged), for: .valueChanged)
 
         elapsedPlayTimeLabel.font = UIFont.preferredFont(forTextStyle: .footnote)
         elapsedPlayTimeLabel.textAlignment = .left
@@ -181,6 +185,22 @@ class ViewController: UIViewController {
         button.tag = content.rawValue // being naive
         button.addTarget(self, action: #selector(play), for: .touchUpInside)
         return button
+    }
+
+    @objc
+    func sliderTouchedDown() {
+        stopDisplayLink(resetLabels: false)
+    }
+
+    @objc
+    func sliderTouchedUp() {
+        startDisplayLink()
+    }
+
+    @objc
+    func sliderValueChanged() {
+
+        print(slider.value)
     }
 
     @objc
@@ -242,18 +262,20 @@ class ViewController: UIViewController {
 
     @objc
     private func tick() {
-        if player.duration() > 0 {
-            let elapsed = Int(player.progress())
-            let remaining = Int(player.duration() - player.progress())
+        let duration = player.duration()
+        let progress = player.progress()
+        if duration > 0 {
+            let elapsed = Int(progress)
+            let remaining = Int(duration - progress)
 
             slider.minimumValue = 0
-            slider.maximumValue = Float(player.duration())
-            slider.value = Float(player.progress())
+            slider.maximumValue = Float(duration)
+            slider.value = Float(progress)
 
             elapsedPlayTimeLabel.text = timeFrom(seconds: elapsed)
             remainingPlayTimeLabel.text = timeFrom(seconds: remaining)
         } else {
-            let elapsed = Int(player.progress())
+            let elapsed = Int(progress)
             elapsedPlayTimeLabel.text = "Live broadcast"
             remainingPlayTimeLabel.text = timeFrom(seconds: elapsed)
         }

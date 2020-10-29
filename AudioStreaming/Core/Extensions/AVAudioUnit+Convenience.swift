@@ -12,21 +12,19 @@ extension AVAudioUnit {
     ///
     /// - parameter description: An `AudioComponentDescription` object that defines the AudioUnit's description
     /// - parameter completion: A block that will get call once the instantiation of an AVAudioUnit will occur.
-    ///
     static func createAudioUnit(with description: AudioComponentDescription,
                                 completion: @escaping (Result<AVAudioUnit, Error>) -> Void)
     {
         AVAudioUnit.instantiate(with: description, options: .loadOutOfProcess) { audioUnit, error in
-            if let error = error {
-                completion(.failure(error))
+            guard let audioUnit = audioUnit else {
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                completion(.failure(AudioPlayerError.audioSystemError(.playerNotFound)))
                 return
             }
-
-            if let audioUnit = audioUnit {
-                completion(.success(audioUnit))
-            } else {
-                completion(.failure(AudioPlayerError.audioSystemError(.playerNotFound)))
-            }
+            completion(.success(audioUnit))
         }
     }
 }

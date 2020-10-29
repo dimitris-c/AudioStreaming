@@ -6,6 +6,7 @@ disabled_rules: # rule identifiers to exclude from running
   - opening_brace
   - trailing_comma
   - file_length
+  - type_body_length
 opt_in_rules: # some rules are only opt-in
   # Find all the available rules by running:
   # swiftlint rules
@@ -28,10 +29,6 @@ line_length:
     ignores_function_declarations: true
     ignores_comments: true
     ignores_urls: true
-# they can set both implicitly with an array
-type_body_length:
-  - 300 # warning
-  - 400 # error
 # or they can set both explicitly
 function_body_length:
   warning: 200

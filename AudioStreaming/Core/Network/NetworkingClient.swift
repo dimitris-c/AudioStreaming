@@ -36,6 +36,7 @@ extension URLSessionConfiguration {
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
         configuration.urlCache = nil
         configuration.httpCookieStorage = nil
+        configuration.shouldUseExtendedBackgroundIdleMode = true
         return configuration
     }
 }
@@ -50,7 +51,7 @@ internal final class NetworkingClient {
 
     internal init(configuration: URLSessionConfiguration = .networkingConfiguration,
                   delegate: NetworkSessionDelegate = NetworkSessionDelegate(),
-                  networkQueue: DispatchQueue = DispatchQueue(label: "com.decimal.session.network.queue"))
+                  networkQueue: DispatchQueue = DispatchQueue(label: "audio.streaming.session.network.queue"))
     {
         let delegateQueue = operationQueue(underlyingQueue: networkQueue)
         let session = URLSession(configuration: configuration, delegate: delegate, delegateQueue: delegateQueue)

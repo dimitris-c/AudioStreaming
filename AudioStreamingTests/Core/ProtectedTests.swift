@@ -12,7 +12,7 @@ class ProtectedTests: XCTestCase {
         measure {
             let protected = Protected<Int>(0)
 
-            DispatchQueue.concurrentPerform(iterations: 1_000_000) { i in
+            DispatchQueue.concurrentPerform(iterations: 1_000_000) { _ in
                 _ = protected.value
                 protected.write { $0 += 1 }
             }

@@ -387,7 +387,6 @@ final class AudioFileStreamProcessor {
                     /// raise undexpected error... codec error
                     return
                 }
-
             } else {
                 var framesAdded: UInt32 = 0
                 var framesToDecode: UInt32 = start - end
@@ -430,11 +429,7 @@ final class AudioFileStreamProcessor {
                                         framesToDecode: UInt32)
     {
         if let mData = rendererContext.audioBuffer.mData {
-            if dataOffset > 0 {
-                bufferList[0].mData = mData + dataOffset
-            } else {
-                bufferList[0].mData = mData
-            }
+            bufferList[0].mData = dataOffset > 0 ? mData + dataOffset : mData
         }
         bufferList[0].mDataByteSize = framesToDecode * rendererContext.bufferContext.sizeInBytes
         bufferList[0].mNumberChannels = rendererContext.audioBuffer.mNumberChannels
@@ -445,9 +440,10 @@ final class AudioFileStreamProcessor {
     /// - parameter frameCount: An `UInt32` value to be added to the used count of the buffers.
     @inline(__always)
     private func fillUsedFrames(framesCount: UInt32) {
-        rendererContext.lock.around {
-            rendererContext.bufferContext.frameUsedCount += framesCount
-        }
+        rendererContext.lock.lock()
+        rendererContext.bufferContext.frameUsedCount += framesCount
+        rendererContext.lock.unlock()
+
         playerContext.audioReadingEntry?.lock.lock()
         playerContext.audioReadingEntry?.framesState.queued += Int(framesCount)
         playerContext.audioReadingEntry?.lock.unlock()
@@ -462,7 +458,7 @@ final class AudioFileStreamProcessor {
         let processedPackCount = readingEntry.processedPacketsState.count
         if processedPackCount < maxCompressedPacketForBitrate {
             let count = min(Int(inNumberPackets), maxCompressedPacketForBitrate - Int(processedPackCount))
-            for i in 0..<count {
+            for i in 0 ..< count {
                 let packet = inPacketDescriptions[i]
                 let packetSize: UInt32 = packet.mDataByteSize
                 readingEntry.lock.lock()

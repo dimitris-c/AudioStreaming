@@ -58,7 +58,7 @@ public final class AudioPlayer {
     /// The underlying `AVAudioEngine` object
     let audioEngine = AVAudioEngine()
     /// An `AVAudioUnit` object that represents the audio player
-    private(set) var player: AVAudioUnit?
+    private(set) var player = AVAudioUnit()
     /// An `AVAudioUnitTimePitch` that controls the playback rate of the audio engine
     let rateNode = AVAudioUnitTimePitch()
 
@@ -90,7 +90,6 @@ public final class AudioPlayer {
 
         rendererContext = AudioRendererContext(configuration: configuration, outputAudioFormat: outputAudioFormat)
         playerContext = AudioPlayerContext()
-
         entriesQueue = PlayerQueueEntries()
 
         sourceQueue = DispatchQueue(label: "source.queue", qos: .userInitiated, target: underlyingQueue)
@@ -277,13 +276,12 @@ public final class AudioPlayer {
     /// Creates and configures an `AVAudioUnit` with an output configuration
     /// and assigns it to the `player` variable.
     private func configPlayerNode() {
-        let playerRenderProcessor = self.playerRenderProcessor
         AVAudioUnit.createAudioUnit(with: UnitDescriptions.output) { [weak self] result in
             guard let self = self else { return }
             switch result {
             case let .success(unit):
                 self.player = unit
-                playerRenderProcessor.attachCallback(on: unit, audioFormat: self.outputAudioFormat)
+                self.playerRenderProcessor.attachCallback(on: unit, audioFormat: self.outputAudioFormat)
             case let .failure(error):
                 assertionFailure("couldn't create player unit: \(error)")
                 self.raiseUnxpected(error: .audioSystemError(.playerNotFound))
@@ -341,7 +339,7 @@ public final class AudioPlayer {
     private func pauseEngine() {
         guard isEngineRunning else { return }
         audioEngine.pause()
-        player?.auAudioUnit.stopHardware()
+        player.auAudioUnit.stopHardware()
         Logger.debug("engine paused ⏸", category: .generic)
     }
 
@@ -354,7 +352,7 @@ public final class AudioPlayer {
             return
         }
         audioEngine.stop()
-        player?.auAudioUnit.stopHardware()
+        player.auAudioUnit.stopHardware()
         rendererContext.resetBuffers()
         playerContext.internalState = .stopped
         playerContext.stopReason.write { $0 = reason }
@@ -364,7 +362,6 @@ public final class AudioPlayer {
     /// Starts the timer of `audioReadSource` for proccesing the source read stream
     ///
     /// This calls `processSource` method every `500 ms`
-    ///
     private func startReadProcessFromSourceIfNeeded() {
         guard audioReadSource.state != .activated else { return }
         audioReadSource.add { [weak self] in
@@ -383,7 +380,6 @@ public final class AudioPlayer {
     ///
     /// - parameter resetBuffers: A `Bool` value indicating if the buffers should be reset, prior starting the player.
     private func startPlayer(resetBuffers: Bool) {
-        guard let player = player else { return }
         if resetBuffers {
             rendererContext.resetBuffers()
         }
@@ -394,6 +390,7 @@ public final class AudioPlayer {
         do {
             try player.auAudioUnit.startHardware()
         } catch {
+            stopEngine(reason: .error)
             raiseUnxpected(error: .audioSystemError(.playerStartError))
         }
         // TODO: stop system background task
@@ -604,7 +601,7 @@ extension AudioPlayer: AudioStreamSourceDelegate {
         playerContext.entriesLock.lock()
         playerContext.audioReadingEntry = nil
         playerContext.entriesLock.unlock()
-        
+
         processSource()
     }
 
