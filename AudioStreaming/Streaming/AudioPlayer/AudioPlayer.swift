@@ -333,7 +333,7 @@ public final class AudioPlayer {
             }
         }
 
-        fileStreamProcessor.effectCallback = { [weak self] effect in
+        fileStreamProcessor.fileStreamCallback = { [weak self] effect in
             guard let self = self else { return }
             switch effect {
             case .proccessSource:

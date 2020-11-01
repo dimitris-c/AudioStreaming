@@ -19,7 +19,7 @@ struct AudioConvertInfo {
     let packDescription: UnsafeMutablePointer<AudioStreamPacketDescription>?
 }
 
-enum FileStreamProccessorEffect {
+enum FileStreamProcessorEffect {
     case proccessSource
     case raiseError(AudioPlayerError)
 }
@@ -28,7 +28,7 @@ enum FileStreamProccessorEffect {
 final class AudioFileStreamProcessor {
     private let maxCompressedPacketForBitrate = 4096
 
-    var effectCallback: ((FileStreamProccessorEffect) -> Void)?
+    var fileStreamCallback: ((FileStreamProcessorEffect) -> Void)?
 
     private let playerContext: AudioPlayerContext
     private let rendererContext: AudioRendererContext
@@ -165,7 +165,7 @@ final class AudioFileStreamProcessor {
 
         if audioConverter == nil {
             guard AudioConverterNew(&inputFormat, &outputFormat, &audioConverter) == noErr else {
-                effectCallback?(.raiseError(.audioSystemError(.fileStreamError)))
+                fileStreamCallback?(.raiseError(.audioSystemError(.fileStreamError)))
                 return
             }
         }
@@ -183,7 +183,7 @@ final class AudioFileStreamProcessor {
                 return
             }
             guard AudioFileStreamSetProperty(fileStream, kAudioConverterDecompressionMagicCookie, cookieSize, cookie) == noErr else {
-                effectCallback?(.raiseError(.audioSystemError(.fileStreamError)))
+                fileStreamCallback?(.raiseError(.audioSystemError(.fileStreamError)))
                 return
             }
         }
@@ -328,7 +328,7 @@ final class AudioFileStreamProcessor {
         if let playingEntry = playerContext.audioPlayingEntry,
            playingEntry.seekRequest.requested, playingEntry.calculatedBitrate() > 0
         {
-            effectCallback?(.proccessSource)
+            fileStreamCallback?(.proccessSource)
             if rendererContext.waiting.value {
                 rendererContext.packetsSemaphore.signal()
             }
@@ -388,7 +388,7 @@ final class AudioFileStreamProcessor {
                 if let playingEntry = playerContext.audioPlayingEntry,
                    playingEntry.seekRequest.requested, playingEntry.calculatedBitrate() > 0
                 {
-                    effectCallback?(.proccessSource)
+                    fileStreamCallback?(.proccessSource)
                     if rendererContext.waiting.value {
                         rendererContext.packetsSemaphore.signal()
                     }

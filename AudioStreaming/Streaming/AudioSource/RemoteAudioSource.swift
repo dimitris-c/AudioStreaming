@@ -28,7 +28,7 @@ public class RemoteAudioSource: AudioStreamSource {
     private var relativePosition: Int
     private var seekOffset: Int
 
-    internal var metadataStreamProccessor: MetadataStreamSource
+    internal var metadataStreamProcessor: MetadataStreamSource
 
     internal var audioFileHint: AudioFileTypeID {
         guard let output = parsedHeaderOutput else {
@@ -48,7 +48,7 @@ public class RemoteAudioSource: AudioStreamSource {
          httpHeaders: [String: String])
     {
         networkingClient = networking
-        metadataStreamProccessor = metadataStreamSource
+        metadataStreamProcessor = metadataStreamSource
         self.url = url
         additionalRequestHeaders = httpHeaders
         relativePosition = 0
@@ -67,9 +67,9 @@ public class RemoteAudioSource: AudioStreamSource {
                      httpHeaders: [String: String])
     {
         let metadataParser = MetadataParser()
-        let metadataProccessor = MetadataStreamProcessor(parser: metadataParser.eraseToAnyParser())
+        let metadataProcessor = MetadataStreamProcessor(parser: metadataParser.eraseToAnyParser())
         self.init(networking: networking,
-                  metadataStreamSource: metadataProccessor,
+                  metadataStreamSource: metadataProcessor,
                   url: url,
                   underlyingQueue: underlyingQueue,
                   httpHeaders: httpHeaders)
@@ -133,7 +133,7 @@ public class RemoteAudioSource: AudioStreamSource {
             .resume()
 
         streamRequest = request
-        metadataStreamProccessor.delegate = self
+        metadataStreamProcessor.delegate = self
     }
 
     // MARK: - Network Handle Methods
@@ -163,8 +163,8 @@ public class RemoteAudioSource: AudioStreamSource {
         switch event {
         case let .success(value):
             if let data = value.data {
-                if metadataStreamProccessor.canProccessMetadata {
-                    let extractedAudioData = metadataStreamProccessor.proccessMetadata(data: data)
+                if metadataStreamProcessor.canProccessMetadata {
+                    let extractedAudioData = metadataStreamProcessor.proccessMetadata(data: data)
                     delegate?.dataAvailable(source: self, data: extractedAudioData)
                 } else {
                     delegate?.dataAvailable(source: self, data: data)
@@ -183,7 +183,7 @@ public class RemoteAudioSource: AudioStreamSource {
         parsedHeaderOutput = parser.parse(input: response)
         // check to see if we have metadata to proccess
         if let metadataStep = parsedHeaderOutput?.metadataStep {
-            metadataStreamProccessor.metadataAvailable(step: metadataStep)
+            metadataStreamProcessor.metadataAvailable(step: metadataStep)
         }
         // check for error
         if httpStatusCode == 416 { // range not satisfied error

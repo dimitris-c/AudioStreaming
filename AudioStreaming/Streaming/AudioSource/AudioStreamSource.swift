@@ -47,5 +47,5 @@ protocol AudioStreamSource: CoreAudioStreamSource {
     var underlyingQueue: DispatchQueue { get }
 
     /// A `MetadataStreamSource` object that handles the metadata parsing
-    var metadataStreamProccessor: MetadataStreamSource { get }
+    var metadataStreamProcessor: MetadataStreamSource { get }
 }
