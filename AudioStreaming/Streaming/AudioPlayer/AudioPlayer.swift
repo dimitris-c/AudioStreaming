@@ -93,7 +93,7 @@ public final class AudioPlayer {
         entriesQueue = PlayerQueueEntries()
 
         sourceQueue = DispatchQueue(label: "source.queue", qos: .userInitiated, target: underlyingQueue)
-        audioReadSource = DispatchTimerSource(interval: .milliseconds(200), queue: underlyingQueue)
+        audioReadSource = DispatchTimerSource(interval: .milliseconds(200), queue: sourceQueue)
 
         fileStreamProcessor = AudioFileStreamProcessor(playerContext: playerContext,
                                                        rendererContext: rendererContext,
@@ -426,16 +426,18 @@ public final class AudioPlayer {
             return
         }
         do {
+            try player.auAudioUnit.allocateRenderResources()
             try player.auAudioUnit.startHardware()
         } catch {
             stopEngine(reason: .error)
             raiseUnxpected(error: .audioSystemError(.playerStartError))
         }
-        // TODO: stop system background task
     }
 
     /// Processing the `playerContext` state to ensure correct behavior of playing/stop/seek
     private func processSource() {
+        dispatchPrecondition(condition: .onQueue(sourceQueue))
+
         guard !playerContext.disposedRequested else { return }
         guard playerContext.internalState != .paused else { return }
 

@@ -88,8 +88,8 @@ public class RemoteAudioSource: AudioStreamSource {
     func close() {
         streamOperationQueue.isSuspended = true
         streamOperationQueue.cancelAllOperations()
-        streamRequest?.cancel()
         if let streamTask = streamRequest {
+            streamTask.cancel()
             networkingClient.remove(task: streamTask)
         }
         streamRequest = nil
@@ -111,10 +111,12 @@ public class RemoteAudioSource: AudioStreamSource {
     }
 
     func suspend() {
+        streamRequest?.suspend()
         streamOperationQueue.isSuspended = true
     }
 
     func resume() {
+        streamRequest?.resume()
         streamOperationQueue.isSuspended = false
     }
 
@@ -146,11 +148,11 @@ public class RemoteAudioSource: AudioStreamSource {
                 self?.handleStreamEvent(event: event)
             }
         case let .complete(event):
-            addCompletionOperation { [weak self] in
-                guard let self = self else { return }
-                if let error = event.error {
-                    self.delegate?.errorOccured(source: self, error: error)
-                } else {
+            if let error = event.error {
+                delegate?.errorOccured(source: self, error: error)
+            } else {
+                addCompletionOperation { [weak self] in
+                    guard let self = self else { return }
                     self.delegate?.endOfFileOccured(source: self)
                 }
             }
@@ -217,6 +219,7 @@ public class RemoteAudioSource: AudioStreamSource {
     /// - Parameter block: A closure to be executed
     private func addStreamOperation(_ block: @escaping () -> Void) {
         let operation = BlockOperation(block: block)
+        operation.name = "stream.op.\(streamOperations.count)"
         if let lastOp = streamOperations.last {
             operation.addDependency(lastOp)
         }
@@ -229,6 +232,7 @@ public class RemoteAudioSource: AudioStreamSource {
     /// - Parameter block: A closure to be executed
     private func addCompletionOperation(_ block: @escaping () -> Void) {
         let operation = BlockOperation(block: block)
+        operation.name = "stream.completion.op"
         if let lastOperation = streamOperations.last {
             operation.addDependency(lastOperation)
         }

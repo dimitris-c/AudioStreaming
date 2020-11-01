@@ -86,6 +86,12 @@ internal final class NetworkDataStream {
         task = nil
     }
 
+    func suspend() {
+        guard state.canBecome(.suspended) else { return }
+        state = .suspended
+        task?.suspend()
+    }
+
     // MARK: Internal
 
     internal func didReceive(response: HTTPURLResponse?) {

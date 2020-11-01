@@ -15,12 +15,12 @@ public enum NetworkError: Error, Equatable {
     case serverError
     public static func == (lhs: NetworkError, rhs: NetworkError) -> Bool {
         switch (lhs, rhs) {
-            case (.failure, failure):
-                return true
-            case (.serverError, .serverError):
-                return true
-            default:
-                return false
+        case (.failure, failure):
+            return true
+        case (.serverError, .serverError):
+            return true
+        default:
+            return false
         }
     }
 }
@@ -74,8 +74,10 @@ internal final class NetworkingClient {
     }
 
     internal func remove(task: NetworkDataStream) {
-        activeTasks.remove(task)
-        if tasks.isEmpty {
+        if activeTasks.contains(task) {
+            activeTasks.remove(task)
+        }
+        if !tasks.isEmpty {
             tasks[task] = nil
         }
     }
