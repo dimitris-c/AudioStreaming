@@ -24,6 +24,9 @@ final class AudioRendererContext {
 
     let framesRequiredToStartPlaying: UInt32
     let framesRequiredAfterRebuffering: UInt32
+    let framesRequiredForDataAfterSeekPlaying: UInt32
+
+    var waitingForDataAfterSeekFrameCount = Protected<Int32>(0)
 
     private let configuration: AudioPlayerConfiguration
 
@@ -34,6 +37,7 @@ final class AudioRendererContext {
 
         framesRequiredToStartPlaying = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.secondsRequiredToStartPlaying)
         framesRequiredAfterRebuffering = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.secondsRequiredToStartPlayingAfterBufferUnderun)
+        framesRequiredForDataAfterSeekPlaying = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.gracePeriodAfterSeekInSeconds)
 
         let dataByteSize = Int(canonicalStream.mSampleRate * configuration.bufferSizeInSeconds) * Int(canonicalStream.mBytesPerFrame)
         inOutAudioBufferList = allocateBufferList(dataByteSize: dataByteSize)
@@ -55,7 +59,8 @@ final class AudioRendererContext {
     /// Resets the `BufferContext`
     public func resetBuffers() {
         lock.lock(); defer { lock.unlock() }
-        bufferContext.reset()
+        bufferContext.frameStartIndex = 0
+        bufferContext.frameUsedCount = 0
     }
 }
 

@@ -39,6 +39,7 @@ public class RemoteAudioSource: AudioStreamSource {
 
     internal let underlyingQueue: DispatchQueue
     internal let streamOperationQueue: OperationQueue
+    private var streamOperations: [BlockOperation] = []
 
     init(networking: NetworkingClient,
          metadataStreamSource: MetadataStreamSource,
@@ -85,12 +86,13 @@ public class RemoteAudioSource: AudioStreamSource {
     }
 
     func close() {
+        streamOperationQueue.isSuspended = true
+        streamOperationQueue.cancelAllOperations()
         streamRequest?.cancel()
         if let streamTask = streamRequest {
             networkingClient.remove(task: streamTask)
         }
         streamRequest = nil
-        streamOperationQueue.cancelAllOperations()
     }
 
     func seek(at offset: Int) {
@@ -105,7 +107,6 @@ public class RemoteAudioSource: AudioStreamSource {
             return
         }
 
-        resume()
         performOpen(seek: offset)
     }
 
@@ -135,12 +136,11 @@ public class RemoteAudioSource: AudioStreamSource {
 
     // MARK: - Network Handle Methods
 
-    private func handleResponse(event: NetworkDataStream.StreamEvent) {
+    private func handleResponse(event: NetworkDataStream.ResponseEvent) {
         switch event {
         case let .response(urlResponse):
-            addStreamOperation { [weak self] in
-                self?.parseResponseHeader(response: urlResponse)
-            }
+            parseResponseHeader(response: urlResponse)
+            resume()
         case let .stream(event):
             addStreamOperation { [weak self] in
                 self?.handleStreamEvent(event: event)
@@ -205,9 +205,8 @@ public class RemoteAudioSource: AudioStreamSource {
         urlRequest.addValue("1", forHTTPHeaderField: "Icy-MetaData")
 
         if let supportsSeek = parsedHeaderOutput?.supportsSeek, supportsSeek, seekOffset > 0 {
-            urlRequest.addValue("bytes=\(seekOffset)", forHTTPHeaderField: "Range")
+            urlRequest.addValue("bytes=\(seekOffset)-", forHTTPHeaderField: "Range")
         }
-
         return urlRequest
     }
 
@@ -218,7 +217,11 @@ public class RemoteAudioSource: AudioStreamSource {
     /// - Parameter block: A closure to be executed
     private func addStreamOperation(_ block: @escaping () -> Void) {
         let operation = BlockOperation(block: block)
+        if let lastOp = streamOperations.last {
+            operation.addDependency(lastOp)
+        }
         streamOperationQueue.addOperation(operation)
+        streamOperations.append(operation)
     }
 
     /// Schedules the given block on the stream operation queue as a completion
@@ -226,10 +229,11 @@ public class RemoteAudioSource: AudioStreamSource {
     /// - Parameter block: A closure to be executed
     private func addCompletionOperation(_ block: @escaping () -> Void) {
         let operation = BlockOperation(block: block)
-        if let lastOperation = streamOperationQueue.operations.last {
+        if let lastOperation = streamOperations.last {
             operation.addDependency(lastOperation)
         }
         streamOperationQueue.addOperation(operation)
+        streamOperations = []
     }
 }
 

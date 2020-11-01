@@ -15,12 +15,12 @@ public enum NetworkError: Error, Equatable {
     case serverError
     public static func == (lhs: NetworkError, rhs: NetworkError) -> Bool {
         switch (lhs, rhs) {
-        case (.failure, failure):
-            return true
-        case (.serverError, .serverError):
-            return true
-        default:
-            return false
+            case (.failure, failure):
+                return true
+            case (.serverError, .serverError):
+                return true
+            default:
+                return false
         }
     }
 }
@@ -74,9 +74,9 @@ internal final class NetworkingClient {
     }
 
     internal func remove(task: NetworkDataStream) {
-        networkQueue.async { [weak self] in
-            self?.activeTasks.remove(task)
-            self?.tasks[task] = nil
+        activeTasks.remove(task)
+        if tasks.isEmpty {
+            tasks[task] = nil
         }
     }
 
@@ -86,13 +86,10 @@ internal final class NetworkingClient {
     /// - parameter stream: The `NetworkDataStream` object to be performed
     /// - parameter request: The `URLRequest` for the `stream`
     private func setupRequest(_ stream: NetworkDataStream, request: URLRequest) {
-        networkQueue.async { [weak self] in
-            guard let self = self else { return }
-
-            self.activeTasks.insert(stream)
-            let task = stream.task(for: request, using: self.session)
-            self.tasks[stream] = task
-        }
+        guard !stream.isCancelled else { return }
+        activeTasks.insert(stream)
+        let task = stream.task(for: request, using: session)
+        tasks[stream] = task
     }
 }
 

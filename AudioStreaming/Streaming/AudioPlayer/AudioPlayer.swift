@@ -77,7 +77,7 @@ public final class AudioPlayer {
     let playerRenderProcessor: AudioPlayerRenderProcessor
 
     private let audioReadSource: DispatchTimerSource
-    private let underlyingQueue = DispatchQueue(label: "streaming.core.queue", qos: .userInitiated)
+    private let underlyingQueue = DispatchQueue(label: "streaming.core.queue", qos: .userInitiated, attributes: .concurrent)
     private let sourceQueue: DispatchQueue
 
     private(set) lazy var networking = NetworkingClient()
@@ -93,7 +93,7 @@ public final class AudioPlayer {
         entriesQueue = PlayerQueueEntries()
 
         sourceQueue = DispatchQueue(label: "source.queue", qos: .userInitiated, target: underlyingQueue)
-        audioReadSource = DispatchTimerSource(interval: .milliseconds(500), queue: underlyingQueue)
+        audioReadSource = DispatchTimerSource(interval: .milliseconds(200), queue: underlyingQueue)
 
         fileStreamProcessor = AudioFileStreamProcessor(playerContext: playerContext,
                                                        rendererContext: rendererContext,
@@ -202,9 +202,36 @@ public final class AudioPlayer {
             Logger.debug("resuming audio engine failed: %@", category: .generic, args: error.localizedDescription)
         }
 
-        playerContext.audioPlayingEntry?.resume()
+        if let playingEntry = playerContext.audioReadingEntry {
+            if playingEntry.seekRequest.requested {
+                rendererContext.resetBuffers()
+            }
+            playingEntry.resume()
+        }
         startPlayer(resetBuffers: false)
         startReadProcessFromSourceIfNeeded()
+    }
+
+    public func seek(to time: Double) {
+        guard let playingEntry = playerContext.audioPlayingEntry else {
+            return
+        }
+        playingEntry.seekRequest.lock.lock()
+        let alreadyRequestedToSeek = playingEntry.seekRequest.requested
+        playingEntry.seekRequest.requested = true
+        playingEntry.seekRequest.time = time
+        playingEntry.seekRequest.lock.unlock()
+
+        if !alreadyRequestedToSeek {
+            playingEntry.seekRequest.version.write { version in
+                version += 1
+            }
+            playingEntry.suspend()
+            checkRenderWaitingAndNotifyIfNeeded()
+            sourceQueue.async { [weak self] in
+                self?.processSource()
+            }
+        }
     }
 
     /// The duration of the audio, in seconds.
@@ -229,12 +256,11 @@ public final class AudioPlayer {
 
     /// The progress of the audio playback, in seconds.
     public func progress() -> Double {
-        // TODO: account for seek request
         guard playerContext.internalState != .pendingNext else { return 0 }
         playerContext.entriesLock.lock()
         let playingEntry = playerContext.audioPlayingEntry
         playerContext.entriesLock.unlock()
-        guard let entry = playingEntry else { return 0 }
+        guard let entry = playingEntry, !entry.seekRequest.requested else { return 0 }
 
         return entry.lock.around {
             return Double(entry.seekTime) + (Double(entry.framesState.played) / outputAudioFormat.sampleRate)
@@ -306,6 +332,18 @@ public final class AudioPlayer {
                 self.processSource()
             }
         }
+
+        fileStreamProcessor.effectCallback = { [weak self] effect in
+            guard let self = self else { return }
+            switch effect {
+            case .proccessSource:
+                self.sourceQueue.async {
+                    self.processSource()
+                }
+            case let .raiseError(error):
+                self.raiseUnxpected(error: error)
+            }
+        }
     }
 
     /// Attaches and connect nodes to the `AudioEngine`.
@@ -347,7 +385,7 @@ public final class AudioPlayer {
     ///
     /// - parameter reason: A value of `AudioPlayerStopReason` indicating the reason the engine stopped.
     private func stopEngine(reason: AudioPlayerStopReason) {
-        guard isEngineRunning else {
+        guard isEngineRunning && player.auAudioUnit.isRunning else {
             Logger.debug("already already stopped 🛑", category: .generic)
             return
         }
@@ -406,6 +444,27 @@ public final class AudioPlayer {
             playerContext.internalState = .waitingForData
             setCurrentReading(entry: entry, startPlaying: true, shouldClearQueue: true)
             rendererContext.resetBuffers()
+        } else if let playingEntry = playerContext.audioPlayingEntry,
+            playingEntry.seekRequest.requested,
+            playingEntry != playerContext.audioReadingEntry
+        {
+            playingEntry.audioStreamState.processedDataFormat = false
+            playingEntry.reset()
+            if let readingEntry = playerContext.audioReadingEntry {
+                readingEntry.delegate = nil
+                readingEntry.close()
+            }
+            if configuration.flushQueueOnSeek {
+                playerContext.setInternalState(to: .waitingForDataAfterSeek)
+                setCurrentReading(entry: playingEntry, startPlaying: true, shouldClearQueue: true)
+            } else {
+                entriesQueue.requeueBufferingEntries { audioEntry in
+                    audioEntry.reset()
+                }
+                playerContext.setInternalState(to: .waitingForDataAfterSeek)
+                setCurrentReading(entry: playingEntry, startPlaying: true, shouldClearQueue: true)
+            }
+
         } else if playerContext.audioReadingEntry == nil {
             if entriesQueue.count(for: .upcoming) > 0 {
                 let entry = entriesQueue.dequeue(type: .upcoming)
@@ -419,6 +478,29 @@ public final class AudioPlayer {
                 }
             }
         }
+
+        if let playingEntry = playerContext.audioPlayingEntry,
+           playingEntry.audioStreamState.processedDataFormat,
+           playingEntry.calculatedBitrate() > 0.0
+        {
+            let currSeekVersion = playingEntry.seekRequest.version.value
+            let originalSeekToTimeRequested = playingEntry.seekRequest.requested
+
+            if originalSeekToTimeRequested, playerContext.audioReadingEntry === playingEntry {
+                proccessSeekTime()
+
+                playingEntry.seekRequest.version.read { version in
+                    if currSeekVersion == version {
+                        playingEntry.seekRequest.requested = false
+                    }
+                }
+            }
+        }
+    }
+
+    private func proccessSeekTime() {
+        assert(playerContext.audioReadingEntry === playerContext.audioPlayingEntry, "reading and playing entry must be the same")
+        fileStreamProcessor.processSeek()
     }
 
     private func setCurrentReading(entry: AudioEntry?, startPlaying: Bool, shouldClearQueue: Bool) {
@@ -479,10 +561,12 @@ public final class AudioPlayer {
 
         if let nextEntry = nextEntry {
             if !isPlayingSameItemProbablySeek {
-                nextEntry.lock.lock()
-                nextEntry.seekTime = 0
-                nextEntry.lock.unlock()
-                // seek requested no.
+                nextEntry.lock.around {
+                    nextEntry.seekTime = 0
+                }
+                nextEntry.seekRequest.lock.around {
+                    nextEntry.seekRequest.requested = false
+                }
             }
             playerContext.entriesLock.lock()
             playerContext.audioPlayingEntry = nextEntry
@@ -551,7 +635,6 @@ extension AudioPlayer: AudioStreamSourceDelegate {
             }
         }
 
-        // TODO: check for discontinuous stream and add flag
         if fileStreamProcessor.isFileStreamOpen {
             guard fileStreamProcessor.parseFileStreamBytes(data: data) == noErr else {
                 if let playingEntry = playerContext.audioPlayingEntry, playingEntry.has(same: source) {

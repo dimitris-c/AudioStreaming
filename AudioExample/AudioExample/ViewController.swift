@@ -38,7 +38,7 @@ enum AudioContent: Int, CaseIterable {
     var streamUrl: URL {
         switch self {
         case .enlefko:
-            return URL(string: "https://ample-02.radiojar.com/srzwv225e3quv?rj-ttl=5&rj-tok=AAABcmnuHngA2PJ4KSBI9k5cCw")!
+            return URL(string: "https://stream.radiojar.com/srzwv225e3quv")!
         case .offradio:
             return URL(string: "http://s3.yesstreaming.net:7033/stream")!
         case .pepper966:
@@ -46,7 +46,8 @@ enum AudioContent: Int, CaseIterable {
         case .radiox:
             return URL(string: "https://media-ssl.musicradio.com/RadioXLondon")!
         case .khruangbin:
-            return URL(string: "https://p.scdn.co/mp3-preview/cab4b09c23ffc11774d879977131df9d150fcef4?cid=d8a5ed958d274c2e8ee717e6a4b0971d")!
+//            return URL(string: "https://p.scdn.co/mp3-preview/cab4b09c23ffc11774d879977131df9d150fcef4?cid=d8a5ed958d274c2e8ee717e6a4b0971d")!
+            return URL(string: "https://t4.bcbits.com/stream/8fce516db797c2496c024ef8560f1f29/mp3-128/3790863592?p=0&ts=1604330347&t=6415e93344ffaf498b6b4b24717782a046c214ce&token=1604330347_7161bf285cfd2ad2eed6f000b0b280313229290b")!
         case .piano:
             return URL(string: "https://www.kozco.com/tech/piano2-CoolEdit.mp3")!
         }
@@ -144,6 +145,7 @@ class ViewController: UIViewController {
             slider.thumbTintColor = .black
         }
         slider.isContinuous = true
+        slider.semanticContentAttribute = .playback
         slider.addTarget(self, action: #selector(sliderTouchedDown), for: .touchDown)
         slider.addTarget(self, action: #selector(sliderTouchedUp), for: [.touchUpInside, .touchUpOutside])
         slider.addTarget(self, action: #selector(sliderValueChanged), for: .valueChanged)
@@ -187,20 +189,24 @@ class ViewController: UIViewController {
         return button
     }
 
+    var seekValue: Float = 0
+    var isScrubbing: Bool = false
     @objc
     func sliderTouchedDown() {
-        stopDisplayLink(resetLabels: false)
+        isScrubbing = true
     }
 
     @objc
     func sliderTouchedUp() {
-        startDisplayLink()
+        isScrubbing = false
+        if player.duration() > 0 {
+            player.seek(to: Double(slider.value))
+        }
     }
 
     @objc
     func sliderValueChanged() {
-
-        print(slider.value)
+        seekValue = slider.value
     }
 
     @objc
@@ -242,7 +248,8 @@ class ViewController: UIViewController {
     private func startDisplayLink() {
         displayLink?.invalidate()
         displayLink = UIScreen.main.displayLink(withTarget: self, selector: #selector(tick))
-        displayLink?.add(to: .current, forMode: .default)
+        displayLink?.preferredFramesPerSecond = 6
+        displayLink?.add(to: .current, forMode: .common)
     }
 
     private func stopDisplayLink(resetLabels: Bool) {
@@ -270,7 +277,9 @@ class ViewController: UIViewController {
 
             slider.minimumValue = 0
             slider.maximumValue = Float(duration)
-            slider.value = Float(progress)
+            if !isScrubbing {
+                slider.value = Float(progress)
+            }
 
             elapsedPlayTimeLabel.text = timeFrom(seconds: elapsed)
             remainingPlayTimeLabel.text = timeFrom(seconds: remaining)
@@ -298,28 +307,28 @@ extension ViewController: AudioPlayerDelegate {
         print("did cancel items")
     }
 
-    func audioPlayerDidStartPlaying(player _: AudioPlayer, with entryId: AudioEntryId) {
-        print("did start playing: \(entryId)")
+    func audioPlayerDidStartPlaying(player _: AudioPlayer, with _: AudioEntryId) {
+//        print("did start playing: \(entryId)")
         metadataLabel.text = ""
     }
 
-    func audioPlayerDidFinishBuffering(player _: AudioPlayer, with entryId: AudioEntryId) {
-        print("did finish buffering: \(entryId)")
+    func audioPlayerDidFinishBuffering(player _: AudioPlayer, with _: AudioEntryId) {
+//        print("did finish buffering: \(entryId)")
     }
 
-    func audioPlayerStateChanged(player _: AudioPlayer, with newState: AudioPlayerState, previous: AudioPlayerState) {
-        print("player state changed from: \(previous) to: \(newState)")
+    func audioPlayerStateChanged(player _: AudioPlayer, with _: AudioPlayerState, previous _: AudioPlayerState) {
+//        print("player state changed from: \(previous) to: \(newState)")
     }
 
-    func audioPlayerDidFinishPlaying(player _: AudioPlayer, entryId: AudioEntryId, stopReason: AudioPlayerStopReason, progress: Double, duration: Double) {
-        print("player finished playing for: \(entryId)")
-        print("===> stop reason: \(stopReason)")
-        print("===> progress: \(progress)")
-        print("===> duration: \(duration)")
+    func audioPlayerDidFinishPlaying(player _: AudioPlayer, entryId _: AudioEntryId, stopReason _: AudioPlayerStopReason, progress _: Double, duration _: Double) {
+//        print("player finished playing for: \(entryId)")
+//        print("===> stop reason: \(stopReason)")
+//        print("===> progress: \(progress)")
+//        print("===> duration: \(duration)")
     }
 
-    func audioPlayerUnexpectedError(player _: AudioPlayer, error: AudioPlayerError) {
-        print("player error'd unexpectedly: \(error)")
+    func audioPlayerUnexpectedError(player _: AudioPlayer, error _: AudioPlayerError) {
+//        print("player error'd unexpectedly: \(error)")
     }
 
     func audioPlayerDidReadMetadata(player _: AudioPlayer, metadata: [String: String]) {

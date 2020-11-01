@@ -187,14 +187,25 @@ final class AudioPlayerRenderProcessor: NSObject {
                          offset: Int(totalFramesCopied * frameSizeInBytes))
 
             if playingEntry != nil || AudioPlayer.InternalState.waiting.contains(state) {
-                // buffering
                 if playerContext.internalState != .rebuffering {
                     playerContext.setInternalState(to: .rebuffering, when: { state -> Bool in
                         state.contains(.running) && state != .paused
                     })
                 }
             } else if state == .waitingForDataAfterSeek {
-                // TODO: implement this
+                if totalFramesCopied == 0 {
+                    rendererContext.waitingForDataAfterSeekFrameCount.write { $0 += Int32(inNumberFrames - totalFramesCopied) }
+                    if rendererContext.waitingForDataAfterSeekFrameCount.value > rendererContext.framesRequiredForDataAfterSeekPlaying {
+                        if playerContext.internalState != .playing {
+                            playerContext.setInternalState(to: .playing) { state -> Bool in
+                                state.contains(.running) && state != .playing
+                            }
+                        }
+                        rendererContext.waitingForDataAfterSeekFrameCount.write { $0 = 0 }
+                    }
+                } else {
+                    rendererContext.waitingForDataAfterSeekFrameCount.write { $0 = 0 }
+                }
             }
         }
 

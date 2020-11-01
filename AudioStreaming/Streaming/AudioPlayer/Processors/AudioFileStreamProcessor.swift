@@ -19,9 +19,16 @@ struct AudioConvertInfo {
     let packDescription: UnsafeMutablePointer<AudioStreamPacketDescription>?
 }
 
+enum FileStreamProccessorEffect {
+    case proccessSource
+    case raiseError(AudioPlayerError)
+}
+
 /// An object that handles the proccessing of AudioFileStream, its packets etc.
 final class AudioFileStreamProcessor {
     private let maxCompressedPacketForBitrate = 4096
+
+    var effectCallback: ((FileStreamProccessorEffect) -> Void)?
 
     private let playerContext: AudioPlayerContext
     private let rendererContext: AudioRendererContext
@@ -29,6 +36,7 @@ final class AudioFileStreamProcessor {
 
     internal var audioFileStream: AudioFileStreamID?
     internal var audioConverter: AudioConverterRef?
+    internal var discontinuous: Bool = false
     internal var inputFormat = AudioStreamBasicDescription()
     internal var fileFormat: String = ""
 
@@ -74,9 +82,66 @@ final class AudioFileStreamProcessor {
     func parseFileStreamBytes(data: Data) -> OSStatus {
         guard let stream = audioFileStream else { return 0 }
         guard !data.isEmpty else { return 0 }
+        let flags: AudioFileStreamParseFlags = discontinuous ? .discontinuity : .init()
         return data.withUnsafeBytes { buffer -> OSStatus in
-            AudioFileStreamParseBytes(stream, UInt32(buffer.count), buffer.baseAddress, .init())
+            AudioFileStreamParseBytes(stream, UInt32(buffer.count), buffer.baseAddress, flags)
         }
+    }
+
+    func processSeek() {
+        guard let stream = audioFileStream else { return }
+        guard let readingEntry = playerContext.audioReadingEntry else {
+            return
+        }
+
+        guard readingEntry.calculatedBitrate() > 0.0 || (playerContext.audioPlayingEntry?.length ?? 0) > 0 else {
+            return
+        }
+
+        let dataOffset = Double(readingEntry.audioStreamState.dataOffset)
+        let seekTimeToProgress = readingEntry.seekRequest.time / readingEntry.duration()
+        let dataLengthInBytes = Double(readingEntry.audioDataLengthBytes())
+        var seekByteOffset = Int64((dataOffset + seekTimeToProgress) * dataLengthInBytes)
+
+        if seekByteOffset > readingEntry.length - (2 * Int(readingEntry.processedPacketsState.bufferSize)) {
+            seekByteOffset = Int64(readingEntry.length - (2 * Int(readingEntry.processedPacketsState.bufferSize)))
+        }
+
+        readingEntry.lock.lock()
+        readingEntry.seekTime = readingEntry.seekRequest.time
+        readingEntry.lock.unlock()
+
+        let bitrate = readingEntry.calculatedBitrate()
+        if readingEntry.processedPacketsState.count > 0, bitrate > 0 {
+            var ioFlags = AudioFileStreamSeekFlags(rawValue: 0)
+            var packetsAlignedByteOffset: Int64 = 0
+            let seekPacket = Int64(floor(readingEntry.seekRequest.time / readingEntry.packetDuration))
+
+            guard AudioFileStreamSeek(stream, seekPacket, &packetsAlignedByteOffset, &ioFlags) == noErr else {
+                Logger.error("seek failed", category: .generic)
+                return
+            }
+
+            let dataOffset = Int64(readingEntry.audioStreamState.dataOffset)
+            seekByteOffset = packetsAlignedByteOffset + dataOffset
+            if !ioFlags.contains(.offsetIsEstimated) {
+                let delta = Double((seekByteOffset - dataOffset) - packetsAlignedByteOffset) / bitrate * 8
+
+                readingEntry.lock.lock()
+                readingEntry.seekTime -= delta
+                readingEntry.lock.unlock()
+            }
+        }
+
+        if let converted = audioConverter {
+            AudioConverterReset(converted)
+        }
+
+        readingEntry.reset()
+        readingEntry.seek(at: Int(seekByteOffset))
+        rendererContext.waitingForDataAfterSeekFrameCount.write { $0 = 0 }
+        playerContext.internalState = .waitingForDataAfterSeek
+        rendererContext.resetBuffers()
     }
 
     /// Creates an `AudioConverter` instance to be used for converting the remote audio data to the canonical audio format
@@ -100,7 +165,7 @@ final class AudioFileStreamProcessor {
 
         if audioConverter == nil {
             guard AudioConverterNew(&inputFormat, &outputFormat, &audioConverter) == noErr else {
-                // raise error...
+                effectCallback?(.raiseError(.audioSystemError(.fileStreamError)))
                 return
             }
         }
@@ -118,7 +183,7 @@ final class AudioFileStreamProcessor {
                 return
             }
             guard AudioFileStreamSetProperty(fileStream, kAudioConverterDecompressionMagicCookie, cookieSize, cookie) == noErr else {
-                // todo raise error
+                effectCallback?(.raiseError(.audioSystemError(.fileStreamError)))
                 return
             }
         }
@@ -175,6 +240,9 @@ final class AudioFileStreamProcessor {
         var packetCountSize = UInt32(MemoryLayout.size(ofValue: packetCount))
         AudioFileStreamGetProperty(fileStream, kAudioFileStreamProperty_AudioDataPacketCount, &packetCountSize, &packetCount)
         playerContext.audioPlayingEntry?.audioStreamState.dataPacketCount = Double(packetCount)
+        if playerContext.audioPlayingEntry?.audioStreamFormat.mFormatID != kAudioFormatLinearPCM {
+            discontinuous = true
+        }
     }
 
     private func processFileFormat(fileStream: AudioFileStreamID) {
@@ -209,9 +277,8 @@ final class AudioFileStreamProcessor {
             playerContext.audioReadingEntry?.lock.around {
                 playerContext.audioReadingEntry?.processedPacketsState.bufferSize = packetBufferSize
             }
-        }
-        if let readingEntry = playerContext.audioReadingEntry {
-            createAudioConverter(from: readingEntry.audioStreamFormat, to: outputAudioFormat)
+
+            createAudioConverter(from: audioStreamFormat, to: outputAudioFormat)
         }
     }
 
@@ -261,7 +328,7 @@ final class AudioFileStreamProcessor {
         if let playingEntry = playerContext.audioPlayingEntry,
            playingEntry.seekRequest.requested, playingEntry.calculatedBitrate() > 0
         {
-            // TODO: call proccess source on player...
+            effectCallback?(.proccessSource)
             if rendererContext.waiting.value {
                 rendererContext.packetsSemaphore.signal()
             }
@@ -272,6 +339,9 @@ final class AudioFileStreamProcessor {
             Logger.error("Couldn't find audio converter", category: .audioRendering)
             return
         }
+
+        // reset discontinuity
+        discontinuous = false
 
         var convertInfo = AudioConvertInfo(done: false,
                                            numberOfPackets: inNumberPackets,
@@ -314,11 +384,11 @@ final class AudioFileStreamProcessor {
                 {
                     return
                 }
-                // TODO: check for seek time and proccess
+
                 if let playingEntry = playerContext.audioPlayingEntry,
                    playingEntry.seekRequest.requested, playingEntry.calculatedBitrate() > 0
                 {
-                    // TODO: call proccess source on player...
+                    effectCallback?(.proccessSource)
                     if rendererContext.waiting.value {
                         rendererContext.packetsSemaphore.signal()
                     }

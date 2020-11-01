@@ -32,6 +32,7 @@
 		B5667A902499018D00D93F85 /* AudioFileStreamProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5667A8F2499018D00D93F85 /* AudioFileStreamProcessor.swift */; };
 		B5667A922499063D00D93F85 /* AudioPlayerContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5667A912499063D00D93F85 /* AudioPlayerContext.swift */; };
 		B5667B3E249BC43100D93F85 /* AudioPlayerRenderProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5667B3D249BC43000D93F85 /* AudioPlayerRenderProcessor.swift */; };
+		B5737340254DE43E003DFBEC /* measure.swift in Sources */ = {isa = PBXBuildFile; fileRef = B573733F254DE43E003DFBEC /* measure.swift */; };
 		B57829CF2548B32B00C78D36 /* Lock.swift in Sources */ = {isa = PBXBuildFile; fileRef = B57829CE2548B32B00C78D36 /* Lock.swift */; };
 		B58386382544A2C10087A712 /* EntryFrames.swift in Sources */ = {isa = PBXBuildFile; fileRef = B58386372544A2C10087A712 /* EntryFrames.swift */; };
 		B5838640254584A50087A712 /* ProcessedPackets.swift in Sources */ = {isa = PBXBuildFile; fileRef = B583863F254584A50087A712 /* ProcessedPackets.swift */; };
@@ -111,6 +112,7 @@
 		B5667A8F2499018D00D93F85 /* AudioFileStreamProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioFileStreamProcessor.swift; sourceTree = "<group>"; };
 		B5667A912499063D00D93F85 /* AudioPlayerContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerContext.swift; sourceTree = "<group>"; };
 		B5667B3D249BC43000D93F85 /* AudioPlayerRenderProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerRenderProcessor.swift; sourceTree = "<group>"; };
+		B573733F254DE43E003DFBEC /* measure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = measure.swift; sourceTree = "<group>"; };
 		B57829CE2548B32B00C78D36 /* Lock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lock.swift; sourceTree = "<group>"; };
 		B58386372544A2C10087A712 /* EntryFrames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryFrames.swift; sourceTree = "<group>"; };
 		B583863F254584A50087A712 /* ProcessedPackets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessedPackets.swift; sourceTree = "<group>"; };
@@ -274,6 +276,7 @@
 		B592E13025460883008866FB /* Helpers */ = {
 			isa = PBXGroup;
 			children = (
+				B573733F254DE43E003DFBEC /* measure.swift */,
 				B514657E248E3884005C03F7 /* DispatchTimerSource.swift */,
 				B57829CE2548B32B00C78D36 /* Lock.swift */,
 				B500731F24D00BAC00BB4475 /* Logger.swift */,
@@ -554,6 +557,7 @@
 				B59DF1A32493E90C0043C498 /* AudioFileStream+Helpers.swift in Sources */,
 				B54D876D2490E4A000C361A0 /* UnitDescriptions.swift in Sources */,
 				B514657F248E3884005C03F7 /* DispatchTimerSource.swift in Sources */,
+				B5737340254DE43E003DFBEC /* measure.swift in Sources */,
 				B55CEABC24853CD20001C498 /* AudioPlayer.swift in Sources */,
 				B5667B3E249BC43100D93F85 /* AudioPlayerRenderProcessor.swift in Sources */,
 				B5276B6F247D21A000D2F56A /* NetworkingClient.swift in Sources */,

@@ -10,6 +10,10 @@ struct BiMap<Left, Right> where Left: Hashable, Right: Hashable {
     private var leftToRight: [Left: Right] = [:]
     private var rightToLeft: [Right: Left] = [:]
 
+    var isEmpty: Bool {
+        leftValues.isEmpty && rightValues.isEmpty
+    }
+
     var leftValues: [Left] {
         leftToRight.lazy.map(\.key)
     }

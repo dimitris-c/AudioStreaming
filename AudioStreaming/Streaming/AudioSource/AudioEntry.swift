@@ -29,16 +29,21 @@ internal class AudioEntry {
         source.audioFileHint
     }
 
+    var length: Int {
+        source.length
+    }
+
     var audioStreamFormat = AudioStreamBasicDescription()
 
-    var seekTime: Float
+    /// Hold the seek time, if a seek was requested
+    var seekTime: Double
 
     private(set) var seekRequest: SeekRequest
     private(set) var audioStreamState: AudioStreamState
     private(set) var framesState: EntryFramesState
     private(set) var processedPacketsState: ProcessedPacketsState
 
-    private var packetDuration: Double {
+    var packetDuration: Double {
         return Double(audioStreamFormat.mFramesPerPacket) / Double(sampleRate)
     }
 
@@ -124,7 +129,7 @@ internal class AudioEntry {
         return Double(audioDataLengthBytes()) / (calculatedBitrate / 8)
     }
 
-    private func audioDataLengthBytes() -> UInt {
+    func audioDataLengthBytes() -> UInt {
         if let byteCount = audioStreamState.dataByteCount {
             return UInt(byteCount)
         }

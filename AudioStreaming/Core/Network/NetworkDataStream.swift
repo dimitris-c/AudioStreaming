@@ -6,15 +6,23 @@
 import Foundation
 
 internal final class NetworkDataStream {
-    typealias StreamResult = Result<StreamResponse, Error>
-    typealias StreamCompletion = (_ event: NetworkDataStream.StreamEvent) -> Void
+    typealias StreamResult = Result<Response, Error>
+    typealias StreamCompletion = (_ event: NetworkDataStream.ResponseEvent) -> Void
 
-    struct StreamResponse {
+    enum State {
+        case initialised
+        case resumed
+        case suspended
+        case cancelled
+        case finished
+    }
+
+    struct Response {
         let response: HTTPURLResponse?
         let data: Data?
     }
 
-    enum StreamEvent {
+    enum ResponseEvent {
         case stream(StreamResult)
         case complete(Completion)
         case response(HTTPURLResponse?)
@@ -31,8 +39,14 @@ internal final class NetworkDataStream {
     private let underlyingQueue: DispatchQueue
     private let id: UUID
 
+    private var state: State
+
+    var isCancelled: Bool {
+        state == .cancelled
+    }
+
     /// the underlying task of the network request
-    private var task: URLSessionTask?
+    var task: URLSessionTask?
 
     var urlResponse: HTTPURLResponse? {
         task?.response as? HTTPURLResponse
@@ -41,6 +55,7 @@ internal final class NetworkDataStream {
     internal init(id: UUID, underlyingQueue: DispatchQueue) {
         self.id = id
         self.underlyingQueue = underlyingQueue
+        state = .initialised
     }
 
     func task(for request: URLRequest, using session: URLSession) -> URLSessionTask {
@@ -57,13 +72,16 @@ internal final class NetworkDataStream {
 
     @discardableResult
     func resume() -> Self {
-        underlyingQueue.async { [weak self] in
-            self?.task?.resume()
-        }
+        guard state.canBecome(.resumed) else { return self }
+        state = .resumed
+        task?.resume()
         return self
     }
 
     func cancel() {
+        guard state.canBecome(.cancelled) else { return }
+        state = .cancelled
+        streamCallback = nil
         task?.cancel()
         task = nil
     }
@@ -82,7 +100,7 @@ internal final class NetworkDataStream {
         underlyingQueue.async { [weak self] in
             guard let self = self else { return }
             guard let streamCallback = self.streamCallback else { return }
-            let streamResponse = StreamResponse(response: response, data: data)
+            let streamResponse = Response(response: response, data: data)
             streamCallback(.stream(.success(streamResponse)))
         }
     }
@@ -112,5 +130,28 @@ extension NetworkDataStream: Equatable {
 extension NetworkDataStream: Hashable {
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
+    }
+}
+
+extension NetworkDataStream.State {
+    func canBecome(_ state: NetworkDataStream.State) -> Bool {
+        switch (self, state) {
+        case (.initialised, _):
+            return true
+        case (_, .initialised),
+             (.cancelled, _),
+             (.finished, _):
+            return false
+        case (.resumed, .cancelled),
+             (.resumed, .suspended),
+             (.suspended, .resumed),
+             (.suspended, .cancelled):
+            return true
+        case (.suspended, .suspended),
+             (.resumed, .resumed):
+            return false
+        case (_, .finished):
+            return true
+        }
     }
 }
