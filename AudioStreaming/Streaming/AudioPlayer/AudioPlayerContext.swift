@@ -14,8 +14,7 @@ internal final class AudioPlayerContext {
     var muted = Protected<Bool>(false)
 
     var internalState: AudioPlayer.InternalState {
-        get { playerInternalState.value }
-        set { setInternalState(to: newValue) }
+        playerInternalState.value
     }
 
     let entriesLock = UnfairLock()

@@ -12,7 +12,7 @@ final class AudioPlayerRenderProcessor: NSObject {
     var renderBlock: AVAudioEngineManualRenderingBlock?
 
     /// A block that notifies if the audio entry has finished playing
-    var audioFinished: ((_ entry: AudioEntry?) -> Void)?
+    var audioFinishedPlaying: ((_ entry: AudioEntry?) -> Void)?
 
     private let playerContext: AudioPlayerContext
     private let rendererContext: AudioRendererContext
@@ -225,7 +225,7 @@ final class AudioPlayerRenderProcessor: NSObject {
         currentPlayingEntry.framesState.played += Int(framesPlayedForCurrent)
         extraFramesPlayedNotAssigned = totalFramesCopied - framesPlayedForCurrent
 
-        let lastFramePlayed = currentPlayingEntry.framesState.isAtEnd
+        let lastFramePlayed = currentPlayingEntry.framesState.played == currentPlayingEntry.framesState.lastFrameQueued
 
         currentPlayingEntry.lock.unlock()
         if framesConsumedSignal || lastFramePlayed {
@@ -233,7 +233,7 @@ final class AudioPlayerRenderProcessor: NSObject {
             let entry = playerContext.audioPlayingEntry
             playerContext.entriesLock.unlock()
             if lastFramePlayed, playingEntry === entry {
-                audioFinished?(playingEntry)
+                audioFinishedPlaying?(playingEntry)
 
                 while extraFramesPlayedNotAssigned > 0 {
                     playerContext.entriesLock.lock()
@@ -242,16 +242,17 @@ final class AudioPlayerRenderProcessor: NSObject {
                     if let newEntry = newEntry {
                         var framesPlayedForCurrent = extraFramesPlayedNotAssigned
 
+                        newEntry.lock.lock()
                         let framesState = newEntry.framesState
                         if newEntry.framesState.lastFrameQueued > 0 {
                             framesPlayedForCurrent = min(UInt32(framesState.lastFrameQueued - framesState.played), framesPlayedForCurrent)
                         }
-                        newEntry.lock.lock()
+
                         newEntry.framesState.played += Int(framesPlayedForCurrent)
 
-                        if framesState.isAtEnd {
+                        if framesState.played == framesState.lastFrameQueued {
                             newEntry.lock.unlock()
-                            audioFinished?(newEntry)
+                            audioFinishedPlaying?(newEntry)
                         } else {
                             newEntry.lock.unlock()
                         }

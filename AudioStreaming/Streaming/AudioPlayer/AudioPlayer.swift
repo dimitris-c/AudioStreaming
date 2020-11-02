@@ -131,12 +131,12 @@ public final class AudioPlayer {
                                             url: url,
                                             underlyingQueue: sourceQueue,
                                             httpHeaders: headers)
-        let entry = AudioEntry(source: audioSource,
-                               entryId: AudioEntryId(id: url.absoluteString))
-        entry.delegate = self
+        let audioEntry = AudioEntry(source: audioSource,
+                                    entryId: AudioEntryId(id: url.absoluteString))
+        audioEntry.delegate = self
         clearQueue()
-        entriesQueue.enqueue(item: entry, type: .upcoming)
-        playerContext.internalState = .pendingNext
+        entriesQueue.enqueue(item: audioEntry, type: .upcoming)
+        playerContext.setInternalState(to: .pendingNext)
 
         checkRenderWaitingAndNotifyIfNeeded()
         sourceQueue.async { [weak self] in
@@ -148,6 +148,19 @@ public final class AudioPlayer {
             }
             self.processSource()
             self.startReadProcessFromSourceIfNeeded()
+        }
+    }
+
+    public func queue(url: URL) {
+        let audioSource = RemoteAudioSource(networking: networking,
+                                            url: url,
+                                            underlyingQueue: sourceQueue)
+        let audioEntry = AudioEntry(source: audioSource,
+                                    entryId: AudioEntryId(id: url.absoluteString))
+        audioEntry.delegate = self
+        entriesQueue.enqueue(item: audioEntry, type: .upcoming)
+        sourceQueue.async { [weak self] in
+            self?.processSource()
         }
     }
 
@@ -324,7 +337,7 @@ public final class AudioPlayer {
             }
         }
 
-        playerRenderProcessor.audioFinished = { [weak self] entry in
+        playerRenderProcessor.audioFinishedPlaying = { [weak self] entry in
             guard let self = self else { return }
             self.sourceQueue.async {
                 let nextEntry = self.entriesQueue.dequeue(type: .buffering)
@@ -392,7 +405,7 @@ public final class AudioPlayer {
         audioEngine.stop()
         player.auAudioUnit.stopHardware()
         rendererContext.resetBuffers()
-        playerContext.internalState = .stopped
+        playerContext.setInternalState(to: .stopped)
         playerContext.stopReason.write { $0 = reason }
         Logger.debug("engine stopped 🛑", category: .generic)
     }
@@ -443,7 +456,7 @@ public final class AudioPlayer {
 
         if playerContext.internalState == .pendingNext {
             let entry = entriesQueue.dequeue(type: .upcoming)
-            playerContext.internalState = .waitingForData
+            playerContext.setInternalState(to: .waitingForData)
             setCurrentReading(entry: entry, startPlaying: true, shouldClearQueue: true)
             rendererContext.resetBuffers()
         } else if let playingEntry = playerContext.audioPlayingEntry,
@@ -471,7 +484,7 @@ public final class AudioPlayer {
             if entriesQueue.count(for: .upcoming) > 0 {
                 let entry = entriesQueue.dequeue(type: .upcoming)
                 let shouldStartPlaying = playerContext.audioPlayingEntry == nil
-                playerContext.internalState = .waitingForData
+                playerContext.setInternalState(to: .waitingForData)
                 setCurrentReading(entry: entry, startPlaying: shouldStartPlaying, shouldClearQueue: true)
             } else if playerContext.audioPlayingEntry == nil {
                 if playerContext.internalState != .stopped {
@@ -541,7 +554,7 @@ public final class AudioPlayer {
         let playingEntry = playerContext.entriesLock.around { playerContext.audioPlayingEntry }
         guard entry == playingEntry else { return }
 
-        let isPlayingSameItemProbablySeek = playerContext.audioPlayingEntry == nextEntry
+        let isPlayingSameItemProbablySeek = playerContext.audioPlayingEntry === nextEntry
 
         let notifyDelegateEntryFinishedPlaying: (AudioEntry?, Bool) -> Void = { [weak self] entry, _ in
             guard let self = self else { return }
@@ -573,11 +586,11 @@ public final class AudioPlayer {
             playerContext.entriesLock.lock()
             playerContext.audioPlayingEntry = nextEntry
             playerContext.entriesLock.unlock()
-            let playingQueueEntryId = nextEntry.id
+            let playingQueueEntryId = playingEntry?.id ?? AudioEntryId(id: "")
 
             notifyDelegateEntryFinishedPlaying(entry, isPlayingSameItemProbablySeek)
             if !isPlayingSameItemProbablySeek {
-                playerContext.internalState = .waitingForData
+                playerContext.setInternalState(to: .waitingForData)
 
                 asyncOnMain { [weak self] in
                     guard let self = self else { return }
@@ -614,7 +627,7 @@ public final class AudioPlayer {
     }
 
     private func raiseUnxpected(error: AudioPlayerError) {
-        playerContext.internalState = .error
+        playerContext.setInternalState(to: .error)
         // todo raise on main thread from playback thread
         asyncOnMain { [weak self] in
             guard let self = self else { return }

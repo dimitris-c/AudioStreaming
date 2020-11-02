@@ -140,7 +140,7 @@ final class AudioFileStreamProcessor {
         readingEntry.reset()
         readingEntry.seek(at: Int(seekByteOffset))
         rendererContext.waitingForDataAfterSeekFrameCount.write { $0 = 0 }
-        playerContext.internalState = .waitingForDataAfterSeek
+        playerContext.setInternalState(to: .waitingForDataAfterSeek)
         rendererContext.resetBuffers()
     }
 

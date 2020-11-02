@@ -142,7 +142,7 @@ public class RemoteAudioSource: AudioStreamSource {
         switch event {
         case let .response(urlResponse):
             parseResponseHeader(response: urlResponse)
-            resume()
+            streamOperationQueue.isSuspended = false
         case let .stream(event):
             addStreamOperation { [weak self] in
                 self?.handleStreamEvent(event: event)
