@@ -60,6 +60,7 @@
 		B5F883B62476DADB00D277C1 /* Protected.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5F883B52476DADB00D277C1 /* Protected.swift */; };
 		B5F883BA2477CEFC00D277C1 /* ProtectedTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5F883B82477CBF600D277C1 /* ProtectedTests.swift */; };
 		B5F883C32477DC4400D277C1 /* NetworkDataStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5F883C22477DC4400D277C1 /* NetworkDataStream.swift */; };
+		B5FB6C0525516507002C0A37 /* AudioConverter+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5FB6C0425516507002C0A37 /* AudioConverter+Helpers.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -142,6 +143,7 @@
 		B5F883B52476DADB00D277C1 /* Protected.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Protected.swift; sourceTree = "<group>"; };
 		B5F883B82477CBF600D277C1 /* ProtectedTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtectedTests.swift; sourceTree = "<group>"; };
 		B5F883C22477DC4400D277C1 /* NetworkDataStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkDataStream.swift; sourceTree = "<group>"; };
+		B5FB6C0425516507002C0A37 /* AudioConverter+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AudioConverter+Helpers.swift"; sourceTree = "<group>"; };
 		B5FFF5FD2549FA02006BBB7C /* AudioExample.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = AudioExample.xctestplan; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -198,6 +200,7 @@
 		B55CE97624813BA10001C498 /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
+				B5FB6C0425516507002C0A37 /* AudioConverter+Helpers.swift */,
 				B59DF1A22493E90C0043C498 /* AudioFileStream+Helpers.swift */,
 				B55CE97724813BCA0001C498 /* UnsafeMutablePointer+Helpers.swift */,
 				B59DF10324916FD50043C498 /* DispatchQueue+Helpers.swift */,
@@ -569,6 +572,7 @@
 				B5667A922499063D00D93F85 /* AudioPlayerContext.swift in Sources */,
 				B55CE97124810DE20001C498 /* MetadataStreamProcessor.swift in Sources */,
 				B55CEAB42485107C0001C498 /* Parser.swift in Sources */,
+				B5FB6C0525516507002C0A37 /* AudioConverter+Helpers.swift in Sources */,
 				B5E1DE2524B70B4200955BFB /* AudioPlayerConfiguration.swift in Sources */,
 				B5F883C32477DC4400D277C1 /* NetworkDataStream.swift in Sources */,
 				B54D876F2490E4DD00C361A0 /* AudioRendererContext.swift in Sources */,

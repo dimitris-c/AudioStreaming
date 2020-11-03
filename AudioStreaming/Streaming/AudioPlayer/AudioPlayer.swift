@@ -644,16 +644,20 @@ extension AudioPlayer: AudioStreamSourceDelegate {
         }
 
         if !fileStreamProcessor.isFileStreamOpen {
-            guard fileStreamProcessor.openFileStream(with: source.audioFileHint) == noErr else {
-                raiseUnxpected(error: .audioSystemError(.fileStreamError))
+            let openFileStreamStatus = fileStreamProcessor.openFileStream(with: source.audioFileHint)
+            guard openFileStreamStatus == noErr else {
+                let streamError = AudioFileStreamError(status: openFileStreamStatus)
+                raiseUnxpected(error: .audioSystemError(.fileStreamError(streamError)))
                 return
             }
         }
 
         if fileStreamProcessor.isFileStreamOpen {
-            guard fileStreamProcessor.parseFileStreamBytes(data: data) == noErr else {
+            let streamBytesStatus = fileStreamProcessor.parseFileStreamBytes(data: data)
+            guard streamBytesStatus == noErr else {
                 if let playingEntry = playerContext.audioPlayingEntry, playingEntry.has(same: source) {
-                    raiseUnxpected(error: .streamParseBytesFailure)
+                    let streamBytesError = AudioFileStreamError(status: streamBytesStatus)
+                    raiseUnxpected(error: .streamParseBytesFailure(streamBytesError))
                 }
                 return
             }

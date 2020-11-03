@@ -164,8 +164,10 @@ final class AudioFileStreamProcessor {
         }
 
         if audioConverter == nil {
-            guard AudioConverterNew(&inputFormat, &outputFormat, &audioConverter) == noErr else {
-                fileStreamCallback?(.raiseError(.audioSystemError(.fileStreamError)))
+            let audioConverterStatus = AudioConverterNew(&inputFormat, &outputFormat, &audioConverter)
+            guard audioConverterStatus == noErr else {
+                let audioConverterError = AudioConverterError(osstatus: audioConverterStatus)
+                fileStreamCallback?(.raiseError(.audioSystemError(.converterError(audioConverterError))))
                 return
             }
         }
@@ -183,7 +185,7 @@ final class AudioFileStreamProcessor {
                 return
             }
             guard AudioFileStreamSetProperty(fileStream, kAudioConverterDecompressionMagicCookie, cookieSize, cookie) == noErr else {
-                fileStreamCallback?(.raiseError(.audioSystemError(.fileStreamError)))
+                fileStreamCallback?(.raiseError(.audioSystemError(.fileStreamError(.unknownError))))
                 return
             }
         }
