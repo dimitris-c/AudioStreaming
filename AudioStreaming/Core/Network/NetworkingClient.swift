@@ -46,6 +46,7 @@ internal final class NetworkingClient {
     weak var delegate: NetworkSessionDelegate?
     let networkQueue: DispatchQueue
 
+    var tasksLock = UnfairLock()
     var tasks = BiMap<URLSessionTask, NetworkDataStream>()
     var activeTasks = Set<NetworkDataStream>()
 
@@ -74,6 +75,7 @@ internal final class NetworkingClient {
     }
 
     internal func remove(task: NetworkDataStream) {
+        tasksLock.lock(); defer { tasksLock.unlock() }
         if activeTasks.contains(task) {
             activeTasks.remove(task)
         }
@@ -88,6 +90,7 @@ internal final class NetworkingClient {
     /// - parameter stream: The `NetworkDataStream` object to be performed
     /// - parameter request: The `URLRequest` for the `stream`
     private func setupRequest(_ stream: NetworkDataStream, request: URLRequest) {
+        tasksLock.lock(); defer { tasksLock.unlock() }
         guard !stream.isCancelled else { return }
         activeTasks.insert(stream)
         let task = stream.task(for: request, using: session)
@@ -99,11 +102,13 @@ internal final class NetworkingClient {
 
 extension NetworkingClient: StreamTaskProvider {
     internal func dataStream(for request: URLSessionTask) -> NetworkDataStream? {
-        tasks[request] ?? nil
+        tasksLock.lock(); defer { tasksLock.unlock() }
+        return tasks[request] ?? nil
     }
 
     internal func sessionTask(for stream: NetworkDataStream) -> URLSessionTask? {
-        tasks[stream] ?? nil
+        tasksLock.lock(); defer { tasksLock.unlock() }
+        return tasks[stream] ?? nil
     }
 }
 
