@@ -214,16 +214,16 @@ final class AudioPlayerRenderProcessor: NSObject {
         }
         currentPlayingEntry.lock.lock()
 
-        var extraFramesPlayedNotAssigned: UInt32 = 0
-        var framesPlayedForCurrent = totalFramesCopied
+        var extraFramesPlayedNotAssigned: Int = 0
+        var framesPlayedForCurrent = Int(totalFramesCopied)
 
         if currentPlayingEntry.framesState.lastFrameQueued >= 0 {
-            let playedFrames = UInt32(currentPlayingEntry.framesState.lastFrameQueued - currentPlayingEntry.framesState.played)
+            let playedFrames = currentPlayingEntry.framesState.lastFrameQueued - currentPlayingEntry.framesState.played
             framesPlayedForCurrent = min(playedFrames, framesPlayedForCurrent)
         }
 
         currentPlayingEntry.framesState.played += Int(framesPlayedForCurrent)
-        extraFramesPlayedNotAssigned = totalFramesCopied - framesPlayedForCurrent
+        extraFramesPlayedNotAssigned = Int(totalFramesCopied) - framesPlayedForCurrent
 
         let lastFramePlayed = currentPlayingEntry.framesState.played == currentPlayingEntry.framesState.lastFrameQueued
 
@@ -245,10 +245,10 @@ final class AudioPlayerRenderProcessor: NSObject {
                         newEntry.lock.lock()
                         let framesState = newEntry.framesState
                         if newEntry.framesState.lastFrameQueued > 0 {
-                            framesPlayedForCurrent = min(UInt32(framesState.lastFrameQueued - framesState.played), framesPlayedForCurrent)
+                            framesPlayedForCurrent = min(framesState.lastFrameQueued - framesState.played, framesPlayedForCurrent)
                         }
 
-                        newEntry.framesState.played += Int(framesPlayedForCurrent)
+                        newEntry.framesState.played += framesPlayedForCurrent
 
                         if framesState.played == framesState.lastFrameQueued {
                             newEntry.lock.unlock()
