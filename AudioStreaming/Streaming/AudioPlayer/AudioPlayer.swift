@@ -18,7 +18,7 @@ public final class AudioPlayer {
     ///
     /// Defaults to 1.0. Valid ranges are 0.0 to 1.0
     /// The value is restricted from 0.0 to 1.0
-    public var volume: Float32 {
+    public var volume: Float {
         get { audioEngine.mainMixerNode.outputVolume }
         set { audioEngine.mainMixerNode.outputVolume = min(1.0, max(0.0, newValue)) }
     }
@@ -49,7 +49,7 @@ public final class AudioPlayer {
 
     /// An `AVAudioFormat` object for the canonical audio stream
     private var outputAudioFormat: AVAudioFormat = {
-        AVAudioFormat(commonFormat: .pcmFormatInt32, sampleRate: 44100.0, channels: 2, interleaved: true)!
+        AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 44100.0, channels: 2, interleaved: true)!
     }()
 
     /// Keeps track of the player's state before being paused.
@@ -80,7 +80,7 @@ public final class AudioPlayer {
     private let underlyingQueue = DispatchQueue(label: "streaming.core.queue", qos: .userInitiated, attributes: .concurrent)
     private let sourceQueue: DispatchQueue
 
-    private(set) lazy var networking = NetworkingClient()
+    private let networking: NetworkingClient
     var audioSource: AudioStreamSource?
 
     var entriesQueue: PlayerQueueEntries
@@ -88,6 +88,7 @@ public final class AudioPlayer {
     public init(configuration: AudioPlayerConfiguration = .default) {
         self.configuration = configuration.normalizeValues()
 
+        networking = NetworkingClient()
         rendererContext = AudioRendererContext(configuration: configuration, outputAudioFormat: outputAudioFormat)
         playerContext = AudioPlayerContext()
         entriesQueue = PlayerQueueEntries()
@@ -477,7 +478,7 @@ public final class AudioPlayer {
                     audioEntry.reset()
                 }
                 playerContext.setInternalState(to: .waitingForDataAfterSeek)
-                setCurrentReading(entry: playingEntry, startPlaying: true, shouldClearQueue: true)
+                setCurrentReading(entry: playingEntry, startPlaying: true, shouldClearQueue: false)
             }
 
         } else if playerContext.audioReadingEntry == nil {
@@ -522,8 +523,7 @@ public final class AudioPlayer {
         guard let entry = entry else { return }
         Logger.debug("Setting current reading entry to: %@", category: .generic, args: entry.debugDescription)
         if startPlaying {
-            let count = Int(rendererContext.bufferContext.totalFrameCount * rendererContext.bufferContext.sizeInBytes)
-            memset(rendererContext.audioBuffer.mData, 0, count)
+            rendererContext.fillSilenceAudioBuffer()
         }
 
         fileStreamProcessor.closeFileStreamIfNeeded()

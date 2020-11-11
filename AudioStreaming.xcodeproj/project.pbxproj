@@ -134,6 +134,7 @@
 		B5AEDBB724744153007D8101 /* AudioStreamingTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AudioStreamingTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5AEDBBE24744153007D8101 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B5B3B7CB248647ED00656828 /* AudioPlayerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerState.swift; sourceTree = "<group>"; };
+		B5DB66DA255C079C00B8DF53 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		B5E1DE2424B70B4200955BFB /* AudioPlayerConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerConfiguration.swift; sourceTree = "<group>"; };
 		B5EF954D247DA5AC003E8FF8 /* NetworkingClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkingClientTests.swift; sourceTree = "<group>"; };
 		B5EF9554247E9393003E8FF8 /* AudioEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEntry.swift; sourceTree = "<group>"; };
@@ -252,6 +253,7 @@
 		B57A4F7A24AB4E6C00D7EA51 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				B5DB66DA255C079C00B8DF53 /* AVFoundation.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";

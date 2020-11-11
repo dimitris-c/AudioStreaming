@@ -32,10 +32,7 @@ struct HTTPHeaderParser: Parser {
     func parse(input: HTTPURLResponse) -> HTTPHeaderParserOutput? {
         guard let headers = input.allHeaderFields as? [String: String], !headers.isEmpty else { return nil }
 
-        var supportsSeek = false
-        if let acceptRanges = headers[HeaderField.acceptRanges], acceptRanges != "none" {
-            supportsSeek = true
-        }
+        let supportsSeek = headers[HeaderField.acceptRanges] != "none"
 
         var typeId: UInt32 = 0
         if let contentType = input.mimeType {

@@ -56,6 +56,7 @@ internal let fileTypesFromFileExtension: [String: AudioFileTypeID] =
         "aac": kAudioFileAAC_ADTSType,
         "ac3": kAudioFileAC3Type,
         "3gp": kAudioFile3GPType,
+        "flac": kAudioFileFLACType,
     ]
 
 func audioFileType(fileExtension: String) -> AudioFileTypeID {

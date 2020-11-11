@@ -4,6 +4,7 @@
 //
 
 import AudioToolbox
+import AVFoundation
 import Foundation
 
 public class RemoteAudioSource: AudioStreamSource {
@@ -31,7 +32,7 @@ public class RemoteAudioSource: AudioStreamSource {
     internal var metadataStreamProcessor: MetadataStreamSource
 
     internal var audioFileHint: AudioFileTypeID {
-        guard let output = parsedHeaderOutput else {
+        guard let output = parsedHeaderOutput, output.typeId != 0 else {
             return audioFileType(fileExtension: url.pathExtension)
         }
         return output.typeId
@@ -205,6 +206,7 @@ public class RemoteAudioSource: AudioStreamSource {
         }
         urlRequest.addValue("*/*", forHTTPHeaderField: "Accept")
         urlRequest.addValue("1", forHTTPHeaderField: "Icy-MetaData")
+        urlRequest.addValue("identity", forHTTPHeaderField: "Accept-Encoding")
 
         if let supportsSeek = parsedHeaderOutput?.supportsSeek, supportsSeek, seekOffset > 0 {
             urlRequest.addValue("bytes=\(seekOffset)-", forHTTPHeaderField: "Range")
@@ -220,9 +222,6 @@ public class RemoteAudioSource: AudioStreamSource {
     private func addStreamOperation(_ block: @escaping () -> Void) {
         let operation = BlockOperation(block: block)
         operation.name = "stream.op.\(streamOperations.count)"
-        if let lastOp = streamOperations.last {
-            operation.addDependency(lastOp)
-        }
         streamOperationQueue.addOperation(operation)
         streamOperations.append(operation)
     }

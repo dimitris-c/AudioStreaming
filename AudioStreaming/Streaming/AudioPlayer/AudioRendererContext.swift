@@ -50,14 +50,19 @@ final class AudioRendererContext {
                                       totalFrameCount: bufferTotalFrameCount)
     }
 
+    func fillSilenceAudioBuffer() {
+        let count = Int(bufferContext.totalFrameCount * bufferContext.sizeInBytes)
+        memset(audioBuffer.mData, 0, count)
+    }
+
     /// Deallocates buffer resources
-    public func clean() {
+    func clean() {
         inOutAudioBufferList.deallocate()
         audioBuffer.mData?.deallocate()
     }
 
     /// Resets the `BufferContext`
-    public func resetBuffers() {
+    func resetBuffers() {
         lock.lock(); defer { lock.unlock() }
         bufferContext.frameStartIndex = 0
         bufferContext.frameUsedCount = 0
