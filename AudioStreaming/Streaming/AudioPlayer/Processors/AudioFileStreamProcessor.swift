@@ -39,6 +39,7 @@ final class AudioFileStreamProcessor {
     internal var discontinuous: Bool = false
     internal var inputFormat = AudioStreamBasicDescription()
     internal var fileFormat: String = ""
+    internal let fa4mFormat = "fa4m"
 
     var isFileStreamOpen: Bool {
         audioFileStream != nil
@@ -175,7 +176,8 @@ final class AudioFileStreamProcessor {
 
         // magic cookie info
         let fileHint = playerContext.audioReadingEntry?.audioFileHint
-        if let fileStream = audioFileStream, fileHint != kAudioFileAAC_ADTSType {
+        let isProperFormat = fileHint != kAudioFileAAC_ADTSType && fileHint != kAudioFileM4AType && fileHint != kAudioFileMPEG4Type
+        if let fileStream = audioFileStream, isProperFormat {
             var cookieSize: UInt32 = 0
             guard AudioFileStreamGetPropertyInfo(fileStream, kAudioFileStreamProperty_MagicCookieData, &cookieSize, nil) == noErr else {
                 return
@@ -280,7 +282,9 @@ final class AudioFileStreamProcessor {
                 playerContext.audioReadingEntry?.processedPacketsState.bufferSize = packetBufferSize
             }
 
-            createAudioConverter(from: audioStreamFormat, to: outputAudioFormat)
+            if fileFormat != fa4mFormat {
+                createAudioConverter(from: audioStreamFormat, to: outputAudioFormat)
+            }
         }
     }
 
@@ -314,6 +318,12 @@ final class AudioFileStreamProcessor {
                 break
             }
             i += step
+        }
+
+        if self.fileFormat == fa4mFormat {
+            if let inputStreamFormat = playerContext.audioPlayingEntry?.audioStreamFormat {
+                createAudioConverter(from: inputStreamFormat, to: outputAudioFormat)
+            }
         }
     }
 

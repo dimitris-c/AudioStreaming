@@ -48,9 +48,6 @@ final class MetadataStreamProcessor: MetadataStreamSource {
     /// An `Int` read from http header value of `Icy-metaint` header
     private var metadataStep = 0
 
-    /// Temporary bytes to hold the metadata from the stream buffer
-    private var tempBytes: UnsafeMutablePointer<UInt8>?
-
     /// The `Data` to write the metadata
     private var metadata = Data()
     private var metadataLength: Int = 0
@@ -76,15 +73,18 @@ final class MetadataStreamProcessor: MetadataStreamSource {
             var audioData = Data()
             var bytesRead = 0
             let bytes = buffer.baseAddress!.assumingMemoryBound(to: UInt8.self)
+            /// read through the bytes
             while bytesRead < buffer.count {
                 let remainingBytes = buffer.count - bytesRead
                 let pointer = bytes + bytesRead
                 if metadataLength > 0 {
+                    // we have metadata to read, extract it and add it to the temp holder
                     let remainingMetaBytes = metadataLength - metadata.count
                     let bytesToAppend = min(remainingMetaBytes, remainingBytes)
                     metadata.append(pointer, count: bytesToAppend)
 
                     if metadata.count == metadataLength {
+                        // we have extracted the metadata, so we can parse
                         let processedMetadata = parser.parse(input: metadata)
                         delegate?.didReceiveMetadata(metadata: processedMetadata)
 
@@ -95,7 +95,9 @@ final class MetadataStreamProcessor: MetadataStreamSource {
 
                     bytesRead += bytesToAppend
                 } else if audioDataBytesRead == metadataStep {
+                    // we've hit the step of the metadata
                     let metaLength = Int(pointer.pointee) * 16
+                    // check to see if there's available metadata
                     if metaLength > 0 {
                         metadataLength = Int(metaLength)
                     } else {
@@ -103,6 +105,7 @@ final class MetadataStreamProcessor: MetadataStreamSource {
                     }
                     bytesRead += 1
                 } else {
+                    /// extract audio only content
                     let audioBytesToRead = min(metadataStep - audioDataBytesRead, remainingBytes)
                     audioData.append(pointer, count: audioBytesToRead)
 

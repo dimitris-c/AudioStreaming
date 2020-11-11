@@ -110,7 +110,7 @@ internal class AudioEntry {
 
     func progressInFrames() -> Float {
         lock.lock(); defer { lock.unlock() }
-        return (Float(seekTime) + Float(audioStreamFormat.mSampleRate)) + Float(framesState.played)
+        return (Float(seekTime) * Float(audioStreamFormat.mSampleRate)) + Float(framesState.played)
     }
 
     func duration() -> Double {
