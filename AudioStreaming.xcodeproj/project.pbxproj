@@ -51,6 +51,7 @@
 		B5AEDBB824744153007D8101 /* AudioStreaming.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5AEDBAE24744153007D8101 /* AudioStreaming.framework */; };
 		B5AEDBBF24744153007D8101 /* AudioStreaming.h in Headers */ = {isa = PBXBuildFile; fileRef = B5AEDBB124744153007D8101 /* AudioStreaming.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		B5B3B7CC248647ED00656828 /* AudioPlayerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5B3B7CB248647ED00656828 /* AudioPlayerState.swift */; };
+		B5DB66E2255C2EAB00B8DF53 /* AudioEntryProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5DB66E1255C2EAB00B8DF53 /* AudioEntryProvider.swift */; };
 		B5E1DE2524B70B4200955BFB /* AudioPlayerConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5E1DE2424B70B4200955BFB /* AudioPlayerConfiguration.swift */; };
 		B5EF954E247DA5AC003E8FF8 /* NetworkingClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5EF954D247DA5AC003E8FF8 /* NetworkingClientTests.swift */; };
 		B5EF9555247E9393003E8FF8 /* AudioEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5EF9554247E9393003E8FF8 /* AudioEntry.swift */; };
@@ -135,6 +136,7 @@
 		B5AEDBBE24744153007D8101 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B5B3B7CB248647ED00656828 /* AudioPlayerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerState.swift; sourceTree = "<group>"; };
 		B5DB66DA255C079C00B8DF53 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		B5DB66E1255C2EAB00B8DF53 /* AudioEntryProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEntryProvider.swift; sourceTree = "<group>"; };
 		B5E1DE2424B70B4200955BFB /* AudioPlayerConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerConfiguration.swift; sourceTree = "<group>"; };
 		B5EF954D247DA5AC003E8FF8 /* NetworkingClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkingClientTests.swift; sourceTree = "<group>"; };
 		B5EF9554247E9393003E8FF8 /* AudioEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEntry.swift; sourceTree = "<group>"; };
@@ -184,6 +186,7 @@
 				B5EF9554247E9393003E8FF8 /* AudioEntry.swift */,
 				B5EF9556247E9439003E8FF8 /* AudioStreamSource.swift */,
 				B5EF955C247ECBB1003E8FF8 /* RemoteAudioSource.swift */,
+				B5DB66E1255C2EAB00B8DF53 /* AudioEntryProvider.swift */,
 			);
 			path = AudioSource;
 			sourceTree = "<group>";
@@ -568,6 +571,7 @@
 				B5276B6F247D21A000D2F56A /* NetworkingClient.swift in Sources */,
 				B5EF955B247EBCB3003E8FF8 /* AudioFileType.swift in Sources */,
 				B592E1252545FF9A008866FB /* BiMap.swift in Sources */,
+				B5DB66E2255C2EAB00B8DF53 /* AudioEntryProvider.swift in Sources */,
 				B5667A902499018D00D93F85 /* AudioFileStreamProcessor.swift in Sources */,
 				B5EF9555247E9393003E8FF8 /* AudioEntry.swift in Sources */,
 				B51FE0C02488F67C00F2A4D2 /* Queue.swift in Sources */,

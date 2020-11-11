@@ -80,21 +80,21 @@ public final class AudioPlayer {
     private let underlyingQueue = DispatchQueue(label: "streaming.core.queue", qos: .userInitiated, attributes: .concurrent)
     private let sourceQueue: DispatchQueue
 
-    private let networking: NetworkingClient
-    var audioSource: AudioStreamSource?
+    private let entryProvider: AudioEntryProviding
 
     var entriesQueue: PlayerQueueEntries
 
     public init(configuration: AudioPlayerConfiguration = .default) {
         self.configuration = configuration.normalizeValues()
 
-        networking = NetworkingClient()
         rendererContext = AudioRendererContext(configuration: configuration, outputAudioFormat: outputAudioFormat)
         playerContext = AudioPlayerContext()
         entriesQueue = PlayerQueueEntries()
 
         sourceQueue = DispatchQueue(label: "source.queue", qos: .userInitiated, target: underlyingQueue)
         audioReadSource = DispatchTimerSource(interval: .milliseconds(200), queue: sourceQueue)
+
+        entryProvider = AudioEntryProvider(networkingClient: NetworkingClient(), underlyingQueue: sourceQueue)
 
         fileStreamProcessor = AudioFileStreamProcessor(playerContext: playerContext,
                                                        rendererContext: rendererContext,
@@ -128,12 +128,7 @@ public final class AudioPlayer {
     /// - parameter url: A `URL` specifying the audio context to be played.
     /// - parameter headers: A `Dictionary` specifying any additional headers to be pass to the network request.
     public func play(url: URL, headers: [String: String]) {
-        let audioSource = RemoteAudioSource(networking: networking,
-                                            url: url,
-                                            underlyingQueue: sourceQueue,
-                                            httpHeaders: headers)
-        let audioEntry = AudioEntry(source: audioSource,
-                                    entryId: AudioEntryId(id: url.absoluteString))
+        let audioEntry = entryProvider.provideAudioEntry(url: url, headers: headers)
         audioEntry.delegate = self
         clearQueue()
         entriesQueue.enqueue(item: audioEntry, type: .upcoming)
@@ -152,12 +147,19 @@ public final class AudioPlayer {
         }
     }
 
+    /// Queues the specified URL
+    ///
+    /// - Parameter url: A `URL` specifying the audio context to be played.
     public func queue(url: URL) {
-        let audioSource = RemoteAudioSource(networking: networking,
-                                            url: url,
-                                            underlyingQueue: sourceQueue)
-        let audioEntry = AudioEntry(source: audioSource,
-                                    entryId: AudioEntryId(id: url.absoluteString))
+        queue(url: url, headers: [:])
+    }
+
+    /// Queues the specified URL
+    ///
+    /// - Parameter url: A `URL` specifying the audio context to be played.
+    /// - parameter headers: A `Dictionary` specifying any additional headers to be pass to the network request.
+    public func queue(url: URL, headers: [String: String]) {
+        let audioEntry = entryProvider.provideAudioEntry(url: url, headers: headers)
         audioEntry.delegate = self
         entriesQueue.enqueue(item: audioEntry, type: .upcoming)
         sourceQueue.async { [weak self] in
