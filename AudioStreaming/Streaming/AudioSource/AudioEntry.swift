@@ -34,6 +34,11 @@ internal class AudioEntry {
         source.length
     }
 
+    var progress: Double {
+        lock.lock(); defer { lock.unlock() }
+        return seekTime + (Double(framesState.played) / outputAudioFormat.sampleRate)
+    }
+
     var audioStreamFormat = AudioStreamBasicDescription()
 
     /// Hold the seek time, if a seek was requested
@@ -55,10 +60,12 @@ internal class AudioEntry {
     }
 
     private let source: AudioStreamSource
+    private let outputAudioFormat: AVAudioFormat
 
-    init(source: AudioStreamSource, entryId: AudioEntryId) {
+    init(source: AudioStreamSource, entryId: AudioEntryId, outputAudioFormat: AVAudioFormat) {
         self.source = source
-        id = entryId
+        self.outputAudioFormat = outputAudioFormat
+        self.id = entryId
 
         seekTime = 0.0
         seekRequest = SeekRequest()

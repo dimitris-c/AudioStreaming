@@ -72,10 +72,7 @@ public final class AudioPlayer {
         let playingEntry = playerContext.audioPlayingEntry
         playerContext.entriesLock.unlock()
         guard let entry = playingEntry, !entry.seekRequest.requested else { return 0 }
-
-        return entry.lock.around {
-            return Double(entry.seekTime) + (Double(entry.framesState.played) / outputAudioFormat.sampleRate)
-        }
+        return entry.progress
     }
 
     /// The current configuration of the player.
@@ -128,7 +125,9 @@ public final class AudioPlayer {
         sourceQueue = DispatchQueue(label: "source.queue", qos: .userInitiated, target: underlyingQueue)
         audioReadSource = DispatchTimerSource(interval: .milliseconds(200), queue: sourceQueue)
 
-        entryProvider = AudioEntryProvider(networkingClient: NetworkingClient(), underlyingQueue: sourceQueue)
+        entryProvider = AudioEntryProvider(networkingClient: NetworkingClient(),
+                                           underlyingQueue: sourceQueue,
+                                           outputAudioFormat: outputAudioFormat)
 
         fileStreamProcessor = AudioFileStreamProcessor(playerContext: playerContext,
                                                        rendererContext: rendererContext,

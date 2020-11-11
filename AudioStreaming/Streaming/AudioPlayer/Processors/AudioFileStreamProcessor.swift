@@ -100,9 +100,11 @@ final class AudioFileStreamProcessor {
         }
 
         let dataOffset = Double(readingEntry.audioStreamState.dataOffset)
-        let seekTimeToProgress = readingEntry.seekRequest.time / readingEntry.duration()
         let dataLengthInBytes = Double(readingEntry.audioDataLengthBytes())
-        var seekByteOffset = Int64((dataOffset + seekTimeToProgress) * dataLengthInBytes)
+        let entryDuration = readingEntry.duration()
+        let duration = entryDuration < readingEntry.progress && entryDuration > 0 ? readingEntry.progress : entryDuration
+
+        var seekByteOffset = Int64(dataOffset + (readingEntry.seekRequest.time / duration) * dataLengthInBytes)
 
         if seekByteOffset > readingEntry.length - (2 * Int(readingEntry.processedPacketsState.bufferSize)) {
             seekByteOffset = Int64(readingEntry.length - (2 * Int(readingEntry.processedPacketsState.bufferSize)))
@@ -118,14 +120,16 @@ final class AudioFileStreamProcessor {
             var packetsAlignedByteOffset: Int64 = 0
             let seekPacket = Int64(floor(readingEntry.seekRequest.time / readingEntry.packetDuration))
 
-            guard AudioFileStreamSeek(stream, seekPacket, &packetsAlignedByteOffset, &ioFlags) == noErr else {
-                Logger.error("seek failed", category: .generic)
+            let seekStatus = AudioFileStreamSeek(stream, seekPacket, &packetsAlignedByteOffset, &ioFlags)
+            guard seekStatus == noErr else {
+                let streamError = AudioFileStreamError(status: seekStatus)
+                Logger.error("seek failed %@", category: .generic, args: streamError.debugDescription)
                 return
             }
 
             let dataOffset = Int64(readingEntry.audioStreamState.dataOffset)
-            seekByteOffset = packetsAlignedByteOffset + dataOffset
             if !ioFlags.contains(.offsetIsEstimated) {
+                seekByteOffset = packetsAlignedByteOffset + dataOffset
                 let delta = Double((seekByteOffset - dataOffset) - packetsAlignedByteOffset) / bitrate * 8
 
                 readingEntry.lock.lock()

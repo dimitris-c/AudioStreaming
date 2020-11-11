@@ -41,6 +41,7 @@ public enum AudioFileStreamError: CustomDebugStringConvertible {
     case unsupportedProperty
     case valueUnknown
     case unknownError
+    case noError
 
     public init(status: OSStatus) {
         switch status {
@@ -68,6 +69,8 @@ public enum AudioFileStreamError: CustomDebugStringConvertible {
             self = .unspecifiedError
         case kAudioFileStreamError_DiscontinuityCantRecover:
             self = .discontinuityCantRecover
+        case noErr:
+            self = .noError
         default:
             self = .unknownError
         }
@@ -104,6 +107,8 @@ public enum AudioFileStreamError: CustomDebugStringConvertible {
             return "The property value is not present in this file before the audio data."
         case .unknownError:
             return "An unknown error occurred"
+        case .noError:
+            return "No error"
         }
     }
 }
