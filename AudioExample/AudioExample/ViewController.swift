@@ -198,7 +198,7 @@ class ViewController: UIViewController {
     @objc
     func sliderTouchedUp() {
         isScrubbing = false
-        if player.duration() > 0 {
+        if player.duration > 0 {
             player.seek(to: Double(slider.value))
         }
     }
@@ -268,8 +268,8 @@ class ViewController: UIViewController {
 
     @objc
     private func tick() {
-        let duration = player.duration()
-        let progress = player.progress()
+        let duration = player.duration
+        let progress = player.progress
         if duration > 0 {
             let elapsed = Int(progress)
             let remaining = Int(duration - progress)

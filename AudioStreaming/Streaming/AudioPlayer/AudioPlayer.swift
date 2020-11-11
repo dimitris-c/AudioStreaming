@@ -7,6 +7,7 @@ import AVFoundation
 import CoreAudio
 
 public final class AudioPlayer {
+
     public weak var delegate: AudioPlayerDelegate?
 
     public var muted: Bool {
@@ -42,6 +43,39 @@ public final class AudioPlayer {
     /// Indicates the reason that the player stopped.
     public var stopReason: AudioPlayerStopReason {
         playerContext.stopReason.value
+    }
+
+    /// The duration of the audio, in seconds.
+    ///
+    /// **NOTE** In live audio playback this will be `0.0`
+    ///
+    /// - Returns: A `Double` value indicating the total duration.
+    public var duration: Double {
+        guard playerContext.internalState != .pendingNext else { return 0 }
+        playerContext.entriesLock.lock()
+        let playingEntry = playerContext.audioPlayingEntry
+        playerContext.entriesLock.unlock()
+        guard let entry = playingEntry else { return 0 }
+
+        let entryDuration = entry.duration()
+        let progress = self.progress
+        if entryDuration < progress, entryDuration > 0 {
+            return progress
+        }
+        return entryDuration
+    }
+
+    /// The progress of the audio playback, in seconds.
+    public var progress: Double {
+        guard playerContext.internalState != .pendingNext else { return 0 }
+        playerContext.entriesLock.lock()
+        let playingEntry = playerContext.audioPlayingEntry
+        playerContext.entriesLock.unlock()
+        guard let entry = playingEntry, !entry.seekRequest.requested else { return 0 }
+
+        return entry.lock.around {
+            return Double(entry.seekTime) + (Double(entry.framesState.played) / outputAudioFormat.sampleRate)
+        }
     }
 
     /// The current configuration of the player.
@@ -247,39 +281,6 @@ public final class AudioPlayer {
             sourceQueue.async { [weak self] in
                 self?.processSource()
             }
-        }
-    }
-
-    /// The duration of the audio, in seconds.
-    ///
-    /// **NOTE** In live audio playback this will be `0.0`
-    ///
-    /// - Returns: A `Double` value indicating the total duration.
-    public func duration() -> Double {
-        guard playerContext.internalState != .pendingNext else { return 0 }
-        playerContext.entriesLock.lock()
-        let playingEntry = playerContext.audioPlayingEntry
-        playerContext.entriesLock.unlock()
-        guard let entry = playingEntry else { return 0 }
-
-        let entryDuration = entry.duration()
-        let progress = self.progress()
-        if entryDuration < progress, entryDuration > 0 {
-            return progress
-        }
-        return entryDuration
-    }
-
-    /// The progress of the audio playback, in seconds.
-    public func progress() -> Double {
-        guard playerContext.internalState != .pendingNext else { return 0 }
-        playerContext.entriesLock.lock()
-        let playingEntry = playerContext.audioPlayingEntry
-        playerContext.entriesLock.unlock()
-        guard let entry = playingEntry, !entry.seekRequest.requested else { return 0 }
-
-        return entry.lock.around {
-            return Double(entry.seekTime) + (Double(entry.framesState.played) / outputAudioFormat.sampleRate)
         }
     }
 
