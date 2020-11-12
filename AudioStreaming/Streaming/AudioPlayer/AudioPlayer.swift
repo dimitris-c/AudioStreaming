@@ -74,6 +74,8 @@ public final class AudioPlayer {
         return entry.progress
     }
 
+    private(set) public var customAttachedNodes = [AVAudioNode]()
+
     /// The current configuration of the player.
     public let configuration: AudioPlayerConfiguration
 
@@ -282,6 +284,35 @@ public final class AudioPlayer {
         }
     }
 
+    public func attach(node: AVAudioNode) {
+        attach(nodes: [node])
+    }
+
+    public func attach(nodes: [AVAudioNode]) {
+        nodes.forEach { node in
+            customAttachedNodes.append(node)
+        }
+        nodes.forEach(audioEngine.attach)
+
+        reattachCustomNodes()
+    }
+
+    public func detach(node: AVAudioNode) {
+        guard customAttachedNodes.contains(node) else {
+            return
+        }
+        customAttachedNodes.removeAll(where: { $0 == node })
+        audioEngine.detach(node)
+        reattachCustomNodes()
+    }
+
+    public func removeCustomAttachedNodes() {
+        customAttachedNodes.forEach { node in
+            audioEngine.detach(node)
+        }
+        attachAndConnectDefaultNodes()
+    }
+
     // MARK: Private
 
     /// Setups the audio engine with manual rendering mode.
@@ -305,7 +336,7 @@ public final class AudioPlayer {
                 assertionFailure("failure setting manual rendering mode")
                 return
             }
-            attachAndConnectNodes()
+            attachAndConnectDefaultNodes()
 
             audioEngine.prepare()
             try audioEngine.start()
@@ -362,11 +393,27 @@ public final class AudioPlayer {
     }
 
     /// Attaches and connect nodes to the `AudioEngine`.
-    private func attachAndConnectNodes() {
+    private func attachAndConnectDefaultNodes() {
         audioEngine.attach(rateNode)
 
         audioEngine.connect(audioEngine.inputNode, to: rateNode, format: nil)
         audioEngine.connect(rateNode, to: audioEngine.mainMixerNode, format: nil)
+    }
+
+    private func reattachCustomNodes() {
+        audioEngine.connect(audioEngine.inputNode, to: rateNode, format: nil)
+        if let first = customAttachedNodes.first {
+            audioEngine.connect(rateNode, to: first, format: nil)
+        }
+        for index in 0..<customAttachedNodes.count - 1 {
+            let current = customAttachedNodes[index]
+            let next = customAttachedNodes[index + 1]
+            let format = current.inputFormat(forBus: 0)
+            audioEngine.connect(current, to: next, format: format)
+        }
+        if let last = customAttachedNodes.last {
+            audioEngine.connect(last, to: audioEngine.mainMixerNode, format: nil)
+        }
     }
 
     /// Starts the engine, if not already running.
