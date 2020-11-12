@@ -268,6 +268,11 @@ final class AudioFileStreamProcessor {
         guard let entry = playerContext.audioReadingEntry else { return }
         if !entry.audioStreamState.processedDataFormat {
             fileStreamGetProperty(value: &audioStreamFormat, fileStream: fileStream, propertyId: kAudioFileStreamProperty_DataFormat)
+
+            if entry.audioStreamFormat.mFormatID == 0 {
+                entry.audioStreamFormat = audioStreamFormat
+            }
+
             var packetBufferSize: UInt32 = 0
             var status = fileStreamGetProperty(value: &packetBufferSize,
                                                fileStream: fileStream,
@@ -280,15 +285,12 @@ final class AudioFileStreamProcessor {
                     packetBufferSize = 2048 // default value
                 }
             }
-            if playerContext.audioReadingEntry?.audioStreamFormat.mFormatID == 0 {
-                playerContext.audioReadingEntry?.audioStreamFormat = audioStreamFormat
-            }
-            playerContext.audioReadingEntry?.lock.around {
-                playerContext.audioReadingEntry?.processedPacketsState.bufferSize = packetBufferSize
+            entry.lock.around {
+                entry.processedPacketsState.bufferSize = packetBufferSize
             }
 
             if fileFormat != fa4mFormat {
-                createAudioConverter(from: audioStreamFormat, to: outputAudioFormat)
+                createAudioConverter(from: entry.audioStreamFormat, to: outputAudioFormat)
             }
         }
     }
