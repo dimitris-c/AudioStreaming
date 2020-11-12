@@ -59,13 +59,13 @@ internal class AudioEntry {
         return Double(packets.sizeTotal / packets.count)
     }
 
-    private let source: AudioStreamSource
+    private let source: CoreAudioStreamSource
     private let outputAudioFormat: AVAudioFormat
 
-    init(source: AudioStreamSource, entryId: AudioEntryId, outputAudioFormat: AVAudioFormat) {
+    init(source: CoreAudioStreamSource, entryId: AudioEntryId, outputAudioFormat: AVAudioFormat) {
         self.source = source
         self.outputAudioFormat = outputAudioFormat
-        self.id = entryId
+        id = entryId
 
         seekTime = 0.0
         seekRequest = SeekRequest()
@@ -97,7 +97,7 @@ internal class AudioEntry {
         framesState = EntryFramesState()
     }
 
-    func has(same source: AudioStreamSource) -> Bool {
+    func has(same source: CoreAudioStreamSource) -> Bool {
         source === self.source
     }
 
@@ -147,15 +147,15 @@ internal class AudioEntry {
 }
 
 extension AudioEntry: AudioStreamSourceDelegate {
-    func dataAvailable(source: AudioStreamSource, data: Data) {
+    func dataAvailable(source: CoreAudioStreamSource, data: Data) {
         delegate?.dataAvailable(source: source, data: data)
     }
 
-    func errorOccured(source: AudioStreamSource, error: Error) {
+    func errorOccured(source: CoreAudioStreamSource, error: Error) {
         delegate?.errorOccured(source: source, error: error)
     }
 
-    func endOfFileOccured(source: AudioStreamSource) {
+    func endOfFileOccured(source: CoreAudioStreamSource) {
         delegate?.endOfFileOccured(source: source)
     }
 

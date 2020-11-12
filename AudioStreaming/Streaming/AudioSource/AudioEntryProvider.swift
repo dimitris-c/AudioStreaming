@@ -20,24 +20,22 @@ final class AudioEntryProvider: AudioEntryProviding {
 
     init(networkingClient: NetworkingClient,
          underlyingQueue: DispatchQueue,
-         outputAudioFormat: AVAudioFormat) {
+         outputAudioFormat: AVAudioFormat)
+    {
         self.networkingClient = networkingClient
         self.underlyingQueue = underlyingQueue
         self.outputAudioFormat = outputAudioFormat
     }
 
     func provideAudioEntry(url: URL, headers: [String: String]) -> AudioEntry {
-        let source = provideAudioSource(url: url, headers: headers)
+        let source = self.source(for: url, headers: headers)
         return AudioEntry(source: source,
                           entryId: AudioEntryId(id: url.absoluteString),
                           outputAudioFormat: outputAudioFormat)
     }
 
     func provideAudioEntry(url: URL) -> AudioEntry {
-        let source = provideAudioSource(url: url, headers: [:])
-        return AudioEntry(source: source,
-                          entryId: AudioEntryId(id: url.absoluteString),
-                          outputAudioFormat: outputAudioFormat)
+        provideAudioEntry(url: url, headers: [:])
     }
 
     func provideAudioSource(url: URL, headers: [String: String]) -> AudioStreamSource {
@@ -45,5 +43,16 @@ final class AudioEntryProvider: AudioEntryProviding {
                           url: url,
                           underlyingQueue: underlyingQueue,
                           httpHeaders: headers)
+    }
+
+    func provideFileAudioSource(url: URL) -> CoreAudioStreamSource {
+        FileAudioSource(url: url, underlyingQueue: underlyingQueue)
+    }
+
+    func source(for url: URL, headers _: [String: String]) -> CoreAudioStreamSource {
+        guard !url.isFileURL else {
+            return provideFileAudioSource(url: url)
+        }
+        return provideAudioSource(url: url, headers: [:])
     }
 }

@@ -7,7 +7,6 @@ import AVFoundation
 import CoreAudio
 
 public final class AudioPlayer {
-
     public weak var delegate: AudioPlayerDelegate?
 
     public var muted: Bool {
@@ -640,7 +639,7 @@ public final class AudioPlayer {
 }
 
 extension AudioPlayer: AudioStreamSourceDelegate {
-    func dataAvailable(source: AudioStreamSource, data: Data) {
+    func dataAvailable(source: CoreAudioStreamSource, data: Data) {
         guard let readingEntry = playerContext.audioReadingEntry, readingEntry.has(same: source) else {
             return
         }
@@ -670,12 +669,12 @@ extension AudioPlayer: AudioStreamSourceDelegate {
         }
     }
 
-    func errorOccured(source: AudioStreamSource, error: Error) {
+    func errorOccured(source: CoreAudioStreamSource, error: Error) {
         guard let entry = playerContext.audioReadingEntry, entry.has(same: source) else { return }
         raiseUnxpected(error: .networkError(.failure(error)))
     }
 
-    func endOfFileOccured(source: AudioStreamSource) {
+    func endOfFileOccured(source: CoreAudioStreamSource) {
         let hasSameSource = playerContext.audioReadingEntry?.has(same: source) ?? false
         guard playerContext.audioReadingEntry == nil || hasSameSource else {
             source.delegate = nil

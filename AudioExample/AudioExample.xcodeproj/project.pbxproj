@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B59D0B73255C983C00D6CCE5 /* bensound-jazzyfrenchy.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = B59D0B72255C983C00D6CCE5 /* bensound-jazzyfrenchy.mp3 */; };
 		B5AEDBD52475274C007D8101 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5AEDBD42475274C007D8101 /* AppDelegate.swift */; };
 		B5AEDBD92475274C007D8101 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5AEDBD82475274C007D8101 /* ViewController.swift */; };
 		B5AEDBDC2475274C007D8101 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B5AEDBDA2475274C007D8101 /* Main.storyboard */; };
@@ -31,6 +32,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		B59D0B72255C983C00D6CCE5 /* bensound-jazzyfrenchy.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; name = "bensound-jazzyfrenchy.mp3"; path = "../../../../../../Desktop/bensound-jazzyfrenchy.mp3"; sourceTree = "<group>"; };
 		B5AEDBD12475274C007D8101 /* AudioExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AudioExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5AEDBD42475274C007D8101 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		B5AEDBD62475274C007D8101 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -78,6 +80,7 @@
 				B5AEDBD42475274C007D8101 /* AppDelegate.swift */,
 				B5AEDBD62475274C007D8101 /* SceneDelegate.swift */,
 				B5AEDBD82475274C007D8101 /* ViewController.swift */,
+				B59D0B72255C983C00D6CCE5 /* bensound-jazzyfrenchy.mp3 */,
 				B5AEDBDA2475274C007D8101 /* Main.storyboard */,
 				B5AEDBDD2475274D007D8101 /* Assets.xcassets */,
 				B5AEDBDF2475274D007D8101 /* LaunchScreen.storyboard */,
@@ -154,6 +157,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B5AEDBE12475274D007D8101 /* LaunchScreen.storyboard in Resources */,
+				B59D0B73255C983C00D6CCE5 /* bensound-jazzyfrenchy.mp3 in Resources */,
 				B5AEDBDE2475274D007D8101 /* Assets.xcassets in Resources */,
 				B5AEDBDC2475274C007D8101 /* Main.storyboard in Resources */,
 			);

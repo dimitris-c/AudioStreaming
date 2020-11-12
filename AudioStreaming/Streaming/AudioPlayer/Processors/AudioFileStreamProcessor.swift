@@ -324,7 +324,7 @@ final class AudioFileStreamProcessor {
             i += step
         }
 
-        if self.fileFormat == fa4mFormat {
+        if fileFormat == fa4mFormat {
             if let inputStreamFormat = playerContext.audioPlayingEntry?.audioStreamFormat {
                 createAudioConverter(from: inputStreamFormat, to: outputAudioFormat)
             }
