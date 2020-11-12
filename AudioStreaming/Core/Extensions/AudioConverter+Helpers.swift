@@ -1,7 +1,4 @@
 //
-//  AudioConverter+Helpers.swift
-//  AudioStreaming
-//
 //  Created by Dimitrios Chatzieleftheriou on 03/11/2020.
 //  Copyright © 2020 Decimal. All rights reserved.
 //

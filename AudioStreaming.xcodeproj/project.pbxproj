@@ -181,17 +181,14 @@
 			path = Network;
 			sourceTree = "<group>";
 		};
-		B55A7369247FCB160050C53D /* AudioSource */ = {
+		B55A7369247FCB160050C53D /* Audio Entry */ = {
 			isa = PBXGroup;
 			children = (
 				B58386362544A2A60087A712 /* Models */,
 				B5DB66E1255C2EAB00B8DF53 /* AudioEntryProvider.swift */,
 				B5EF9554247E9393003E8FF8 /* AudioEntry.swift */,
-				B5EF9556247E9439003E8FF8 /* AudioStreamSource.swift */,
-				B5EF955C247ECBB1003E8FF8 /* RemoteAudioSource.swift */,
-				B59D0B6E255C904900D6CCE5 /* FileAudioSource.swift */,
 			);
-			path = AudioSource;
+			path = "Audio Entry";
 			sourceTree = "<group>";
 		};
 		B55A736A247FCB310050C53D /* Parsers */ = {
@@ -273,6 +270,16 @@
 				B5838647254584D90087A712 /* SeekRequest.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		B58BD7FC255DB653005B756D /* Audio Source */ = {
+			isa = PBXGroup;
+			children = (
+				B5EF9556247E9439003E8FF8 /* AudioStreamSource.swift */,
+				B5EF955C247ECBB1003E8FF8 /* RemoteAudioSource.swift */,
+				B59D0B6E255C904900D6CCE5 /* FileAudioSource.swift */,
+			);
+			path = "Audio Source";
 			sourceTree = "<group>";
 		};
 		B592E11E2545FF33008866FB /* Structures */ = {
@@ -384,7 +391,8 @@
 			isa = PBXGroup;
 			children = (
 				B5E1DE2924B7179E00955BFB /* AudioPlayer */,
-				B55A7369247FCB160050C53D /* AudioSource */,
+				B58BD7FC255DB653005B756D /* Audio Source */,
+				B55A7369247FCB160050C53D /* Audio Entry */,
 				B55CEABF24855A900001C498 /* Helpers */,
 				B55A736A247FCB310050C53D /* Parsers */,
 			);

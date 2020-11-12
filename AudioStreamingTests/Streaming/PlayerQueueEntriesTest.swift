@@ -4,6 +4,7 @@
 //
 
 import XCTest
+import AVFoundation
 
 @testable import AudioStreaming
 
@@ -172,5 +173,6 @@ private func audioEntry(id: String) -> AudioEntry {
                           url: URL(string: "www.a-url.com")!,
                           underlyingQueue: DispatchQueue(label: "some-queue"),
                           httpHeaders: [:])
-    return AudioEntry(source: source, entryId: AudioEntryId(id: id))
+    let outputFormat = AVAudioFormat()
+    return AudioEntry(source: source, entryId: AudioEntryId(id: id), outputAudioFormat: outputFormat)
 }
