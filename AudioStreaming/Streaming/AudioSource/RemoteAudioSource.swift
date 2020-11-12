@@ -228,6 +228,7 @@ public class RemoteAudioSource: AudioStreamSource {
     /// - Parameter block: A closure to be executed
     private func addCompletionOperation(_ block: @escaping () -> Void) {
         let operation = BlockOperation(block: block)
+        operation.queuePriority = .veryLow
         streamOperationQueue.addOperation(operation)
     }
 }

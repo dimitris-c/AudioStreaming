@@ -155,10 +155,11 @@ final class AudioFileStreamProcessor {
     /// - parameter toFormat: An `AudioStreamBasicDescription` indicating the local format in which the fromFormat will be converted to.
     func createAudioConverter(from fromFormat: AudioStreamBasicDescription, to toFormat: AudioStreamBasicDescription) {
         var inputFormat = fromFormat
-        if let converter = audioConverter,
-           memcmp(&inputFormat, &self.inputFormat, MemoryLayout.size(ofValue: AudioStreamBasicDescription.self)) != 0
-        {
-            AudioConverterReset(converter)
+        if let converter = audioConverter {
+            if memcmp(&inputFormat, &self.inputFormat, MemoryLayout<AudioStreamBasicDescription>.size) == 0 {
+                AudioConverterReset(converter)
+                return
+            }
         }
         disposeAudioConverter()
 
@@ -317,15 +318,15 @@ final class AudioFileStreamProcessor {
         while i * step < size {
             let asbd = list[i].mASBD
             let formatId = asbd.mFormatID
-            if formatId == kAudioFormatMPEG4AAC_HE || formatId == kAudioFormatMPEG4AAC_HE_V2 || formatId == kAudioFileAAC_ADTSType {
-                playerContext.audioPlayingEntry?.audioStreamFormat = asbd
+            if formatId == kAudioFormatMPEG4AAC_HE || formatId == kAudioFormatMPEG4AAC_HE_V2 {
+                playerContext.audioReadingEntry?.audioStreamFormat = asbd
                 break
             }
             i += step
         }
 
         if fileFormat == fa4mFormat {
-            if let inputStreamFormat = playerContext.audioPlayingEntry?.audioStreamFormat {
+            if let inputStreamFormat = playerContext.audioReadingEntry?.audioStreamFormat {
                 createAudioConverter(from: inputStreamFormat, to: outputAudioFormat)
             }
         }
