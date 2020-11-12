@@ -17,7 +17,7 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
     var length: Int
 
     var audioFileHint: AudioFileTypeID {
-        audioFileType(fileExtension: url.path)
+        audioFileType(fileExtension: url.pathExtension)
     }
 
     private var seekOffset: Int
@@ -109,7 +109,8 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
         guard let inputStream = inputStream else { return }
         let read = inputStream.read(buffer, maxLength: readSize)
         if read > 0 {
-            delegate?.dataAvailable(source: self, data: Data(bytes: buffer, count: read))
+            let data = Data(bytes: buffer, count: read)
+            delegate?.dataAvailable(source: self, data: data)
             position += read
         } else {
             position += getCurrentOffsetFromStream()

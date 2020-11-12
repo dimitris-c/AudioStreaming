@@ -40,7 +40,6 @@ public class RemoteAudioSource: AudioStreamSource {
 
     internal let underlyingQueue: DispatchQueue
     internal let streamOperationQueue: OperationQueue
-    private var streamOperations: [BlockOperation] = []
 
     init(networking: NetworkingClient,
          metadataStreamSource: MetadataStreamSource,
@@ -221,9 +220,7 @@ public class RemoteAudioSource: AudioStreamSource {
     /// - Parameter block: A closure to be executed
     private func addStreamOperation(_ block: @escaping () -> Void) {
         let operation = BlockOperation(block: block)
-        operation.name = "stream.op.\(streamOperations.count)"
         streamOperationQueue.addOperation(operation)
-        streamOperations.append(operation)
     }
 
     /// Schedules the given block on the stream operation queue as a completion
@@ -231,12 +228,7 @@ public class RemoteAudioSource: AudioStreamSource {
     /// - Parameter block: A closure to be executed
     private func addCompletionOperation(_ block: @escaping () -> Void) {
         let operation = BlockOperation(block: block)
-        operation.name = "stream.completion.op"
-        if let lastOperation = streamOperations.last {
-            operation.addDependency(lastOperation)
-        }
         streamOperationQueue.addOperation(operation)
-        streamOperations = []
     }
 }
 
