@@ -6,6 +6,7 @@
 import AudioToolbox
 import AVFoundation
 import Foundation
+import Network
 
 public class RemoteAudioSource: AudioStreamSource {
     weak var delegate: AudioStreamSourceDelegate?
@@ -40,9 +41,14 @@ public class RemoteAudioSource: AudioStreamSource {
 
     internal let underlyingQueue: DispatchQueue
     internal let streamOperationQueue: OperationQueue
+    internal let netStatusService: NetStatusProvider
+    internal var waitingForNetwork = false
+    internal let retrierTimeout: Retrier
 
     init(networking: NetworkingClient,
          metadataStreamSource: MetadataStreamSource,
+         netStatusProvider: NetStatusProvider,
+         retrier: Retrier,
          url: URL,
          underlyingQueue: DispatchQueue,
          httpHeaders: [String: String])
@@ -53,12 +59,15 @@ public class RemoteAudioSource: AudioStreamSource {
         additionalRequestHeaders = httpHeaders
         relativePosition = 0
         seekOffset = 0
+        netStatusService = netStatusProvider
         self.underlyingQueue = underlyingQueue
         streamOperationQueue = OperationQueue()
         streamOperationQueue.underlyingQueue = underlyingQueue
         streamOperationQueue.maxConcurrentOperationCount = 1
         streamOperationQueue.isSuspended = true
         streamOperationQueue.name = "remote.audio.source.data.stream.queue"
+        retrierTimeout = retrier
+        startNetworkService()
     }
 
     convenience init(networking: NetworkingClient,
@@ -68,8 +77,12 @@ public class RemoteAudioSource: AudioStreamSource {
     {
         let metadataParser = MetadataParser()
         let metadataProcessor = MetadataStreamProcessor(parser: metadataParser.eraseToAnyParser())
+        let netStatusProvider = NetStatusService(network: NWPathMonitor())
+        let retrierTimout = Retrier(interval: .seconds(1), maxInterval: 5, underlyingQueue: nil)
         self.init(networking: networking,
                   metadataStreamSource: metadataProcessor,
+                  netStatusProvider: netStatusProvider,
+                  retrier: retrierTimout,
                   url: url,
                   underlyingQueue: underlyingQueue,
                   httpHeaders: httpHeaders)
@@ -107,6 +120,9 @@ public class RemoteAudioSource: AudioStreamSource {
             return
         }
 
+        retrierTimeout.cancel()
+        metadataStreamProcessor.reset()
+
         performOpen(seek: offset)
     }
 
@@ -121,6 +137,17 @@ public class RemoteAudioSource: AudioStreamSource {
     }
 
     // MARK: Private
+
+    private func startNetworkService() {
+        netStatusService.start { [weak self] connection in
+            guard let self = self else { return }
+            guard connection.isConnected else { return }
+            if self.waitingForNetwork {
+                self.waitingForNetwork = false
+                self.seek(at: self.position)
+            }
+        }
+    }
 
     private func performOpen(seek seekOffset: Int) {
         let urlRequest = buildUrlRequest(with: url, seekIfNeeded: seekOffset)
@@ -144,9 +171,7 @@ public class RemoteAudioSource: AudioStreamSource {
             parseResponseHeader(response: urlResponse)
             streamOperationQueue.isSuspended = false
         case let .stream(event):
-            addStreamOperation { [weak self] in
-                self?.handleStreamEvent(event: event)
-            }
+            handleStreamEvent(event: event)
         case let .complete(event):
             if let error = event.error {
                 delegate?.errorOccured(source: self, error: error)
@@ -162,17 +187,25 @@ public class RemoteAudioSource: AudioStreamSource {
     private func handleStreamEvent(event: NetworkDataStream.StreamResult) {
         switch event {
         case let .success(value):
-            if let data = value.data {
-                if metadataStreamProcessor.canProccessMetadata {
-                    let extractedAudioData = metadataStreamProcessor.proccessMetadata(data: data)
-                    delegate?.dataAvailable(source: self, data: extractedAudioData)
-                } else {
-                    delegate?.dataAvailable(source: self, data: data)
+            addStreamOperation { [weak self] in
+                guard let self = self else { return }
+                if let data = value.data {
+                    if self.metadataStreamProcessor.canProccessMetadata {
+                        let extractedAudioData = self.metadataStreamProcessor.proccessMetadata(data: data)
+                        self.delegate?.dataAvailable(source: self, data: extractedAudioData)
+                    } else {
+                        self.delegate?.dataAvailable(source: self, data: data)
+                    }
+                    self.relativePosition += data.count
                 }
-                relativePosition += data.count
             }
-        case let .failure(error):
-            delegate?.errorOccured(source: self, error: error)
+        case .failure:
+            if !netStatusService.isConnected {
+                waitingForNetwork = true
+                return
+            }
+            waitingForNetwork = false
+            retryOnError()
         }
     }
 
@@ -198,7 +231,7 @@ public class RemoteAudioSource: AudioStreamSource {
         var urlRequest = URLRequest(url: url)
         urlRequest.networkServiceType = .avStreaming
         urlRequest.cachePolicy = .reloadIgnoringLocalCacheData
-        urlRequest.timeoutInterval = 30
+        urlRequest.timeoutInterval = 10
 
         for header in additionalRequestHeaders {
             urlRequest.addValue(header.value, forHTTPHeaderField: header.key)
@@ -211,6 +244,13 @@ public class RemoteAudioSource: AudioStreamSource {
             urlRequest.addValue("bytes=\(seekOffset)-", forHTTPHeaderField: "Range")
         }
         return urlRequest
+    }
+
+    private func retryOnError() {
+        retrierTimeout.retry { [weak self] in
+            guard let self = self else { return }
+            self.seek(at: self.position)
+        }
     }
 
     // MARK: - Network Stream Operation Queue

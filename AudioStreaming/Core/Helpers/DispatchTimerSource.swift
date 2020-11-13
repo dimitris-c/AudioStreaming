@@ -27,9 +27,13 @@ final class DispatchTimerSource {
     ///
     /// - parameter interval: A `DispatchTimeInterval` value indicating the interval of te timer.
     /// - parameter queue: An optional `DispatchQueue` in which to execute the installed handlers.
-    init(interval: DispatchTimeInterval, queue: DispatchQueue?) {
+    required init(queue: DispatchQueue?) {
         timer = DispatchSource.makeTimerSource(flags: [], queue: queue)
-        timer.schedule(deadline: .now() + interval, repeating: interval)
+    }
+
+    convenience init(interval: DispatchTimeInterval, queue: DispatchQueue?, repeats: Bool = true) {
+        self.init(queue: queue)
+        schedule(interval: interval, repeats: repeats)
     }
 
     deinit {
@@ -56,7 +60,7 @@ final class DispatchTimerSource {
     func activate() {
         if state == .activated { return }
         state = .activated
-        timer.activate()
+        timer.resume()
     }
 
     /// Suspends the timer, if needed.
@@ -64,5 +68,9 @@ final class DispatchTimerSource {
         if state == .suspended { return }
         state = .suspended
         timer.suspend()
+    }
+
+    func schedule(interval: DispatchTimeInterval, repeats: Bool) {
+        timer.schedule(deadline: .now() + interval, repeating: repeats ? interval : .never)
     }
 }

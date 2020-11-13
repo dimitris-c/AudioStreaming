@@ -16,6 +16,7 @@
 		B51FE0C824892D1600F2A4D2 /* PlayerQueueEntriesTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = B51FE0C724892D1600F2A4D2 /* PlayerQueueEntriesTest.swift */; };
 		B5276B6F247D21A000D2F56A /* NetworkingClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5276B6E247D21A000D2F56A /* NetworkingClient.swift */; };
 		B5276B74247D4D9F00D2F56A /* NetworkSessionDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5276B73247D4D9F00D2F56A /* NetworkSessionDelegate.swift */; };
+		B54C3E56255F286D00B356F2 /* Retrier.swift in Sources */ = {isa = PBXBuildFile; fileRef = B54C3E55255F286D00B356F2 /* Retrier.swift */; };
 		B54D876D2490E4A000C361A0 /* UnitDescriptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = B54D876C2490E4A000C361A0 /* UnitDescriptions.swift */; };
 		B54D876F2490E4DD00C361A0 /* AudioRendererContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = B54D876E2490E4DD00C361A0 /* AudioRendererContext.swift */; };
 		B55A736C247FCB420050C53D /* HTTPHeaderParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55A736B247FCB420050C53D /* HTTPHeaderParser.swift */; };
@@ -52,6 +53,7 @@
 		B5AEDBB824744153007D8101 /* AudioStreaming.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5AEDBAE24744153007D8101 /* AudioStreaming.framework */; };
 		B5AEDBBF24744153007D8101 /* AudioStreaming.h in Headers */ = {isa = PBXBuildFile; fileRef = B5AEDBB124744153007D8101 /* AudioStreaming.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		B5B3B7CC248647ED00656828 /* AudioPlayerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5B3B7CB248647ED00656828 /* AudioPlayerState.swift */; };
+		B5D82E65255DD562009EDAA4 /* NetStatusService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5D82E64255DD562009EDAA4 /* NetStatusService.swift */; };
 		B5DB66E2255C2EAB00B8DF53 /* AudioEntryProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5DB66E1255C2EAB00B8DF53 /* AudioEntryProvider.swift */; };
 		B5E1DE2524B70B4200955BFB /* AudioPlayerConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5E1DE2424B70B4200955BFB /* AudioPlayerConfiguration.swift */; };
 		B5EF954E247DA5AC003E8FF8 /* NetworkingClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5EF954D247DA5AC003E8FF8 /* NetworkingClientTests.swift */; };
@@ -99,6 +101,7 @@
 		B5276B6E247D21A000D2F56A /* NetworkingClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkingClient.swift; sourceTree = "<group>"; };
 		B5276B71247D4D5B00D2F56A /* BiMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiMap.swift; sourceTree = "<group>"; };
 		B5276B73247D4D9F00D2F56A /* NetworkSessionDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkSessionDelegate.swift; sourceTree = "<group>"; };
+		B54C3E55255F286D00B356F2 /* Retrier.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Retrier.swift; sourceTree = "<group>"; };
 		B54D876C2490E4A000C361A0 /* UnitDescriptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnitDescriptions.swift; sourceTree = "<group>"; };
 		B54D876E2490E4DD00C361A0 /* AudioRendererContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRendererContext.swift; sourceTree = "<group>"; };
 		B55A736B247FCB420050C53D /* HTTPHeaderParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPHeaderParser.swift; sourceTree = "<group>"; };
@@ -137,6 +140,7 @@
 		B5AEDBB724744153007D8101 /* AudioStreamingTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AudioStreamingTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5AEDBBE24744153007D8101 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B5B3B7CB248647ED00656828 /* AudioPlayerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerState.swift; sourceTree = "<group>"; };
+		B5D82E64255DD562009EDAA4 /* NetStatusService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetStatusService.swift; sourceTree = "<group>"; };
 		B5DB66DA255C079C00B8DF53 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		B5DB66E1255C2EAB00B8DF53 /* AudioEntryProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEntryProvider.swift; sourceTree = "<group>"; };
 		B5E1DE2424B70B4200955BFB /* AudioPlayerConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerConfiguration.swift; sourceTree = "<group>"; };
@@ -174,6 +178,7 @@
 		B5276B70247D4D3D00D2F56A /* Network */ = {
 			isa = PBXGroup;
 			children = (
+				B5D82E64255DD562009EDAA4 /* NetStatusService.swift */,
 				B5276B6E247D21A000D2F56A /* NetworkingClient.swift */,
 				B5276B73247D4D9F00D2F56A /* NetworkSessionDelegate.swift */,
 				B5F883C22477DC4400D277C1 /* NetworkDataStream.swift */,
@@ -299,6 +304,7 @@
 				B57829CE2548B32B00C78D36 /* Lock.swift */,
 				B500731F24D00BAC00BB4475 /* Logger.swift */,
 				B5F883B52476DADB00D277C1 /* Protected.swift */,
+				B54C3E55255F286D00B356F2 /* Retrier.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -568,6 +574,7 @@
 				B5EF955D247ECBB1003E8FF8 /* RemoteAudioSource.swift in Sources */,
 				B57829CF2548B32B00C78D36 /* Lock.swift in Sources */,
 				B5838640254584A50087A712 /* ProcessedPackets.swift in Sources */,
+				B54C3E56255F286D00B356F2 /* Retrier.swift in Sources */,
 				B59DF10424916FD50043C498 /* DispatchQueue+Helpers.swift in Sources */,
 				B5B3B7CC248647ED00656828 /* AudioPlayerState.swift in Sources */,
 				B51B9F9A24DBE5BF00BDEAA2 /* AVAudioFormat+Convenience.swift in Sources */,
@@ -603,6 +610,7 @@
 				B5276B74247D4D9F00D2F56A /* NetworkSessionDelegate.swift in Sources */,
 				B55F77D624DACE140057F431 /* BufferContext.swift in Sources */,
 				B5838648254584D90087A712 /* SeekRequest.swift in Sources */,
+				B5D82E65255DD562009EDAA4 /* NetStatusService.swift in Sources */,
 				B55CE97824813BCA0001C498 /* UnsafeMutablePointer+Helpers.swift in Sources */,
 				B5F883B62476DADB00D277C1 /* Protected.swift in Sources */,
 			);

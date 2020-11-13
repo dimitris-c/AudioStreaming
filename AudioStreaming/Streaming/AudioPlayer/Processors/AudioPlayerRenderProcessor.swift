@@ -54,11 +54,9 @@ final class AudioPlayerRenderProcessor: NSObject {
         let readingEntry = playerContext.audioReadingEntry
         playerContext.entriesLock.unlock()
         let isMuted = playerContext.muted.value
-
         let state = playerContext.internalState
 
         rendererContext.lock.lock()
-
         var waitForBuffer = false
         let audioBuffer = rendererContext.audioBuffer
         var bufferList = rendererContext.inOutAudioBufferList[0]
@@ -67,7 +65,7 @@ final class AudioPlayerRenderProcessor: NSObject {
         let used = bufferContext.frameUsedCount
         let start = bufferContext.frameStartIndex
         let end = bufferContext.end
-        let framesConsumedSignal = rendererContext.waiting.value && used < bufferContext.totalFrameCount / 2
+        let signal = rendererContext.waiting.value && used < bufferContext.totalFrameCount / 2
 
         if let playingEntry = playingEntry {
             playingEntry.lock.lock()
@@ -101,7 +99,6 @@ final class AudioPlayerRenderProcessor: NSObject {
                 }
             }
         }
-
         rendererContext.lock.unlock()
 
         var totalFramesCopied: UInt32 = 0
@@ -228,7 +225,7 @@ final class AudioPlayerRenderProcessor: NSObject {
         let lastFramePlayed = currentPlayingEntry.framesState.played == currentPlayingEntry.framesState.lastFrameQueued
 
         currentPlayingEntry.lock.unlock()
-        if framesConsumedSignal || lastFramePlayed {
+        if signal || lastFramePlayed {
             playerContext.entriesLock.lock()
             let entry = playerContext.audioPlayingEntry
             playerContext.entriesLock.unlock()

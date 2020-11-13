@@ -29,7 +29,8 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
     init(url: URL,
          fileManager: FileManager = .default,
          underlyingQueue: DispatchQueue,
-         readSize: Int = 64 * 1024) {
+         readSize: Int = 64 * 1024)
+    {
         self.url = url
         self.underlyingQueue = underlyingQueue
         self.fileManager = fileManager
@@ -121,7 +122,7 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
     }
 
     private func getCurrentOffsetFromStream() -> Int {
-        guard let stream = self.inputStream else {
+        guard let stream = inputStream else {
             return 0
         }
         return (stream.property(forKey: .fileCurrentOffsetKey) as? Int) ?? 0
@@ -129,7 +130,7 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
 }
 
 extension FileAudioSource: StreamDelegate {
-    func stream(_ stream: Stream, handle eventCode: Stream.Event) {
+    func stream(_: Stream, handle eventCode: Stream.Event) {
         switch eventCode {
         case .hasBytesAvailable:
             dataAvailable()

@@ -3,8 +3,8 @@
 //  Copyright © 2020 Decimal. All rights reserved.
 //
 
-import XCTest
 import AVFoundation
+import XCTest
 
 @testable import AudioStreaming
 

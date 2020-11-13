@@ -22,6 +22,9 @@ protocol MetadataStreamSource {
     /// - parameter data: A `Data` object for parsing any metadata
     /// - returns: The extracted audio `Data`
     func proccessMetadata(data: Data) -> Data
+
+    /// Resets the processor
+    func reset()
 }
 
 ///
@@ -62,6 +65,12 @@ final class MetadataStreamProcessor: MetadataStreamSource {
 
     func metadataAvailable(step: Int) {
         metadataStep = step
+    }
+
+    func reset() {
+        metadata = Data()
+        metadataLength = 0
+        audioDataBytesRead = 0
     }
 
     // MARK: Proccess Metadata

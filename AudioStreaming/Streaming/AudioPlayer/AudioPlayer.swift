@@ -74,7 +74,7 @@ public final class AudioPlayer {
         return entry.progress
     }
 
-    private(set) public var customAttachedNodes = [AVAudioNode]()
+    public private(set) var customAttachedNodes = [AVAudioNode]()
 
     /// The current configuration of the player.
     public let configuration: AudioPlayerConfiguration
@@ -405,7 +405,7 @@ public final class AudioPlayer {
         if let first = customAttachedNodes.first {
             audioEngine.connect(rateNode, to: first, format: nil)
         }
-        for index in 0..<customAttachedNodes.count - 1 {
+        for index in 0 ..< customAttachedNodes.count - 1 {
             let current = customAttachedNodes[index]
             let next = customAttachedNodes[index + 1]
             let format = current.inputFormat(forBus: 0)
@@ -548,15 +548,18 @@ public final class AudioPlayer {
            playingEntry.calculatedBitrate() > 0.0
         {
             let currSeekVersion = playingEntry.seekRequest.version.value
+            playingEntry.seekRequest.lock.lock()
             let originalSeekToTimeRequested = playingEntry.seekRequest.requested
+            playingEntry.seekRequest.lock.unlock()
 
             if originalSeekToTimeRequested, playerContext.audioReadingEntry === playingEntry {
                 proccessSeekTime()
 
-                playingEntry.seekRequest.version.read { version in
-                    if currSeekVersion == version {
-                        playingEntry.seekRequest.requested = false
-                    }
+                let version = playingEntry.seekRequest.version.value
+                if currSeekVersion == version {
+                    playingEntry.seekRequest.lock.lock()
+                    playingEntry.seekRequest.requested = false
+                    playingEntry.seekRequest.lock.unlock()
                 }
             }
         }
