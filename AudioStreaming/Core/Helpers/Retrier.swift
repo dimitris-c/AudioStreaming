@@ -46,7 +46,6 @@ final class Retrier {
 
     private func internalRetry() {
         cancel()
-        print(interval)
         timeoutTimer.schedule(interval: interval, repeats: false)
         timeoutTimer.add { [weak self] in
             self?.callback?()

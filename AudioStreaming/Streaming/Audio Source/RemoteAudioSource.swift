@@ -231,7 +231,7 @@ public class RemoteAudioSource: AudioStreamSource {
         var urlRequest = URLRequest(url: url)
         urlRequest.networkServiceType = .avStreaming
         urlRequest.cachePolicy = .reloadIgnoringLocalCacheData
-        urlRequest.timeoutInterval = 10
+        urlRequest.timeoutInterval = 60
 
         for header in additionalRequestHeaders {
             urlRequest.addValue(header.value, forHTTPHeaderField: header.key)
