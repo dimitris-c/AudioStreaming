@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		B5220836256051830086FB3A /* AudioPlayerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5220835256051830086FB3A /* AudioPlayerService.swift */; };
 		B5220948256074910086FB3A /* MulticastDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5220947256074910086FB3A /* MulticastDelegate.swift */; };
+		B52209502561883E0086FB3A /* EqualizerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B522094F2561883E0086FB3A /* EqualizerViewController.swift */; };
+		B5220954256188590086FB3A /* EqualizerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5220953256188590086FB3A /* EqualizerViewModel.swift */; };
 		B524D59C2560176C00F5A88F /* bensound-jazzyfrenchy.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = B524D59B2560176C00F5A88F /* bensound-jazzyfrenchy.mp3 */; };
 		B524D5A12560302100F5A88F /* PlayerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B524D5A02560302100F5A88F /* PlayerViewController.swift */; };
 		B524D5A32560303000F5A88F /* PlayerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B524D5A22560303000F5A88F /* PlayerViewModel.swift */; };
@@ -17,6 +19,7 @@
 		B524D5A9256031DE00F5A88F /* AppCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B524D5A8256031DE00F5A88F /* AppCoordinator.swift */; };
 		B524D5AD25604E4B00F5A88F /* PlaylistItemsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B524D5AC25604E4B00F5A88F /* PlaylistItemsService.swift */; };
 		B524D5AF25604ED900F5A88F /* AudioContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = B524D5AE25604ED900F5A88F /* AudioContent.swift */; };
+		B580CB0E2561B912006D7DD8 /* EqualizerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B580CB0D2561B912006D7DD8 /* EqualizerService.swift */; };
 		B5AEDBD52475274C007D8101 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5AEDBD42475274C007D8101 /* AppDelegate.swift */; };
 		B5AEDBDE2475274D007D8101 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B5AEDBDD2475274D007D8101 /* Assets.xcassets */; };
 		B5AEDBE12475274D007D8101 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B5AEDBDF2475274D007D8101 /* LaunchScreen.storyboard */; };
@@ -41,6 +44,8 @@
 /* Begin PBXFileReference section */
 		B5220835256051830086FB3A /* AudioPlayerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerService.swift; sourceTree = "<group>"; };
 		B5220947256074910086FB3A /* MulticastDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MulticastDelegate.swift; sourceTree = "<group>"; };
+		B522094F2561883E0086FB3A /* EqualizerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EqualizerViewController.swift; sourceTree = "<group>"; };
+		B5220953256188590086FB3A /* EqualizerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EqualizerViewModel.swift; sourceTree = "<group>"; };
 		B524D59B2560176C00F5A88F /* bensound-jazzyfrenchy.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "bensound-jazzyfrenchy.mp3"; sourceTree = "<group>"; };
 		B524D5A02560302100F5A88F /* PlayerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerViewController.swift; sourceTree = "<group>"; };
 		B524D5A22560303000F5A88F /* PlayerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerViewModel.swift; sourceTree = "<group>"; };
@@ -49,6 +54,7 @@
 		B524D5A8256031DE00F5A88F /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
 		B524D5AC25604E4B00F5A88F /* PlaylistItemsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistItemsService.swift; sourceTree = "<group>"; };
 		B524D5AE25604ED900F5A88F /* AudioContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioContent.swift; sourceTree = "<group>"; };
+		B580CB0D2561B912006D7DD8 /* EqualizerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EqualizerService.swift; sourceTree = "<group>"; };
 		B5AEDBD12475274C007D8101 /* AudioExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AudioExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5AEDBD42475274C007D8101 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		B5AEDBDD2475274D007D8101 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -86,6 +92,7 @@
 				B524D5AC25604E4B00F5A88F /* PlaylistItemsService.swift */,
 				B5220835256051830086FB3A /* AudioPlayerService.swift */,
 				B5220947256074910086FB3A /* MulticastDelegate.swift */,
+				B580CB0D2561B912006D7DD8 /* EqualizerService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -97,6 +104,8 @@
 				B524D5A22560303000F5A88F /* PlayerViewModel.swift */,
 				B524D5A42560303D00F5A88F /* PlayerControlsViewController.swift */,
 				B524D5A62560305800F5A88F /* PlayerControlsViewModel.swift */,
+				B522094F2561883E0086FB3A /* EqualizerViewController.swift */,
+				B5220953256188590086FB3A /* EqualizerViewModel.swift */,
 			);
 			path = Controllers;
 			sourceTree = "<group>";
@@ -219,9 +228,12 @@
 				B5220836256051830086FB3A /* AudioPlayerService.swift in Sources */,
 				B5AEDBD52475274C007D8101 /* AppDelegate.swift in Sources */,
 				B524D5A12560302100F5A88F /* PlayerViewController.swift in Sources */,
+				B580CB0E2561B912006D7DD8 /* EqualizerService.swift in Sources */,
+				B5220954256188590086FB3A /* EqualizerViewModel.swift in Sources */,
 				B5220948256074910086FB3A /* MulticastDelegate.swift in Sources */,
 				B524D5A52560303D00F5A88F /* PlayerControlsViewController.swift in Sources */,
 				B524D5A72560305800F5A88F /* PlayerControlsViewModel.swift in Sources */,
+				B52209502561883E0086FB3A /* EqualizerViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

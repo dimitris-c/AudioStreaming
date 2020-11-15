@@ -17,6 +17,9 @@ class PlayerControlsViewController: UIViewController {
     private lazy var elapsedPlayTimeLabel = UILabel()
     private lazy var remainingPlayTimeLabel = UILabel()
 
+    private lazy var rateSlider = UISlider()
+    private lazy var rateSliderValueLabel = UILabel()
+
     private lazy var playerStatus = UILabel()
 
     private let viewModel: PlayerControlsViewModel
@@ -33,7 +36,7 @@ class PlayerControlsViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
+        view.backgroundColor = .systemBackground
         setupUI()
         setupBinding()
     }
@@ -102,7 +105,35 @@ class PlayerControlsViewController: UIViewController {
         playerStatus.numberOfLines = 0
         playerStatus.accessibilityIdentifier = "playerStatus-label"
 
-        let controlsAndSliderStack = UIStackView(arrangedSubviews: [controlsStackView, slider, playbackTimeLabelsStack, playerStatus])
+        let sliderLabel = UILabel()
+        sliderLabel.translatesAutoresizingMaskIntoConstraints = false
+        sliderLabel.text = "Rate: "
+
+        rateSliderValueLabel.translatesAutoresizingMaskIntoConstraints = false
+        rateSliderValueLabel.text = viewModel.currentRateTitle
+
+        rateSlider.translatesAutoresizingMaskIntoConstraints = false
+        rateSlider.minimumValue = viewModel.rateMinValue
+        rateSlider.maximumValue = viewModel.rateMaxValue
+        rateSlider.value = viewModel.rateMinValue
+        rateSlider.addTarget(self, action: #selector(rateValueChanged), for: .valueChanged)
+
+        let sliderWarningLabel = UILabel()
+        sliderWarningLabel.translatesAutoresizingMaskIntoConstraints = false
+        sliderWarningLabel.text = "Adjusting rate in live broadcast is not recommended"
+        sliderWarningLabel.numberOfLines = 2
+        sliderWarningLabel.textColor = .systemRed
+
+        let rateSliderStackView = UIStackView(arrangedSubviews: [sliderLabel, rateSlider, rateSliderValueLabel])
+        rateSliderStackView.spacing = 10
+        rateSliderStackView.axis = .horizontal
+
+        let controlsAndSliderStack = UIStackView(arrangedSubviews: [controlsStackView,
+                                                                    slider,
+                                                                    playbackTimeLabelsStack,
+                                                                    playerStatus,
+                                                                    rateSliderStackView,
+                                                                    sliderWarningLabel])
         controlsAndSliderStack.translatesAutoresizingMaskIntoConstraints = false
         controlsAndSliderStack.spacing = 10
         controlsAndSliderStack.setCustomSpacing(15, after: playbackTimeLabelsStack)
@@ -144,6 +175,13 @@ class PlayerControlsViewController: UIViewController {
             elapsedPlayTimeLabel.text = progress
             remainingPlayTimeLabel.text = duration
         }
+    }
+
+    @objc private func rateValueChanged() {
+        viewModel.update(rate: rateSlider.value) { [rateSlider] value in
+            rateSlider.value = value
+        }
+        rateSliderValueLabel.text = viewModel.currentRateTitle
     }
 
     @objc private func toggleMute() {

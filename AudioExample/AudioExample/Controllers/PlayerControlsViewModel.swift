@@ -35,6 +35,13 @@ final class PlayerControlsViewModel {
     private var seekTime: Float = 0
     private var isScrubbing: Bool = false
 
+    let rateMinValue: Float = 1.0
+    let rateMaxValue: Float = 3.0
+
+    var currentRateTitle: String {
+        String(format: "%.1fx", playerService.rate)
+    }
+
     init(playerService: AudioPlayerService) {
         self.playerService = playerService
         self.playerService.delegate.add(delegate: self)
@@ -71,6 +78,12 @@ final class PlayerControlsViewModel {
                 playerService.seek(at: seekTime)
             }
         }
+    }
+
+    func update(rate: Float, updater: (Float) -> Void) {
+        let rate = round(rate / 0.5) * 0.5
+        playerService.update(rate: rate)
+        updater(rate)
     }
 
     private func startDisplayLink() {

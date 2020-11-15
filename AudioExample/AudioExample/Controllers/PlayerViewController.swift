@@ -42,10 +42,15 @@ class PlayerViewController: UIViewController {
 
     private func setupUI() {
         title = "Player"
-        view.backgroundColor = .white
+        view.backgroundColor = .systemBackground
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add,
                                                             target: self,
                                                             action: #selector(addNowPlaylistItem))
+
+        navigationItem.leftBarButtonItem = UIBarButtonItem(image: UIImage(systemName: "slider.horizontal.3"),
+                                                           style: .plain,
+                                                           target: self,
+                                                           action: #selector(showEqualizer))
         
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.delegate = self
@@ -81,7 +86,11 @@ class PlayerViewController: UIViewController {
         )
     }
 
-    @objc func addNowPlaylistItem() {
+    @objc private func showEqualizer() {
+        viewModel.showEqualizer()
+    }
+
+    @objc private func addNowPlaylistItem() {
         let controller = UIAlertController(title: "Add new item", message: "", preferredStyle: .alert)
         controller.addTextField { (textField) in
             textField.placeholder = "Insert url here"

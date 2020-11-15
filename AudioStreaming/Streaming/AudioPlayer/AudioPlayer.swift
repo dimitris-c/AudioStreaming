@@ -309,7 +309,7 @@ public final class AudioPlayer {
         reattachCustomNodes()
     }
 
-    public func removeCustomAttachedNodes() {
+    public func detachCustomAttachedNodes() {
         customAttachedNodes.forEach { node in
             audioEngine.detach(node)
         }
@@ -405,17 +405,22 @@ public final class AudioPlayer {
 
     private func reattachCustomNodes() {
         audioEngine.connect(audioEngine.inputNode, to: rateNode, format: nil)
-        if let first = customAttachedNodes.first {
-            audioEngine.connect(rateNode, to: first, format: nil)
-        }
-        for index in 0 ..< customAttachedNodes.count - 1 {
-            let current = customAttachedNodes[index]
-            let next = customAttachedNodes[index + 1]
-            let format = current.inputFormat(forBus: 0)
-            audioEngine.connect(current, to: next, format: format)
-        }
-        if let last = customAttachedNodes.last {
-            audioEngine.connect(last, to: audioEngine.mainMixerNode, format: nil)
+
+        if !customAttachedNodes.isEmpty {
+            if let first = customAttachedNodes.first {
+                audioEngine.connect(rateNode, to: first, format: nil)
+            }
+            for index in 0..<customAttachedNodes.count - 1 {
+                let current = customAttachedNodes[index]
+                let next = customAttachedNodes[index + 1]
+                let format = current.inputFormat(forBus: 0)
+                audioEngine.connect(current, to: next, format: format)
+            }
+            if let last = customAttachedNodes.last {
+                audioEngine.connect(last, to: audioEngine.mainMixerNode, format: nil)
+            }
+        } else {
+            audioEngine.connect(rateNode, to: audioEngine.mainMixerNode, format: nil)
         }
     }
 

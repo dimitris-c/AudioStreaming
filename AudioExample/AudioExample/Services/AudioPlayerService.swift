@@ -35,6 +35,10 @@ final class AudioPlayerService {
         player.muted
     }
 
+    var rate: Float {
+        player.rate
+    }
+
     var state: AudioPlayerState {
         player.state
     }
@@ -67,6 +71,18 @@ final class AudioPlayerService {
 
     func toggleMute() {
         player.muted = !player.muted
+    }
+
+    func update(rate: Float) {
+        player.rate = rate
+    }
+
+    func add(_ node: AVAudioNode) {
+        player.attach(node: node)
+    }
+
+    func remove(_ node: AVAudioNode) {
+        player.detach(node: node)
     }
 
     func toggle() {
