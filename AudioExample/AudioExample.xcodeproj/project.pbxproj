@@ -7,10 +7,17 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		B59D0B73255C983C00D6CCE5 /* bensound-jazzyfrenchy.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = B59D0B72255C983C00D6CCE5 /* bensound-jazzyfrenchy.mp3 */; };
+		B5220836256051830086FB3A /* AudioPlayerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5220835256051830086FB3A /* AudioPlayerService.swift */; };
+		B5220948256074910086FB3A /* MulticastDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5220947256074910086FB3A /* MulticastDelegate.swift */; };
+		B524D59C2560176C00F5A88F /* bensound-jazzyfrenchy.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = B524D59B2560176C00F5A88F /* bensound-jazzyfrenchy.mp3 */; };
+		B524D5A12560302100F5A88F /* PlayerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B524D5A02560302100F5A88F /* PlayerViewController.swift */; };
+		B524D5A32560303000F5A88F /* PlayerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B524D5A22560303000F5A88F /* PlayerViewModel.swift */; };
+		B524D5A52560303D00F5A88F /* PlayerControlsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B524D5A42560303D00F5A88F /* PlayerControlsViewController.swift */; };
+		B524D5A72560305800F5A88F /* PlayerControlsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B524D5A62560305800F5A88F /* PlayerControlsViewModel.swift */; };
+		B524D5A9256031DE00F5A88F /* AppCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B524D5A8256031DE00F5A88F /* AppCoordinator.swift */; };
+		B524D5AD25604E4B00F5A88F /* PlaylistItemsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B524D5AC25604E4B00F5A88F /* PlaylistItemsService.swift */; };
+		B524D5AF25604ED900F5A88F /* AudioContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = B524D5AE25604ED900F5A88F /* AudioContent.swift */; };
 		B5AEDBD52475274C007D8101 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5AEDBD42475274C007D8101 /* AppDelegate.swift */; };
-		B5AEDBD92475274C007D8101 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5AEDBD82475274C007D8101 /* ViewController.swift */; };
-		B5AEDBDC2475274C007D8101 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B5AEDBDA2475274C007D8101 /* Main.storyboard */; };
 		B5AEDBDE2475274D007D8101 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B5AEDBDD2475274D007D8101 /* Assets.xcassets */; };
 		B5AEDBE12475274D007D8101 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B5AEDBDF2475274D007D8101 /* LaunchScreen.storyboard */; };
 		B5F883C624780A3D00D277C1 /* AudioStreaming.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5F883C524780A3C00D277C1 /* AudioStreaming.framework */; };
@@ -32,12 +39,18 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		B59D0B72255C983C00D6CCE5 /* bensound-jazzyfrenchy.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; name = "bensound-jazzyfrenchy.mp3"; path = "../../../../../../Desktop/bensound-jazzyfrenchy.mp3"; sourceTree = "<group>"; };
+		B5220835256051830086FB3A /* AudioPlayerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerService.swift; sourceTree = "<group>"; };
+		B5220947256074910086FB3A /* MulticastDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MulticastDelegate.swift; sourceTree = "<group>"; };
+		B524D59B2560176C00F5A88F /* bensound-jazzyfrenchy.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "bensound-jazzyfrenchy.mp3"; sourceTree = "<group>"; };
+		B524D5A02560302100F5A88F /* PlayerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerViewController.swift; sourceTree = "<group>"; };
+		B524D5A22560303000F5A88F /* PlayerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerViewModel.swift; sourceTree = "<group>"; };
+		B524D5A42560303D00F5A88F /* PlayerControlsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerControlsViewController.swift; sourceTree = "<group>"; };
+		B524D5A62560305800F5A88F /* PlayerControlsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerControlsViewModel.swift; sourceTree = "<group>"; };
+		B524D5A8256031DE00F5A88F /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
+		B524D5AC25604E4B00F5A88F /* PlaylistItemsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistItemsService.swift; sourceTree = "<group>"; };
+		B524D5AE25604ED900F5A88F /* AudioContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioContent.swift; sourceTree = "<group>"; };
 		B5AEDBD12475274C007D8101 /* AudioExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AudioExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5AEDBD42475274C007D8101 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		B5AEDBD62475274C007D8101 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-		B5AEDBD82475274C007D8101 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
-		B5AEDBDB2475274C007D8101 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		B5AEDBDD2475274D007D8101 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B5AEDBE02475274D007D8101 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		B5AEDBE22475274D007D8101 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -56,6 +69,38 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		B524D59D2560177C00F5A88F /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				B524D59B2560176C00F5A88F /* bensound-jazzyfrenchy.mp3 */,
+				B5AEDBDD2475274D007D8101 /* Assets.xcassets */,
+				B5AEDBDF2475274D007D8101 /* LaunchScreen.storyboard */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		B524D5AA25604E2E00F5A88F /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				B524D5AE25604ED900F5A88F /* AudioContent.swift */,
+				B524D5AC25604E4B00F5A88F /* PlaylistItemsService.swift */,
+				B5220835256051830086FB3A /* AudioPlayerService.swift */,
+				B5220947256074910086FB3A /* MulticastDelegate.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		B524D5AB25604E3500F5A88F /* Controllers */ = {
+			isa = PBXGroup;
+			children = (
+				B524D5A02560302100F5A88F /* PlayerViewController.swift */,
+				B524D5A22560303000F5A88F /* PlayerViewModel.swift */,
+				B524D5A42560303D00F5A88F /* PlayerControlsViewController.swift */,
+				B524D5A62560305800F5A88F /* PlayerControlsViewModel.swift */,
+			);
+			path = Controllers;
+			sourceTree = "<group>";
+		};
 		B5AEDBC82475274C007D8101 = {
 			isa = PBXGroup;
 			children = (
@@ -78,12 +123,10 @@
 			isa = PBXGroup;
 			children = (
 				B5AEDBD42475274C007D8101 /* AppDelegate.swift */,
-				B5AEDBD62475274C007D8101 /* SceneDelegate.swift */,
-				B5AEDBD82475274C007D8101 /* ViewController.swift */,
-				B59D0B72255C983C00D6CCE5 /* bensound-jazzyfrenchy.mp3 */,
-				B5AEDBDA2475274C007D8101 /* Main.storyboard */,
-				B5AEDBDD2475274D007D8101 /* Assets.xcassets */,
-				B5AEDBDF2475274D007D8101 /* LaunchScreen.storyboard */,
+				B524D5A8256031DE00F5A88F /* AppCoordinator.swift */,
+				B524D5AA25604E2E00F5A88F /* Services */,
+				B524D5AB25604E3500F5A88F /* Controllers */,
+				B524D59D2560177C00F5A88F /* Resources */,
 				B5AEDBE22475274D007D8101 /* Info.plist */,
 			);
 			path = AudioExample;
@@ -156,10 +199,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B524D59C2560176C00F5A88F /* bensound-jazzyfrenchy.mp3 in Resources */,
 				B5AEDBE12475274D007D8101 /* LaunchScreen.storyboard in Resources */,
-				B59D0B73255C983C00D6CCE5 /* bensound-jazzyfrenchy.mp3 in Resources */,
 				B5AEDBDE2475274D007D8101 /* Assets.xcassets in Resources */,
-				B5AEDBDC2475274C007D8101 /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -170,22 +212,22 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B5AEDBD92475274C007D8101 /* ViewController.swift in Sources */,
+				B524D5AF25604ED900F5A88F /* AudioContent.swift in Sources */,
+				B524D5A9256031DE00F5A88F /* AppCoordinator.swift in Sources */,
+				B524D5AD25604E4B00F5A88F /* PlaylistItemsService.swift in Sources */,
+				B524D5A32560303000F5A88F /* PlayerViewModel.swift in Sources */,
+				B5220836256051830086FB3A /* AudioPlayerService.swift in Sources */,
 				B5AEDBD52475274C007D8101 /* AppDelegate.swift in Sources */,
+				B524D5A12560302100F5A88F /* PlayerViewController.swift in Sources */,
+				B5220948256074910086FB3A /* MulticastDelegate.swift in Sources */,
+				B524D5A52560303D00F5A88F /* PlayerControlsViewController.swift in Sources */,
+				B524D5A72560305800F5A88F /* PlayerControlsViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
-		B5AEDBDA2475274C007D8101 /* Main.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				B5AEDBDB2475274C007D8101 /* Base */,
-			);
-			name = Main.storyboard;
-			sourceTree = "<group>";
-		};
 		B5AEDBDF2475274D007D8101 /* LaunchScreen.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -320,7 +362,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 5Y92JCRVR7;
 				INFOPLIST_FILE = AudioExample/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -339,7 +381,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 5Y92JCRVR7;
 				INFOPLIST_FILE = AudioExample/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

@@ -11,10 +11,14 @@ import UIKit
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
+    var appCoordinator: AppCoordinator?
 
     func application(_: UIApplication, didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
-        URLCache.shared = URLCache()
+        let window = UIWindow(frame: UIScreen.main.bounds)
+        let appCoordinator = AppCoordinator()
+        appCoordinator.start(window: window)
+        self.window = window
+        self.appCoordinator = appCoordinator
 
         return true
     }

@@ -145,6 +145,9 @@ public final class AudioPlayer {
 
     deinit {
         // todo more stuff to release...
+        playerContext.audioPlayingEntry?.close()
+        clearQueue()
+        stopReadProccessFromSource()
         rendererContext.clean()
     }
 
