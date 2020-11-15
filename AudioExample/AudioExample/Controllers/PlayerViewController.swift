@@ -41,9 +41,13 @@ class PlayerViewController: UIViewController {
     }
 
     private func setupUI() {
+        title = "Player"
         view.backgroundColor = .white
+        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add,
+                                                            target: self,
+                                                            action: #selector(addNowPlaylistItem))
+        
         tableView.translatesAutoresizingMaskIntoConstraints = false
-
         tableView.delegate = self
         tableView.dataSource = self
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "PlaylistCell")
@@ -75,6 +79,24 @@ class PlayerViewController: UIViewController {
                 stackView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             ]
         )
+    }
+
+    @objc func addNowPlaylistItem() {
+        let controller = UIAlertController(title: "Add new item", message: "", preferredStyle: .alert)
+        controller.addTextField { (textField) in
+            textField.placeholder = "Insert url here"
+        }
+        let saveAction = UIAlertAction(title: "Save", style: .default) { [viewModel] action in
+            if let textfield = controller.textFields?.first,
+               let text = textfield.text {
+                viewModel.add(urlString: text)
+            }
+        }
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+
+        controller.addAction(saveAction)
+        controller.addAction(cancelAction)
+        self.present(controller, animated: true, completion: nil)
     }
 }
 

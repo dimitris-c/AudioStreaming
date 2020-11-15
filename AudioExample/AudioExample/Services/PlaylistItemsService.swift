@@ -40,8 +40,11 @@ final class PlaylistItemsService {
         items.count
     }
 
+    let protectedItemCount: Int
+
     init(initialItemsProvider: () -> [PlaylistItem]) {
         items = initialItemsProvider()
+        protectedItemCount = items.count
     }
 
     func item(at index: Int) -> PlaylistItem? {

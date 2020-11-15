@@ -32,6 +32,17 @@ final class PlayerViewModel {
         playlistItemsService.itemsCount
     }
 
+    func add(urlString: String) {
+        let detector = try! NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
+        let result = detector.firstMatch(in: urlString, options: [], range: NSRange(location: 0, length: urlString.utf16.count))
+        guard let url = URL(string: urlString), result != nil else {
+            print("malformed url error")
+            return
+        }
+        playlistItemsService.add(item: PlaylistItem(url: url, name: urlString, status: .stopped))
+        reloadContent?(.all)
+    }
+
     func item(at indexPath: IndexPath) -> PlaylistItem? {
         playlistItemsService.item(at: indexPath.row)
     }
