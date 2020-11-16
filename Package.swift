@@ -1,7 +1,4 @@
-//
-//  Created by Dimitrios Chatzieleftheriou on 16/11/2020.
-//  Copyright © 2020 Decimal. All rights reserved.
-//
+// swift-tools-version:5.3
 
 import PackageDescription
 
@@ -19,7 +16,8 @@ let package = Package(
     targets: [
         .target(
             name: "AudioStreaming",
-            path: "AudioStreaming"
+            dependencies: []
         ),
-    ]
+    ],
+    swiftLanguageVersions: [.v5]
 )
