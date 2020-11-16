@@ -16,6 +16,7 @@ let package = Package(
     targets: [
         .target(
             name: "AudioStreaming",
+            path: "AudioStreaming",
             dependencies: []
         ),
     ],
