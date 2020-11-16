@@ -17,7 +17,6 @@ let package = Package(
         .target(
             name: "AudioStreaming",
             path: "AudioStreaming",
-            dependencies: []
         ),
     ],
     swiftLanguageVersions: [.v5]
