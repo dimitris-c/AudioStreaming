@@ -13,8 +13,6 @@ Pod::Spec.new do |s|
 
   s.source_files = 'AudioStreaming/**/*.swift'
 
-  s.frameworks = 'AVFoundation', ' CoreAudio', 'AudioToolbox', 'Network'
-
   s.pod_target_xcconfig = {
     'SWIFT_INSTALL_OBJC_HEADER' => 'NO'
   }
