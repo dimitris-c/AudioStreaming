@@ -154,3 +154,7 @@ Visit [installation instructions](https://github.com/Carthage/Carthage#adding-fr
 # Licence
 
 AudioStreaming is available under the MIT license. See the LICENSE file for more info.
+
+# Attributions
+This librabry takes inspiration on the already battled-tested streaming library, [StreamingKit](https://github.com/tumtumtum/StreamingKit).
+Big 🙏 to Thong Nguyen (@tumtumtum) and Matt Gallagher (@mattgallagher) for [AudioStreamer](https://github.com/mattgallagher/AudioStreamer)
