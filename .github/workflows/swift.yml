@@ -1,4 +1,4 @@
-name: AudioStreaming CI
+name: "AudioStreaming CI"
 
 on: 
   push:
