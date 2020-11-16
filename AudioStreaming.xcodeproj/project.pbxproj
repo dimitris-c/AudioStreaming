@@ -120,6 +120,9 @@
 		B5667B3D249BC43000D93F85 /* AudioPlayerRenderProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerRenderProcessor.swift; sourceTree = "<group>"; };
 		B573733F254DE43E003DFBEC /* measure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = measure.swift; sourceTree = "<group>"; };
 		B57829CE2548B32B00C78D36 /* Lock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lock.swift; sourceTree = "<group>"; };
+		B580CB1D25628CF4006D7DD8 /* AudioStreaming.podspec */ = {isa = PBXFileReference; lastKnownFileType = text; path = AudioStreaming.podspec; sourceTree = "<group>"; };
+		B580CB1E25628CF4006D7DD8 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
+		B580CB1F25628D09006D7DD8 /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		B58386372544A2C10087A712 /* EntryFrames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryFrames.swift; sourceTree = "<group>"; };
 		B583863F254584A50087A712 /* ProcessedPackets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessedPackets.swift; sourceTree = "<group>"; };
 		B5838643254584BE0087A712 /* AudioStreamState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioStreamState.swift; sourceTree = "<group>"; };
@@ -266,6 +269,16 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		B580CB1C25628CE4006D7DD8 /* Deployment */ = {
+			isa = PBXGroup;
+			children = (
+				B580CB1D25628CF4006D7DD8 /* AudioStreaming.podspec */,
+				B580CB1E25628CF4006D7DD8 /* LICENSE */,
+				B580CB1F25628D09006D7DD8 /* Package.swift */,
+			);
+			name = Deployment;
+			sourceTree = "<group>";
+		};
 		B58386362544A2A60087A712 /* Models */ = {
 			isa = PBXGroup;
 			children = (
@@ -332,6 +345,7 @@
 		B5AEDBA424744153007D8101 = {
 			isa = PBXGroup;
 			children = (
+				B580CB1C25628CE4006D7DD8 /* Deployment */,
 				B5AEDBB024744153007D8101 /* AudioStreaming */,
 				B5AEDBBB24744153007D8101 /* AudioStreamingTests */,
 				B5AEDBAF24744153007D8101 /* Products */,
