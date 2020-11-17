@@ -16,8 +16,6 @@ Known limitations:
  - iOS 12.0+
  - Swift 5.x
 
-# Installation
-
 # Using AudioStreaming
 
 ### Playing an audio source over HTTP
@@ -84,8 +82,8 @@ let state = player.stopReason
 ```
 
 ### AudioPlayer Delegate
-You can inspect various callbacks by using the `delegate` property of the `AudioPlayer` to get informed about various playback callbacks
-View the `AudioPlayerDelegate` for more details
+You can inspect various callbacks by using the `delegate` property of the `AudioPlayer` to get informed about the player state, errors etc.
+View the [AudioPlayerDelegate](AudioStreaming/Streaming/AudioPlayer/AudioPlayerDelegate.swift) for more details
 
 ```
 let player = AudioPlayer()
@@ -117,6 +115,8 @@ player.detachCustomAttachedNodes()
 ```
 
 The example project shows an example of adding a custom `AVAudioUnitEQ` node for adding equaliser to the `AudioPlayer`
+
+# Installation
 
 ### Cocoapods
 
