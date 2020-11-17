@@ -16,6 +16,7 @@ enum AudioContent: Int, CaseIterable {
     case khruangbin
     case piano
     case local
+    case podcast
 
     var title: String {
         switch self {
@@ -33,6 +34,8 @@ enum AudioContent: Int, CaseIterable {
             return "Piano (mp3)"
         case .local:
             return "Local file (mp3)"
+        case .podcast:
+            return "Swift by Sundell. Ep. 50 (mp3)"
         }
     }
 
@@ -53,6 +56,8 @@ enum AudioContent: Int, CaseIterable {
         case .local:
             let path = Bundle.main.path(forResource: "bensound-jazzyfrenchy", ofType: "mp3")!
             return URL(fileURLWithPath: path)
+        case .podcast:
+            return URL(string: "https://hwcdn.libsyn.com/p/f/6/e/f6e7cb785cf0f71f/SwiftBySundell50.mp3?c_id=45232967&cs_id=45232967&expiration=1605613140&hwt=f9ff0b2f758c3286cd75322e14ef7a23")!
         }
     }
 }
