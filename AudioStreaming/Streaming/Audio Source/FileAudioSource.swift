@@ -41,6 +41,10 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
         length = 0
     }
 
+    deinit {
+        buffer.deallocate()
+    }
+
     func close() {
         guard let inputStream = inputStream else {
             return
