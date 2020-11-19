@@ -382,7 +382,7 @@ final class AudioFileStreamProcessor {
             var start = bufferContext.frameStartIndex
             var end = bufferContext.end
 
-            var framesLeftInBuffer = max(bufferContext.totalFrameCount &- used, 0)
+            var framesLeftInBuffer = bufferContext.totalFrameCount - used
             rendererContext.lock.unlock()
 
             if framesLeftInBuffer == 0 {
