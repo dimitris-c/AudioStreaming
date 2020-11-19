@@ -386,37 +386,39 @@ final class AudioFileStreamProcessor {
             rendererContext.lock.unlock()
 
             if framesLeftInBuffer == 0 {
-                rendererContext.lock.lock()
-                let bufferContext = rendererContext.bufferContext
-                used = bufferContext.frameUsedCount
-                start = bufferContext.frameStartIndex
-                end = bufferContext.end
-                framesLeftInBuffer = max(bufferContext.totalFrameCount &- used, 0)
-                rendererContext.lock.unlock()
-                if framesLeftInBuffer > 0 {
-                    break packetProccess
-                }
-                if playerContext.disposedRequested
-                    || playerContext.internalState == .disposed
-                    || playerContext.internalState == .pendingNext
-                    || playerContext.internalState == .stopped
-                {
-                    return
-                }
-
-                if let playingEntry = playerContext.audioPlayingEntry,
-                   playingEntry.seekRequest.requested, playingEntry.calculatedBitrate() > 0
-                {
-                    fileStreamCallback?(.proccessSource)
-                    if rendererContext.waiting.value {
-                        rendererContext.packetsSemaphore.signal()
+                while true {
+                    rendererContext.lock.lock()
+                    let bufferContext = rendererContext.bufferContext
+                    used = bufferContext.frameUsedCount
+                    start = bufferContext.frameStartIndex
+                    end = (bufferContext.frameStartIndex + bufferContext.frameUsedCount) % bufferContext.totalFrameCount
+                    framesLeftInBuffer = bufferContext.totalFrameCount - used
+                    rendererContext.lock.unlock()
+                    if framesLeftInBuffer > 0 {
+                        break
                     }
-                    return
-                }
+                    if playerContext.disposedRequested
+                        || playerContext.internalState == .disposed
+                        || playerContext.internalState == .pendingNext
+                        || playerContext.internalState == .stopped
+                    {
+                        return
+                    }
 
-                rendererContext.waiting.write { $0 = true }
-                rendererContext.packetsSemaphore.wait()
-                rendererContext.waiting.write { $0 = false }
+                    if let playingEntry = playerContext.audioPlayingEntry,
+                       playingEntry.seekRequest.requested, playingEntry.calculatedBitrate() > 0
+                    {
+                        fileStreamCallback?(.proccessSource)
+                        if rendererContext.waiting.value {
+                            rendererContext.packetsSemaphore.signal()
+                        }
+                        return
+                    }
+
+                    rendererContext.waiting.write { $0 = true }
+                    rendererContext.packetsSemaphore.wait()
+                    rendererContext.waiting.write { $0 = false }
+                }
             }
 
             let localBufferList = AudioBufferList.allocate(maximumBuffers: 1)

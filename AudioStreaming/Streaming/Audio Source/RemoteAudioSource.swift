@@ -189,9 +189,9 @@ public class RemoteAudioSource: AudioStreamSource {
     private func handleStreamEvent(event: NetworkDataStream.StreamResult) {
         switch event {
         case let .success(value):
-            addStreamOperation { [weak self] in
-                guard let self = self else { return }
-                if let data = value.data {
+            if let data = value.data {
+                addStreamOperation { [weak self] in
+                    guard let self = self else { return }
                     if self.metadataStreamProcessor.canProccessMetadata {
                         let extractedAudioData = self.metadataStreamProcessor.proccessMetadata(data: data)
                         self.delegate?.dataAvailable(source: self, data: extractedAudioData)
@@ -281,3 +281,4 @@ extension RemoteAudioSource: MetadataStreamSourceDelegate {
         delegate?.metadataReceived(data: data)
     }
 }
+
