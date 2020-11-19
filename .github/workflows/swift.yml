@@ -3,7 +3,7 @@ name: "AudioStreaming CI"
 on: 
   push:
     branches: 
-      - master
+      - main
       - hotfix
   pull_request:
     branches: 
