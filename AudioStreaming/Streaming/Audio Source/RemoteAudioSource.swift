@@ -17,8 +17,9 @@ public class RemoteAudioSource: AudioStreamSource {
 
     var length: Int {
         guard let parsedHeader = parsedHeaderOutput else { return 0 }
-        return parsedHeader.fileLength
+        return parsedHeader.fileLength == 0 ? cachedFileLength : parsedHeader.fileLength
     }
+    private var cachedFileLength: Int = 0
 
     private let url: URL
     private let networkingClient: NetworkingClient
@@ -216,6 +217,9 @@ public class RemoteAudioSource: AudioStreamSource {
         let httpStatusCode = response.statusCode
         let parser = HTTPHeaderParser()
         parsedHeaderOutput = parser.parse(input: response)
+        if cachedFileLength == 0 {
+            cachedFileLength = parsedHeaderOutput?.fileLength ?? 0
+        }
         // check to see if we have metadata to proccess
         if let metadataStep = parsedHeaderOutput?.metadataStep {
             metadataStreamProcessor.metadataAvailable(step: metadataStep)
