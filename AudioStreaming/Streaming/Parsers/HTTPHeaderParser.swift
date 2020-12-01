@@ -28,7 +28,7 @@ protocol HTTPHeaderParsing: Parser {
     /// Returns the value for the given field of the headers in the given `HTTPURLResponse`
     ///
     /// - Parameters:
-    ///   - field: The header field to be search
+    ///   - field: The header field to be searched
     ///   - response: The `HTTPURLResponse` for the header
     /// - Returns: A `String` if the field exists in the headers otherwise `nil`
     func value(forHTTPHeaderField field: String, in response: HTTPURLResponse) -> String?
