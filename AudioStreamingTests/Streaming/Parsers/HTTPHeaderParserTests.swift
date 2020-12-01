@@ -32,8 +32,7 @@ class HTTPHeaderParserTests: XCTestCase {
 
         // When
         let headers: [String: String] =
-            [HeaderField.acceptRanges: "range",
-             HeaderField.contentLength: "1000",
+            [HeaderField.contentLength: "1000",
              HeaderField.contentType: "audio/mp3",
              IcyHeaderField.icyMentaint: "16000"]
         let httpURLResponse = HTTPURLResponse(url: URL(string: "www.google.com")!,
@@ -46,23 +45,21 @@ class HTTPHeaderParserTests: XCTestCase {
         // Then
         XCTAssertNotNil(output)
         XCTAssertEqual(output!.fileLength, 1000)
-        XCTAssertEqual(output!.supportsSeek, true)
         XCTAssertEqual(output!.typeId, kAudioFileMP3Type)
         XCTAssertEqual(output!.metadataStep, 16000)
     }
 
-    func testReturnCorrectValuesOnRequestThatSupportsSeekRanges() throws {
+    func testReturnCorectValuesOnCaseInsensitiveHeaderFiels() throws {
         // Given
         let parser = HTTPHeaderParser()
 
         // When
         let headers: [String: String] =
-            [HeaderField.acceptRanges: "range",
-             HeaderField.contentLength: "1000",
-             HeaderField.contentType: "audio/mp3",
-             HeaderField.contentRange: "100/1000"]
+            [HeaderField.contentLength.lowercased(): "1000",
+             HeaderField.contentType.lowercased(): "audio/mp3",
+             IcyHeaderField.icyMentaint.lowercased(): "16000"]
         let httpURLResponse = HTTPURLResponse(url: URL(string: "www.google.com")!,
-                                              statusCode: 206,
+                                              statusCode: 200,
                                               httpVersion: "",
                                               headerFields: headers)
 
@@ -71,7 +68,7 @@ class HTTPHeaderParserTests: XCTestCase {
         // Then
         XCTAssertNotNil(output)
         XCTAssertEqual(output!.fileLength, 1000)
-        XCTAssertEqual(output!.supportsSeek, true)
         XCTAssertEqual(output!.typeId, kAudioFileMP3Type)
+        XCTAssertEqual(output!.metadataStep, 16000)
     }
 }
