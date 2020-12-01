@@ -191,7 +191,11 @@ final class AudioFileStreamProcessor {
             guard AudioFileStreamGetProperty(fileStream, kAudioFileStreamProperty_MagicCookieData, &cookieSize, &cookie) == noErr else {
                 return
             }
-            guard AudioFileStreamSetProperty(fileStream, kAudioConverterDecompressionMagicCookie, cookieSize, cookie) == noErr else {
+            guard let converter = audioConverter else {
+                fileStreamCallback?(.raiseError(.audioSystemError(.fileStreamError(.unknownError))))
+                 return
+            }
+            guard AudioConverterSetProperty(converter, kAudioConverterDecompressionMagicCookie, cookieSize, cookie) == noErr else {
                 fileStreamCallback?(.raiseError(.audioSystemError(.fileStreamError(.unknownError))))
                 return
             }
