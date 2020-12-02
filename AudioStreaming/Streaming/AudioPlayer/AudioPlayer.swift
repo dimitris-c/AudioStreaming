@@ -71,8 +71,12 @@ public final class AudioPlayer {
         let playingEntry = playerContext.audioPlayingEntry
         playerContext.entriesLock.unlock()
         guard let entry = playingEntry else { return 0 }
-        if entry.seekRequest.requested {
-            return entry.seekRequest.time
+        entry.seekRequest.lock.lock()
+        let seekRequested = entry.seekRequest.requested
+        let seekTime = entry.seekRequest.time
+        entry.seekRequest.lock.unlock()
+        if seekRequested {
+            return seekTime
         }
         return entry.progress
     }
