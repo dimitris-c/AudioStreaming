@@ -70,7 +70,10 @@ public final class AudioPlayer {
         playerContext.entriesLock.lock()
         let playingEntry = playerContext.audioPlayingEntry
         playerContext.entriesLock.unlock()
-        guard let entry = playingEntry, !entry.seekRequest.requested else { return 0 }
+        guard let entry = playingEntry else { return 0 }
+        if entry.seekRequest.requested {
+            return entry.seekRequest.time
+        }
         return entry.progress
     }
 
