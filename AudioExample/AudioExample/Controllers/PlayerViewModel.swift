@@ -47,7 +47,7 @@ final class PlayerViewModel {
             print("malformed url error")
             return
         }
-        playlistItemsService.add(item: PlaylistItem(url: url, name: urlString, status: .stopped))
+        playlistItemsService.add(item: PlaylistItem(url: url, name: urlString, status: .stopped, queues: false))
         reloadContent?(.all)
     }
 
@@ -57,13 +57,20 @@ final class PlayerViewModel {
 
     func playItem(at indexPath: IndexPath) {
         guard let item = item(at: indexPath) else { return }
-        if let index = currentPlayingItemIndex {
-            playlistItemsService.setStatus(for: index, status: .stopped)
-            reloadContent?(.item(IndexPath(row: index, section: 0)))
-            currentPlayingItemIndex = nil
+        if item.queues {
+            playerService.queue(url: item.url)
+            if currentPlayingItemIndex == nil {
+                currentPlayingItemIndex = indexPath.row
+            }
+        } else {
+            if let index = currentPlayingItemIndex {
+                playlistItemsService.setStatus(for: index, status: .stopped)
+                reloadContent?(.item(IndexPath(row: index, section: 0)))
+                currentPlayingItemIndex = nil
+            }
+            playerService.play(url: item.url)
+            currentPlayingItemIndex = indexPath.row
         }
-        playerService.play(url: item.url)
-        currentPlayingItemIndex = indexPath.row
     }
 }
 

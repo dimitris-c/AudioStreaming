@@ -55,7 +55,7 @@ class PlayerViewController: UIViewController {
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.delegate = self
         tableView.dataSource = self
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "PlaylistCell")
+        tableView.register(PlaylistTableViewCell.self, forCellReuseIdentifier: "PlaylistCell")
 
         let controlsController = controlsProvider()
         playerControlsController = controlsController
@@ -120,6 +120,7 @@ extension PlayerViewController: UITableViewDataSource {
             return cell
         }
         cell.textLabel?.text = item.name
+        cell.detailTextLabel?.text = item.queues ? "Queue item" : nil
         update(status: item.status, of: cell)
         return cell
     }
@@ -145,5 +146,17 @@ extension PlayerViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         viewModel.playItem(at: indexPath)
+    }
+}
+
+
+final class PlaylistTableViewCell: UITableViewCell {
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: .subtitle, reuseIdentifier: reuseIdentifier)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
 }

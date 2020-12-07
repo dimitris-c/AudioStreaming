@@ -116,7 +116,7 @@ public final class AudioPlayer {
     let playerRenderProcessor: AudioPlayerRenderProcessor
 
     private let audioReadSource: DispatchTimerSource
-    private let underlyingQueue = DispatchQueue(label: "streaming.core.queue", qos: .userInitiated, attributes: .concurrent)
+    private let serializationQueue: DispatchQueue
     private let sourceQueue: DispatchQueue
 
     private let entryProvider: AudioEntryProviding
@@ -130,7 +130,8 @@ public final class AudioPlayer {
         playerContext = AudioPlayerContext()
         entriesQueue = PlayerQueueEntries()
 
-        sourceQueue = DispatchQueue(label: "source.queue", qos: .userInitiated, target: underlyingQueue)
+        serializationQueue = DispatchQueue(label: "streaming.core.queue", qos: .userInitiated)
+        sourceQueue = DispatchQueue(label: "source.queue", qos: .userInitiated, target: serializationQueue)
         audioReadSource = DispatchTimerSource(interval: .milliseconds(200), queue: sourceQueue)
 
         entryProvider = AudioEntryProvider(networkingClient: NetworkingClient(),
@@ -206,6 +207,7 @@ public final class AudioPlayer {
         let audioEntry = entryProvider.provideAudioEntry(url: url, headers: headers)
         audioEntry.delegate = self
         entriesQueue.enqueue(item: audioEntry, type: .upcoming)
+        checkRenderWaitingAndNotifyIfNeeded()
         sourceQueue.async { [weak self] in
             self?.processSource()
         }
@@ -215,8 +217,8 @@ public final class AudioPlayer {
     public func stop() {
         guard playerContext.internalState != .stopped else { return }
 
-        stopEngine(reason: .userAction)
         stopReadProccessFromSource()
+        stopEngine(reason: .userAction)
         sourceQueue.async { [weak self] in
             guard let self = self else { return }
             self.playerContext.audioReadingEntry?.delegate = nil
@@ -382,9 +384,11 @@ public final class AudioPlayer {
 
         playerRenderProcessor.audioFinishedPlaying = { [weak self] entry in
             guard let self = self else { return }
-            self.sourceQueue.async {
+            self.serializationQueue.sync {
                 let nextEntry = self.entriesQueue.dequeue(type: .buffering)
                 self.processFinishPlaying(entry: entry, with: nextEntry)
+            }
+            self.sourceQueue.async {
                 self.processSource()
             }
         }
@@ -462,10 +466,6 @@ public final class AudioPlayer {
     ///
     /// - parameter reason: A value of `AudioPlayerStopReason` indicating the reason the engine stopped.
     private func stopEngine(reason: AudioPlayerStopReason) {
-        guard isEngineRunning && player.auAudioUnit.isRunning else {
-            Logger.debug("already already stopped 🛑", category: .generic)
-            return
-        }
         audioEngine.stop()
         player.auAudioUnit.stopHardware()
         rendererContext.resetBuffers()
@@ -498,11 +498,8 @@ public final class AudioPlayer {
         if resetBuffers {
             rendererContext.resetBuffers()
         }
-        if !isEngineRunning && !player.auAudioUnit.isRunning {
-            Logger.debug("trying to start the player when audio engine and player are already running", category: .generic)
-            return
-        }
         do {
+            try startEngineIfNeeded()
             try player.auAudioUnit.allocateRenderResources()
             try player.auAudioUnit.startHardware()
         } catch {
@@ -669,7 +666,9 @@ public final class AudioPlayer {
             playerContext.audioPlayingEntry = nil
             playerContext.entriesLock.unlock()
         }
-        processSource()
+        sourceQueue.async { [weak self] in
+            self?.processSource()
+        }
         checkRenderWaitingAndNotifyIfNeeded()
     }
 
