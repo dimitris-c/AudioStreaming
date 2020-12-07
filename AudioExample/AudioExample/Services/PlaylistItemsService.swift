@@ -19,17 +19,20 @@ struct PlaylistItem: Equatable {
     let url: URL
     let name: String
     let status: Status
+    let queues: Bool
 
-    init(content: AudioContent) {
+    init(content: AudioContent, queues: Bool) {
         name = content.title
         url = content.streamUrl
         status = .stopped
+        self.queues = queues
     }
 
-    init(url: URL, name: String, status: Status) {
+    init(url: URL, name: String, status: Status, queues: Bool) {
         self.url = url
         self.name = name
         self.status = status
+        self.queues = queues
     }
 }
 
@@ -70,10 +73,14 @@ final class PlaylistItemsService {
         guard let item = item(at: index) else {
             return
         }
-        items[index] = PlaylistItem(url: item.url, name: item.name, status: status)
+        items[index] = PlaylistItem(url: item.url, name: item.name, status: status, queues: item.queues)
     }
 }
 
 func provideInitialPlaylistItems() -> [PlaylistItem] {
-    AudioContent.allCases.map(PlaylistItem.init(content:))
+    let allCases = AudioContent.allCases
+    let casesForQueueing: [AudioContent] = [.piano, .local, .khruangbin]
+    let allItems = allCases.map { PlaylistItem.init(content: $0 , queues: false) }
+    let casesForQueuingItems = casesForQueueing.map { PlaylistItem.init(content: $0 , queues: true) }
+    return allItems + casesForQueuingItems
 }

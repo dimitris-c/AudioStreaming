@@ -56,6 +56,11 @@ final class AudioPlayerService {
         player.play(url: url)
     }
 
+    func queue(url: URL) {
+        activateAudioSession()
+        player.queue(url: url)
+    }
+
     func stop() {
         player.stop()
         deactivateAudioSession()
