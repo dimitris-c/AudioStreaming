@@ -131,7 +131,7 @@ public final class AudioPlayer {
         entriesQueue = PlayerQueueEntries()
 
         serializationQueue = DispatchQueue(label: "streaming.core.queue", qos: .userInitiated)
-        sourceQueue = DispatchQueue(label: "source.queue", qos: .userInitiated, target: serializationQueue)
+        sourceQueue = DispatchQueue(label: "source.queue", qos: .userInitiated)
         audioReadSource = DispatchTimerSource(interval: .milliseconds(200), queue: sourceQueue)
 
         entryProvider = AudioEntryProvider(networkingClient: NetworkingClient(),
@@ -152,7 +152,6 @@ public final class AudioPlayer {
     }
 
     deinit {
-        // todo more stuff to release...
         playerContext.audioPlayingEntry?.close()
         clearQueue()
         stopReadProccessFromSource()
@@ -175,18 +174,21 @@ public final class AudioPlayer {
     public func play(url: URL, headers: [String: String]) {
         let audioEntry = entryProvider.provideAudioEntry(url: url, headers: headers)
         audioEntry.delegate = self
-        clearQueue()
-        entriesQueue.enqueue(item: audioEntry, type: .upcoming)
-        playerContext.setInternalState(to: .pendingNext)
 
         checkRenderWaitingAndNotifyIfNeeded()
-        sourceQueue.async { [weak self] in
-            guard let self = self else { return }
+        serializationQueue.sync {
+            clearQueue()
+            entriesQueue.enqueue(item: audioEntry, type: .upcoming)
+            playerContext.setInternalState(to: .pendingNext)
             do {
                 try self.startEngineIfNeeded()
             } catch {
                 self.raiseUnxpected(error: .audioSystemError(.engineFailure))
             }
+        }
+
+        sourceQueue.async { [weak self] in
+            guard let self = self else { return }
             self.processSource()
             self.startReadProcessFromSourceIfNeeded()
         }
@@ -194,19 +196,46 @@ public final class AudioPlayer {
 
     /// Queues the specified URL
     ///
-    /// - Parameter url: A `URL` specifying the audio context to be played.
+    /// - Parameter url: A `URL` specifying the audio content to be played.
     public func queue(url: URL) {
         queue(url: url, headers: [:])
     }
 
+    /// Queues the specified URLs
+    ///
+    /// - Parameter url: A `URL` specifying the audio content to be played.
+    public func queue(urls: [URL]) {
+        queue(urls: urls, headers: [:])
+    }
+
     /// Queues the specified URL
     ///
-    /// - Parameter url: A `URL` specifying the audio context to be played.
+    /// - Parameter url: A `URL` specifying the audio content to be played.
     /// - parameter headers: A `Dictionary` specifying any additional headers to be pass to the network request.
     public func queue(url: URL, headers: [String: String]) {
-        let audioEntry = entryProvider.provideAudioEntry(url: url, headers: headers)
-        audioEntry.delegate = self
-        entriesQueue.enqueue(item: audioEntry, type: .upcoming)
+        serializationQueue.sync {
+            let audioEntry = entryProvider.provideAudioEntry(url: url, headers: headers)
+            audioEntry.delegate = self
+            entriesQueue.enqueue(item: audioEntry, type: .upcoming)
+        }
+        checkRenderWaitingAndNotifyIfNeeded()
+        sourceQueue.async { [weak self] in
+            self?.processSource()
+        }
+    }
+
+    /// Queues the specified URLs
+    ///
+    /// - Parameter url: A array of `URL`s specifying the audio content to be played.
+    /// - parameter headers: A `Dictionary` specifying any additional headers to be pass to the network request.
+    public func queue(urls: [URL], headers: [String: String]) {
+        serializationQueue.sync {
+            for url in urls {
+                let audioEntry = entryProvider.provideAudioEntry(url: url, headers: headers)
+                audioEntry.delegate = self
+                entriesQueue.enqueue(item: audioEntry, type: .upcoming)
+            }
+        }
         checkRenderWaitingAndNotifyIfNeeded()
         sourceQueue.async { [weak self] in
             self?.processSource()
@@ -218,7 +247,10 @@ public final class AudioPlayer {
         guard playerContext.internalState != .stopped else { return }
 
         stopReadProccessFromSource()
-        stopEngine(reason: .userAction)
+        serializationQueue.sync {
+            stopEngine(reason: .userAction)
+        }
+        checkRenderWaitingAndNotifyIfNeeded()
         sourceQueue.async { [weak self] in
             guard let self = self else { return }
             self.playerContext.audioReadingEntry?.delegate = nil
@@ -235,7 +267,6 @@ public final class AudioPlayer {
 
             self.processSource()
         }
-        checkRenderWaitingAndNotifyIfNeeded()
     }
 
     /// Pauses the audio playback
@@ -243,8 +274,9 @@ public final class AudioPlayer {
         if playerContext.internalState != .paused, playerContext.internalState.contains(.running) {
             stateBeforePaused = playerContext.internalState
             playerContext.setInternalState(to: .paused)
-
-            pauseEngine()
+            serializationQueue.sync {
+                pauseEngine()
+            }
             stopReadProccessFromSource()
             playerContext.audioPlayingEntry?.suspend()
             sourceQueue.async { [weak self] in
@@ -257,20 +289,20 @@ public final class AudioPlayer {
     public func resume() {
         guard playerContext.internalState == .paused else { return }
         playerContext.setInternalState(to: stateBeforePaused)
-        // check if seek time requested and reset buffers
-        do {
-            try startEngine()
-        } catch {
-            Logger.debug("resuming audio engine failed: %@", category: .generic, args: error.localizedDescription)
-        }
-
-        if let playingEntry = playerContext.audioReadingEntry {
-            if playingEntry.seekRequest.requested {
-                rendererContext.resetBuffers()
+        serializationQueue.sync {
+            do {
+                try startEngine()
+            } catch {
+                Logger.debug("resuming audio engine failed: %@", category: .generic, args: error.localizedDescription)
             }
-            playingEntry.resume()
+            if let playingEntry = playerContext.audioReadingEntry {
+                if playingEntry.seekRequest.requested {
+                    rendererContext.resetBuffers()
+                }
+                playingEntry.resume()
+            }
+            startPlayer(resetBuffers: false)
         }
-        startPlayer(resetBuffers: false)
         startReadProcessFromSourceIfNeeded()
     }
 
@@ -546,7 +578,7 @@ public final class AudioPlayer {
                 let entry = entriesQueue.dequeue(type: .upcoming)
                 let shouldStartPlaying = playerContext.audioPlayingEntry == nil
                 playerContext.setInternalState(to: .waitingForData)
-                setCurrentReading(entry: entry, startPlaying: shouldStartPlaying, shouldClearQueue: true)
+                setCurrentReading(entry: entry, startPlaying: shouldStartPlaying, shouldClearQueue: false)
             } else if playerContext.audioPlayingEntry == nil {
                 if playerContext.internalState != .stopped {
                     stopReadProccessFromSource()
@@ -578,7 +610,8 @@ public final class AudioPlayer {
     }
 
     private func proccessSeekTime() {
-        assert(playerContext.audioReadingEntry === playerContext.audioPlayingEntry, "reading and playing entry must be the same")
+        assert(playerContext.audioReadingEntry === playerContext.audioPlayingEntry,
+               "reading and playing entry must be the same")
         fileStreamProcessor.processSeek()
     }
 
