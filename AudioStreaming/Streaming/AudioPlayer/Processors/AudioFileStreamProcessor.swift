@@ -450,7 +450,7 @@ final class AudioFileStreamProcessor {
                     fillUsedFrames(framesCount: framesAdded)
                     return
                 } else if status != 0 {
-                    /// raise undexpected error... codec error
+                    fileStreamCallback?(.raiseError(.codecError))
                     return
                 }
 
@@ -479,7 +479,7 @@ final class AudioFileStreamProcessor {
                     fillUsedFrames(framesCount: framesAdded)
                     continue packetProccess
                 } else if status != 0 {
-                    /// raise undexpected error... codec error
+                    fileStreamCallback?(.raiseError(.codecError))
                     return
                 }
             } else {
@@ -506,7 +506,7 @@ final class AudioFileStreamProcessor {
                     fillUsedFrames(framesCount: framesAdded)
                     continue packetProccess
                 } else if status != 0 {
-                    /// raise undexpected error... codec error
+                    fileStreamCallback?(.raiseError(.codecError))
                     return
                 }
             }
