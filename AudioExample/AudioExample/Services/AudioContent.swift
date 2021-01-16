@@ -12,6 +12,7 @@ enum AudioContent: Int, CaseIterable {
     case offradio
     case enlefko
     case pepper966
+    case kosmos
     case radiox
     case khruangbin
     case piano
@@ -26,6 +27,8 @@ enum AudioContent: Int, CaseIterable {
             return "Enlefko (stream)"
         case .pepper966:
             return "Pepper 96.6 (stream)"
+        case .kosmos:
+            return "Kosmos 93.6 (stream)"
         case .radiox:
             return "Radio X (stream)"
         case .khruangbin:
@@ -47,6 +50,8 @@ enum AudioContent: Int, CaseIterable {
             return URL(string: "https://s3.yesstreaming.net:17062/stream")!
         case .pepper966:
             return URL(string: "https://ample-09.radiojar.com/pepper.m4a?1593699983=&rj-tok=AAABcw_1KyMAIViq2XpI098ZSQ&rj-ttl=5")!
+        case .kosmos:
+            return URL(string: "https://radiostreaming.ert.gr/ert-kosmos")!
         case .radiox:
             return URL(string: "https://media-ssl.musicradio.com/RadioXLondon")!
         case .khruangbin:
