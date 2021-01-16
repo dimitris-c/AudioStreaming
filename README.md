@@ -35,8 +35,14 @@ player.play(url: URL(fileURLWithPath: "your-local-path/to/audio-file.mp3")!)
 ### Queueing audio files
 ```
 let player = AudioPlayer()
+// when you want to queue a single url
 player.queue(url: URL(string: "https://your-remote-url/to/audio-file.mp3")!)
-player.queue(url: URL(fileURLWithPath: "your-local-path/to/audio-file.mp3")!)
+
+// or if you want to queue a list of urls use
+player.queue(urls: [
+    URL(fileURLWithPath: "your-local-path/to/audio-file.mp3")!,
+    URL(fileURLWithPath: "your-local-path/to/audio-file-2.mp3")!
+])
 ```
 
 ### Adjusting playback properties
