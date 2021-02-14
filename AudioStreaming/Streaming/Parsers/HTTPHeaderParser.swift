@@ -39,7 +39,7 @@ struct HTTPHeaderParser: HTTPHeaderParsing {
     typealias Output = HTTPHeaderParserOutput?
 
     func parse(input: HTTPURLResponse) -> HTTPHeaderParserOutput? {
-        guard let headers = input.allHeaderFields as? [String: String], !headers.isEmpty else { return nil }
+        guard let headers = input.allHeaderFields as? [String: String], headers.count > 2 else { return nil }
 
         var typeId: UInt32 = 0
         if let contentType = input.mimeType {
