@@ -37,7 +37,7 @@ final class IcycastHeadersProcessor {
     }
 
     @inline(__always)
-    func proccessIcecastHeaders(data: Data) -> (Data?, Data) {
+    func proccess(data: Data) -> (Data?, Data) {
         let stopProccessingCheckOne: [UInt8] = Array("\n\n".utf8)
         let stopProccessingCheckTwo: [UInt8] = Array("\r\n\r\n".utf8)
         let icyPrefix: [UInt8] = Array("ICY ".utf8)

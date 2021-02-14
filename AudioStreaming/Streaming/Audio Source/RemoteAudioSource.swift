@@ -198,11 +198,11 @@ public class RemoteAudioSource: AudioStreamSource {
     private func handleStreamEvent(event: NetworkDataStream.StreamResult) {
         switch event {
         case let .success(value):
-            if let data = value.data {
+            if let audioData = value.data {
                 addStreamOperation { [weak self] in
                     guard let self = self else { return }
                     if self.shouldTryParsingIcycastHeaders {
-                        let (header, audio) = self.icycastHeadersProcessor.proccessIcecastHeaders(data: data)
+                        let (header, extractedAudio) = self.icycastHeadersProcessor.proccess(data: audioData)
                         if let header = header {
                             self.shouldTryParsingIcycastHeaders = false
                             let parser = IcycastHeaderParser()
@@ -211,12 +211,12 @@ public class RemoteAudioSource: AudioStreamSource {
                                 self.metadataStreamProcessor.metadataAvailable(step: metadataStep)
                             }
 
-                            let audioCount = self.processAudio(data: audio)
+                            let audioCount = self.processAudio(data: extractedAudio)
                             self.relativePosition += audioCount
                             return
                         }
                     }
-                    let audioCount = self.processAudio(data: data)
+                    let audioCount = self.processAudio(data: audioData)
                     self.relativePosition += audioCount
                 }
             }
