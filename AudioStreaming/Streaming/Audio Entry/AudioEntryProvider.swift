@@ -46,10 +46,10 @@ final class AudioEntryProvider: AudioEntryProviding {
         FileAudioSource(url: url, underlyingQueue: underlyingQueue)
     }
 
-    func source(for url: URL, headers _: [String: String]) -> CoreAudioStreamSource {
+    func source(for url: URL, headers: [String: String]) -> CoreAudioStreamSource {
         guard !url.isFileURL else {
             return provideFileAudioSource(url: url)
         }
-        return provideAudioSource(url: url, headers: [:])
+        return provideAudioSource(url: url, headers: headers)
     }
 }
