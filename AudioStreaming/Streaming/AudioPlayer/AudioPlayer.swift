@@ -6,7 +6,7 @@
 import AVFoundation
 import CoreAudio
 
-public final class AudioPlayer {
+open class AudioPlayer {
     public weak var delegate: AudioPlayerDelegate?
 
     public var muted: Bool {
@@ -95,25 +95,30 @@ public final class AudioPlayer {
     private var stateBeforePaused: InternalState = .initial
 
     /// The underlying `AVAudioEngine` object
-    let audioEngine = AVAudioEngine()
+    private let audioEngine = AVAudioEngine()
     /// An `AVAudioUnit` object that represents the audio player
     private(set) var player = AVAudioUnit()
     /// An `AVAudioUnitTimePitch` that controls the playback rate of the audio engine
-    let rateNode = AVAudioUnitTimePitch()
+    private let rateNode = AVAudioUnitTimePitch()
 
     /// A Boolean value that indicates whether the audio engine is running.
     /// `true` if the engine is running, otherwise, `false`
-    var isEngineRunning: Bool { audioEngine.isRunning }
+    public var isEngineRunning: Bool { audioEngine.isRunning }
+
+    /// The `AVAudioMixerNode` as created by the underlying audio engine
+    public var mainMixerNode: AVAudioMixerNode {
+        audioEngine.mainMixerNode
+    }
 
     /// An object representing the context of the audio render.
     /// Holds the audio buffer and in/out lists as required by the audio rendering
-    let rendererContext: AudioRendererContext
+    private let rendererContext: AudioRendererContext
     /// An object representing the context of the player.
     /// Holds the player's state, current playing and reading entries.
-    let playerContext: AudioPlayerContext
+    private let playerContext: AudioPlayerContext
 
-    let fileStreamProcessor: AudioFileStreamProcessor
-    let playerRenderProcessor: AudioPlayerRenderProcessor
+    private let fileStreamProcessor: AudioFileStreamProcessor
+    private let playerRenderProcessor: AudioPlayerRenderProcessor
 
     private let audioReadSource: DispatchTimerSource
     private let serializationQueue: DispatchQueue
@@ -306,6 +311,8 @@ public final class AudioPlayer {
         startReadProcessFromSourceIfNeeded()
     }
 
+    /// Seeks the audio to the specified time.
+    /// - Parameter time: A `Double` value specifing the time of the requested seek in seconds
     public func seek(to time: Double) {
         guard let playingEntry = playerContext.audioPlayingEntry else {
             return
@@ -328,10 +335,16 @@ public final class AudioPlayer {
         }
     }
 
+    /// Attaches the given `AVAudioNode` to the engine
+    /// - Note: The node will be added after the default rate node
+    /// - Parameter node: An instance of `AVAudioNode`
     public func attach(node: AVAudioNode) {
         attach(nodes: [node])
     }
 
+    /// Attaches the given `AVAudioNode`s to the engine
+    /// - Note: The nodes will be added after the default rate node
+    /// - Parameter node: An array of `AVAudioNode` instances
     public func attach(nodes: [AVAudioNode]) {
         nodes.forEach { node in
             customAttachedNodes.append(node)
@@ -341,6 +354,8 @@ public final class AudioPlayer {
         reattachCustomNodes()
     }
 
+    /// Detaches the given `AVAudioNode` from the engine
+    /// - Parameter node: An instance of `AVAudioNode`
     public func detach(node: AVAudioNode) {
         guard customAttachedNodes.contains(node) else {
             return
@@ -350,6 +365,8 @@ public final class AudioPlayer {
         reattachCustomNodes()
     }
 
+    /// Detaches the given `AVAudioNode`s from the engine
+    /// - Parameter node: An array of `AVAudioNode` instances
     public func detachCustomAttachedNodes() {
         customAttachedNodes.forEach { node in
             audioEngine.detach(node)
