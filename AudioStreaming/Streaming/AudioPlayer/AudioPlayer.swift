@@ -86,6 +86,19 @@ open class AudioPlayer {
     /// The current configuration of the player.
     public let configuration: AudioPlayerConfiguration
 
+    /// A Boolean value that indicates whether the audio engine is running.
+    /// `true` if the engine is running, otherwise, `false`
+    public var isEngineRunning: Bool { audioEngine.isRunning }
+
+    /// The `AVAudioMixerNode` as created by the underlying audio engine
+    public var mainMixerNode: AVAudioMixerNode {
+        audioEngine.mainMixerNode
+    }
+
+    public var frameFiltering: FrameFiltering {
+        frameFilterProcessor
+    }
+
     /// An `AVAudioFormat` object for the canonical audio stream
     private var outputAudioFormat: AVAudioFormat = {
         AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 44100.0, channels: 2, interleaved: true)!
@@ -101,15 +114,6 @@ open class AudioPlayer {
     /// An `AVAudioUnitTimePitch` that controls the playback rate of the audio engine
     private let rateNode = AVAudioUnitTimePitch()
 
-    /// A Boolean value that indicates whether the audio engine is running.
-    /// `true` if the engine is running, otherwise, `false`
-    public var isEngineRunning: Bool { audioEngine.isRunning }
-
-    /// The `AVAudioMixerNode` as created by the underlying audio engine
-    public var mainMixerNode: AVAudioMixerNode {
-        audioEngine.mainMixerNode
-    }
-
     /// An object representing the context of the audio render.
     /// Holds the audio buffer and in/out lists as required by the audio rendering
     private let rendererContext: AudioRendererContext
@@ -119,6 +123,7 @@ open class AudioPlayer {
 
     private let fileStreamProcessor: AudioFileStreamProcessor
     private let playerRenderProcessor: AudioPlayerRenderProcessor
+    private let frameFilterProcessor: FrameFilterProcessor
 
     private let audioReadSource: DispatchTimerSource
     private let serializationQueue: DispatchQueue
@@ -146,6 +151,8 @@ open class AudioPlayer {
         fileStreamProcessor = AudioFileStreamProcessor(playerContext: playerContext,
                                                        rendererContext: rendererContext,
                                                        outputAudioFormat: outputAudioFormat.basicStreamDescription)
+
+        frameFilterProcessor = FrameFilterProcessor(mixerNode: audioEngine.mainMixerNode)
 
         playerRenderProcessor = AudioPlayerRenderProcessor(playerContext: playerContext,
                                                            rendererContext: rendererContext,
