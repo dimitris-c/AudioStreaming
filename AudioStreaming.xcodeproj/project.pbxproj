@@ -52,6 +52,7 @@
 		B59DF1A32493E90C0043C498 /* AudioFileStream+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B59DF1A22493E90C0043C498 /* AudioFileStream+Helpers.swift */; };
 		B5AEDBB824744153007D8101 /* AudioStreaming.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5AEDBAE24744153007D8101 /* AudioStreaming.framework */; };
 		B5AEDBBF24744153007D8101 /* AudioStreaming.h in Headers */ = {isa = PBXBuildFile; fileRef = B5AEDBB124744153007D8101 /* AudioStreaming.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		B5B36E432655A32200DC96F5 /* FrameFilterProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5B36E422655A32200DC96F5 /* FrameFilterProcessor.swift */; };
 		B5B3B7CC248647ED00656828 /* AudioPlayerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5B3B7CB248647ED00656828 /* AudioPlayerState.swift */; };
 		B5D4A40925D9321400E1450C /* IcycastHeaderParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5D4A40825D9321400E1450C /* IcycastHeaderParser.swift */; };
 		B5D4A41025D948EF00E1450C /* IcycastHeadersProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5D4A40B25D9445600E1450C /* IcycastHeadersProcessor.swift */; };
@@ -144,6 +145,7 @@
 		B5AEDBB224744153007D8101 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B5AEDBB724744153007D8101 /* AudioStreamingTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AudioStreamingTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5AEDBBE24744153007D8101 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B5B36E422655A32200DC96F5 /* FrameFilterProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameFilterProcessor.swift; sourceTree = "<group>"; };
 		B5B3B7CB248647ED00656828 /* AudioPlayerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerState.swift; sourceTree = "<group>"; };
 		B5D4A40825D9321400E1450C /* IcycastHeaderParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IcycastHeaderParser.swift; sourceTree = "<group>"; };
 		B5D4A40B25D9445600E1450C /* IcycastHeadersProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IcycastHeadersProcessor.swift; sourceTree = "<group>"; };
@@ -259,6 +261,7 @@
 		B55CEAC024855AA20001C498 /* Processors */ = {
 			isa = PBXGroup;
 			children = (
+				B5B36E422655A32200DC96F5 /* FrameFilterProcessor.swift */,
 				B5667A8F2499018D00D93F85 /* AudioFileStreamProcessor.swift */,
 				B5667B3D249BC43000D93F85 /* AudioPlayerRenderProcessor.swift */,
 				B55CE97024810DE20001C498 /* MetadataStreamProcessor.swift */,
@@ -615,6 +618,7 @@
 				B5667A902499018D00D93F85 /* AudioFileStreamProcessor.swift in Sources */,
 				B59D0B6F255C904900D6CCE5 /* FileAudioSource.swift in Sources */,
 				B5EF9555247E9393003E8FF8 /* AudioEntry.swift in Sources */,
+				B5B36E432655A32200DC96F5 /* FrameFilterProcessor.swift in Sources */,
 				B51FE0C02488F67C00F2A4D2 /* Queue.swift in Sources */,
 				B5667A922499063D00D93F85 /* AudioPlayerContext.swift in Sources */,
 				B55CE97124810DE20001C498 /* MetadataStreamProcessor.swift in Sources */,
