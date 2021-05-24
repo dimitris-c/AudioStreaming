@@ -124,6 +124,41 @@ player.detachCustomAttachedNodes()
 
 The example project shows an example of adding a custom `AVAudioUnitEQ` node for adding equaliser to the `AudioPlayer`
 
+### Adding custom frame filter for recording and observation of audio data
+
+`AudioStreaming` allow for custom frame fliters to be added so that recording or other observation for audio that's playing.
+
+You add a frame filter by using the `AudioPlayer`'s property `frameFiltering`.
+
+```
+let player = AudioPlayer()
+let format = player.mainMixerNode.outputFormat(forBus: 0)
+
+let settings = [
+    AVFormatIDKey: kAudioFormatMPEG4AAC,
+    AVSampleRateKey: format.sampleRate,
+    AVNumberOfChannelsKey: format.channelCount
+] as [String : Any]
+
+var audioFile = try? AVAudioFile(
+        forWriting: outputUrl,
+        settings: settings,
+        commonFormat: format.commonFormat,
+        interleaved: format.isInterleaved)
+
+let record = FilterEntry(name: "record") { buffer, when in
+    try? audioFile?.write(from: buffer)
+}
+
+player.frameFiltering.add(entry: record)
+```
+See the `FrameFiltering` protocol for more ways of adding and removing frame filters. 
+The callback in which you observe a filter will be run on a thread other than the main thread. 
+
+Under the hood the concrete class for frame filters, `FrameFilterProcessor` installs a tap on the `mainMixerNode` of  `AVAudioEngine` in which all the added fitler will be called from.
+
+**Note** since the `mainMixerNode` is publicly exposed extra care should be taken to not install a tap directly and also use frame filters, this result in an exception because only one tap can be installed on an output node, as per Apple's documention. 
+
 # Installation
 
 ### Cocoapods
