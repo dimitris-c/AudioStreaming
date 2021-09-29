@@ -33,6 +33,7 @@ internal final class NetworkDataStream {
         let error: Error?
     }
 
+    private var lock = UnfairLock()
     private var streamCallback: StreamCompletion?
 
     /// The serial queue for all internal async actions.
@@ -66,6 +67,7 @@ internal final class NetworkDataStream {
 
     @discardableResult
     func responseStream(completion: @escaping StreamCompletion) -> Self {
+        lock.lock(); defer { lock.unlock() }
         streamCallback = completion
         return self
     }
@@ -79,6 +81,7 @@ internal final class NetworkDataStream {
     }
 
     func cancel() {
+        lock.lock(); defer { lock.unlock() }
         guard state.canBecome(.cancelled) else { return }
         state = .cancelled
         streamCallback = nil

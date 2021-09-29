@@ -535,10 +535,11 @@ open class AudioPlayer {
     /// This calls `processSource` method every `500 ms`
     private func startReadProcessFromSourceIfNeeded() {
         guard audioReadSource.state != .activated else { return }
-        audioReadSource.add { [weak self] in
-            self?.processSource()
-        }
-        audioReadSource.activate()
+        // TODO: this might be needed after all...
+//        audioReadSource.add { [weak self] in
+//            self?.processSource()
+//        }
+//        audioReadSource.activate()
     }
 
     /// Stops and removes the handler from the timer, @see `audioReadSource`
