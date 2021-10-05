@@ -18,19 +18,19 @@ class MetadataStreamProcessorTests: XCTestCase {
         let processor = MetadataStreamProcessor(parser: parser.eraseToAnyParser())
 
         // without calling `metadataAvailable(step:)` it should be false
-        XCTAssertFalse(processor.canProccessMetadata)
+        XCTAssertFalse(processor.canProcessMetadata)
 
         // calling `metadataAvailable(step:)` with zero
         processor.metadataAvailable(step: 0)
 
         // it should be false
-        XCTAssertFalse(processor.canProccessMetadata)
+        XCTAssertFalse(processor.canProcessMetadata)
 
         // calling `metadataAvailable(step:)` with greater zero
         processor.metadataAvailable(step: 1)
 
         // it should be true
-        XCTAssertTrue(processor.canProccessMetadata)
+        XCTAssertTrue(processor.canProcessMetadata)
     }
 
     func test_Processor_Outputs_Correct_Metadata_ForStep_WithEmptyMetadata() throws {
@@ -45,7 +45,7 @@ class MetadataStreamProcessorTests: XCTestCase {
         // this is the step value as received from the http headers
         processor.metadataAvailable(step: 16000)
 
-        let audio = processor.proccessMetadata(data: data)
+        let audio = processor.processMetadata(data: data)
         XCTAssertFalse(audio.isEmpty)
 
         XCTAssertTrue(metadataDelegateSpy.receivedMetadata.called)
@@ -64,7 +64,7 @@ class MetadataStreamProcessorTests: XCTestCase {
         // this is the step value as received from the http headers
         processor.metadataAvailable(step: 16000)
 
-        let audio = processor.proccessMetadata(data: data)
+        let audio = processor.processMetadata(data: data)
         XCTAssertFalse(audio.isEmpty)
 
         XCTAssertTrue(metadataDelegateSpy.receivedMetadata.called)
@@ -83,7 +83,7 @@ class MetadataStreamProcessorTests: XCTestCase {
         // this is the step value as received from the http headers
         processor.metadataAvailable(step: 8000)
 
-        let audio = processor.proccessMetadata(data: data)
+        let audio = processor.processMetadata(data: data)
         XCTAssertFalse(audio.isEmpty)
 
         XCTAssertTrue(metadataDelegateSpy.receivedMetadata.called)
@@ -106,7 +106,7 @@ class MetadataStreamProcessorTests: XCTestCase {
         // this is the step value as received from the http headers
         processor.metadataAvailable(step: 16000)
 
-        let audio = processor.proccessMetadata(data: data)
+        let audio = processor.processMetadata(data: data)
         XCTAssertFalse(audio.isEmpty)
 
         XCTAssertFalse(metadataDelegateSpy.receivedMetadata.called)
@@ -122,7 +122,7 @@ class MetadataStreamProcessorTests: XCTestCase {
         // this is the step value as received from the http headers
         processor.metadataAvailable(step: 16000)
 
-        let audio = processor.proccessMetadata(data: data)
+        let audio = processor.processMetadata(data: data)
         XCTAssertTrue(audio.isEmpty)
 
         XCTAssertFalse(metadataDelegateSpy.receivedMetadata.called)

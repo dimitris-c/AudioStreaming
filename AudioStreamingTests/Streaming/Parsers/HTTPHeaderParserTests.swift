@@ -34,7 +34,7 @@ class HTTPHeaderParserTests: XCTestCase {
         let headers: [String: String] =
             [HeaderField.contentLength: "1000",
              HeaderField.contentType: "audio/mp3",
-             IcyHeaderField.icyMentaint: "16000"]
+             IcyHeaderField.icyMetaint: "16000"]
         let httpURLResponse = HTTPURLResponse(url: URL(string: "www.google.com")!,
                                               statusCode: 200,
                                               httpVersion: "",
@@ -57,7 +57,7 @@ class HTTPHeaderParserTests: XCTestCase {
         let headers: [String: String] =
             [HeaderField.contentLength.lowercased(): "1000",
              HeaderField.contentType.lowercased(): "audio/mp3",
-             IcyHeaderField.icyMentaint.lowercased(): "16000"]
+             IcyHeaderField.icyMetaint.lowercased(): "16000"]
         let httpURLResponse = HTTPURLResponse(url: URL(string: "www.google.com")!,
                                               statusCode: 200,
                                               httpVersion: "",
