@@ -18,7 +18,7 @@ struct MetadataParser: Parser {
 
     func parse(input: Data) -> MetadataOutput {
         guard let string = String(data: input, encoding: .utf8) else { return .failure(.unableToParse) }
-        // remove added bytes (zeros) and seperate the string on every ';' char
+        // remove added bytes (zeros) and separate the string on every ';' char
         let pairs = string.trimmingCharacters(in: CharacterSet(charactersIn: "\0")).components(separatedBy: ";")
         let temp: [String: String] = [:]
         let metadata = pairs.reduce(into: temp) { result, next in

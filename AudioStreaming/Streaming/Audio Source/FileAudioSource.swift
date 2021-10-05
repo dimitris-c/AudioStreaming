@@ -74,7 +74,7 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
         do {
             try performOpen(seek: offset)
         } catch {
-            delegate?.errorOccured(source: self, error: error)
+            delegate?.errorOccurred(source: self, error: error)
         }
     }
 
@@ -139,11 +139,11 @@ extension FileAudioSource: StreamDelegate {
         case .hasBytesAvailable:
             dataAvailable()
         case .endEncountered:
-            delegate?.endOfFileOccured(source: self)
+            delegate?.endOfFileOccurred(source: self)
         case .errorOccurred:
-            delegate?.errorOccured(source: self, error: AudioPlayerError.codecError)
+            delegate?.errorOccurred(source: self, error: AudioPlayerError.codecError)
         case .endEncountered:
-            delegate?.endOfFileOccured(source: self)
+            delegate?.endOfFileOccurred(source: self)
         default:
             break
         }

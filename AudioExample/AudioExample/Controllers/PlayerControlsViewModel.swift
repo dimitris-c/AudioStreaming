@@ -153,7 +153,7 @@ extension PlayerControlsViewModel: AudioPlayerServiceDelegate {
         updateContent?(.updateMetadata(""))
     }
 
-    func errorOccured(error _: AudioPlayerError) {}
+    func errorOccurred(error _: AudioPlayerError) {}
 
     func metadataReceived(metadata: [String: String]) {
         guard !metadata.isEmpty else { return }

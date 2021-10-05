@@ -31,7 +31,7 @@ internal enum Logger {
     }
 
     static func error(_ message: StaticString, category: Category, args: CVarArg...) {
-        proccess(message, category: category, type: .error, args: args)
+        process(message, category: category, type: .error, args: args)
     }
 
     static func error(_ message: StaticString, category: Category) {
@@ -39,14 +39,14 @@ internal enum Logger {
     }
 
     static func debug(_ message: StaticString, category: Category, args: CVarArg...) {
-        proccess(message, category: category, type: .debug, args: args)
+        process(message, category: category, type: .debug, args: args)
     }
 
     static func debug(_ message: StaticString, category: Category) {
         debug(message, category: category, args: [])
     }
 
-    private static func proccess(_ message: StaticString, category: Category, type: OSLogType, args: CVarArg...) {
+    private static func process(_ message: StaticString, category: Category, type: OSLogType, args: CVarArg...) {
         guard isEnabled else { return }
         os_log(message, log: category.toOSLog(), type: type, args)
     }

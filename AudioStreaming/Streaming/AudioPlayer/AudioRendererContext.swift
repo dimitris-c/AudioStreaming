@@ -20,8 +20,6 @@ final class AudioRendererContext {
 
     let packetsSemaphore = DispatchSemaphore(value: 0)
 
-    var discontinuous: Bool = false
-
     let framesRequiredToStartPlaying: UInt32
     let framesRequiredAfterRebuffering: UInt32
     let framesRequiredForDataAfterSeekPlaying: UInt32

@@ -10,9 +10,9 @@ protocol AudioStreamSourceDelegate: AnyObject {
     /// Indicates that there's data available
     func dataAvailable(source: CoreAudioStreamSource, data: Data)
     /// Indicates an error occurred
-    func errorOccured(source: CoreAudioStreamSource, error: Error)
+    func errorOccurred(source: CoreAudioStreamSource, error: Error)
     /// Indicates end of file has occurred
-    func endOfFileOccured(source: CoreAudioStreamSource)
+    func endOfFileOccurred(source: CoreAudioStreamSource)
     /// Indicates metadata read from stream
     func metadataReceived(data: [String: String])
 }

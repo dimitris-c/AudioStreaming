@@ -96,7 +96,7 @@ extension PlayerViewModel: AudioPlayerServiceDelegate {
         }
     }
 
-    func errorOccured(error _: AudioPlayerError) {
+    func errorOccurred(error _: AudioPlayerError) {
         currentPlayingItemIndex = nil
     }
 

@@ -14,7 +14,7 @@ struct HeaderField {
 }
 
 enum IcyHeaderField {
-    public static let icyMentaint = "icy-metaint"
+    public static let icyMetaint = "icy-metaint"
 }
 
 struct HTTPHeaderParserOutput {
@@ -64,7 +64,7 @@ struct HTTPHeaderParser: HTTPHeaderParsing {
         }
 
         var metadataStep = 0
-        if let icyMetaint = value(forHTTPHeaderField: IcyHeaderField.icyMentaint, in: input),
+        if let icyMetaint = value(forHTTPHeaderField: IcyHeaderField.icyMetaint, in: input),
            let intValue = Int(icyMetaint)
         {
             metadataStep = intValue

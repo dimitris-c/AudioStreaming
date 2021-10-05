@@ -22,7 +22,7 @@ public protocol AudioPlayerDelegate: AnyObject {
                                      stopReason: AudioPlayerStopReason,
                                      progress: Double,
                                      duration: Double)
-    /// Tells the delegate when an unexpected error occured.
+    /// Tells the delegate when an unexpected error occurred.
     /// - note: Probably a good time to recreate the player when this occurs
     func audioPlayerUnexpectedError(player: AudioPlayer, error: AudioPlayerError)
 
