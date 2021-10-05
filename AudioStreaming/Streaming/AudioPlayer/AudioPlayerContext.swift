@@ -6,22 +6,20 @@
 import Foundation
 
 internal final class AudioPlayerContext {
-    var stopReason = Protected<AudioPlayerStopReason>(.none)
+    var stopReason: Protected<AudioPlayerStopReason>
 
-    var state = Protected<AudioPlayerState>(.ready)
+    var state: Protected<AudioPlayerState>
     var stateChanged: ((_ oldState: AudioPlayerState, _ newState: AudioPlayerState) -> Void)?
 
-    var muted = Protected<Bool>(false)
+    var muted: Protected<Bool>
 
     var internalState: AudioPlayer.InternalState {
         playerInternalState.value
     }
 
-    let entriesLock = UnfairLock()
+    let entriesLock: UnfairLock
     var audioReadingEntry: AudioEntry?
     var audioPlayingEntry: AudioEntry?
-
-    var disposedRequested: Bool
 
     /// This is the player's internal state to use
     /// - NOTE: Do not use directly instead use the `internalState` to set and get the property
@@ -29,7 +27,10 @@ internal final class AudioPlayerContext {
     private var playerInternalState = Protected<AudioPlayer.InternalState>(.initial)
 
     init() {
-        disposedRequested = false
+        stopReason = Protected<AudioPlayerStopReason>(.none)
+        state = Protected<AudioPlayerState>(.ready)
+        muted = Protected<Bool>(false)
+        entriesLock = UnfairLock()
     }
 
     /// Sets the internal state if given the `inState` will be evaluated before assignment occurs.

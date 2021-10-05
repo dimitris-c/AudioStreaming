@@ -23,7 +23,7 @@ struct IcycastHeaderParser: Parser {
                 result[String(key)] = String(value)
             }
         }
-        let metadataStep = Int(result[IcyHeaderField.icyMentaint] ?? "") ?? 0
+        let metadataStep = Int(result[IcyHeaderField.icyMetaint] ?? "") ?? 0
         let contentType = result[HeaderField.contentType.lowercased()] ?? "audio/mpeg"
         let typeId = audioFileType(mimeType: contentType)
 

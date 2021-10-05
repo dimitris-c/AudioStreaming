@@ -13,15 +13,15 @@ protocol MetadataStreamSource {
     var delegate: MetadataStreamSourceDelegate? { get set }
 
     /// Returns `true` when the stream header has indicated that we can proccess metadata, otherwise `false`.
-    var canProccessMetadata: Bool { get }
+    var canProcessMetadata: Bool { get }
 
     /// Assigns the metadata step of the metadata
     func metadataAvailable(step: Int)
 
-    /// Proccess the received data and extract the metadata if any, returns audio data only.
+    /// Process the received data and extract the metadata if any, returns audio data only.
     /// - parameter data: A `Data` object for parsing any metadata
     /// - returns: The extracted audio `Data`
-    func proccessMetadata(data: Data) -> Data
+    func processMetadata(data: Data) -> Data
 
     /// Resets the processor
     func reset()
@@ -44,7 +44,7 @@ protocol MetadataStreamSource {
 final class MetadataStreamProcessor: MetadataStreamSource {
     weak var delegate: MetadataStreamSourceDelegate?
 
-    var canProccessMetadata: Bool {
+    var canProcessMetadata: Bool {
         return metadataStep > 0
     }
 
@@ -73,10 +73,10 @@ final class MetadataStreamProcessor: MetadataStreamSource {
         audioDataBytesRead = 0
     }
 
-    // MARK: Proccess Metadata
+    // MARK: Process Metadata
 
     @inline(__always)
-    func proccessMetadata(data: Data) -> Data {
+    func processMetadata(data: Data) -> Data {
         data.withUnsafeBytes { buffer -> Data in
             guard !buffer.isEmpty else { return data }
             var audioData = Data()

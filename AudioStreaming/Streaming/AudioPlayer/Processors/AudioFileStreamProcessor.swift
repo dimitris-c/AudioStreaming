@@ -9,7 +9,7 @@ import AVFoundation
 
 enum AudioConvertStatus: Int32 {
     case done = 100
-    case proccessed = 0
+    case processed = 0
 }
 
 struct AudioConvertInfo {
@@ -20,11 +20,11 @@ struct AudioConvertInfo {
 }
 
 enum FileStreamProcessorEffect {
-    case proccessSource
+    case processSource
     case raiseError(AudioPlayerError)
 }
 
-/// An object that handles the proccessing of AudioFileStream, its packets etc.
+/// An object that handles the processing of AudioFileStream, its packets etc.
 final class AudioFileStreamProcessor {
     private let maxCompressedPacketForBitrate = 4096
 
@@ -38,8 +38,9 @@ final class AudioFileStreamProcessor {
     internal var audioConverter: AudioConverterRef?
     internal var discontinuous: Bool = false
     internal var inputFormat = AudioStreamBasicDescription()
-    internal var fileFormat: String = ""
-    internal let fa4mFormat = "fa4m"
+
+    internal var currentFileFormat: String = ""
+    internal let fileFormatsForDelayedConverterCreation: Set = ["fa4m", "f4pm"]
 
     var isFileStreamOpen: Bool {
         audioFileStream != nil
@@ -165,7 +166,7 @@ final class AudioFileStreamProcessor {
 
         var classDesc = AudioClassDescription()
         var outputFormat = toFormat
-        if getHardwareCodecClassDescripition(formatId: inputFormat.mFormatID, classDesc: &classDesc) {
+        if getHardwareCodecClassDescription(formatId: inputFormat.mFormatID, classDesc: &classDesc) {
             AudioConverterNewSpecific(&inputFormat, &outputFormat, 1, &classDesc, &audioConverter)
         }
 
@@ -178,11 +179,12 @@ final class AudioFileStreamProcessor {
             }
         }
         self.inputFormat = inputFormat
+        assignMagicCookieToConverterIfNeeded()
+    }
 
+    private func assignMagicCookieToConverterIfNeeded() {
         // magic cookie info
-        let fileHint = playerContext.audioReadingEntry?.audioFileHint
-        let isProperFormat = fileHint != kAudioFileAAC_ADTSType && fileHint != kAudioFileM4AType && fileHint != kAudioFileMPEG4Type
-        if let fileStream = audioFileStream, isProperFormat {
+        if let fileStream = audioFileStream {
             var cookieSize: UInt32 = 0
             guard AudioFileStreamGetPropertyInfo(fileStream, kAudioFileStreamProperty_MagicCookieData, &cookieSize, nil) == noErr else {
                 return
@@ -263,7 +265,7 @@ final class AudioFileStreamProcessor {
         var size = UInt32(4)
         AudioFileStreamGetProperty(fileStream, kAudioFileStreamProperty_FileFormat, &size, &fileFormat)
         if let stringFileFormat = String(data: Data(fileFormat), encoding: .utf8) {
-            self.fileFormat = stringFileFormat
+            self.currentFileFormat = stringFileFormat
         }
     }
 
@@ -293,7 +295,7 @@ final class AudioFileStreamProcessor {
                 entry.processedPacketsState.bufferSize = packetBufferSize
             }
 
-            if fileFormat != fa4mFormat {
+            if !fileFormatsForDelayedConverterCreation.contains(currentFileFormat) {
                 createAudioConverter(from: entry.audioStreamFormat, to: outputAudioFormat)
             }
         }
@@ -331,7 +333,7 @@ final class AudioFileStreamProcessor {
             i += step
         }
 
-        if fileFormat == fa4mFormat {
+        if fileFormatsForDelayedConverterCreation.contains(currentFileFormat) {
             if let inputStreamFormat = playerContext.audioReadingEntry?.audioStreamFormat {
                 createAudioConverter(from: inputStreamFormat, to: outputAudioFormat)
             }
@@ -346,12 +348,12 @@ final class AudioFileStreamProcessor {
                              inPacketDescriptions: UnsafeMutablePointer<AudioStreamPacketDescription>?)
     {
         guard let entry = playerContext.audioReadingEntry else { return }
-        guard entry.audioStreamState.processedDataFormat, !playerContext.disposedRequested else { return }
+        guard entry.audioStreamState.processedDataFormat else { return }
 
         if let playingEntry = playerContext.audioPlayingEntry,
            playingEntry.seekRequest.requested, playingEntry.calculatedBitrate() > 0
         {
-            fileStreamCallback?(.proccessSource)
+            fileStreamCallback?(.processSource)
             if rendererContext.waiting.value {
                 rendererContext.packetsSemaphore.signal()
             }
@@ -375,11 +377,11 @@ final class AudioFileStreamProcessor {
             convertInfo.audioBuffer.mNumberChannels = playingAudioStreamFormat.mChannelsPerFrame
         }
 
-        updateProccessedPackets(inPacketDescriptions: inPacketDescriptions,
+        updateProcessedPackets(inPacketDescriptions: inPacketDescriptions,
                                 inNumberPackets: inNumberPackets)
 
         var status: OSStatus = noErr
-        packetProccess: while status == noErr {
+        packetProcess: while status == noErr {
             rendererContext.lock.lock()
             let bufferContext = rendererContext.bufferContext
             var used = bufferContext.frameUsedCount
@@ -401,8 +403,7 @@ final class AudioFileStreamProcessor {
                     if framesLeftInBuffer > 0 {
                         break
                     }
-                    if playerContext.disposedRequested
-                        || playerContext.internalState == .disposed
+                    if playerContext.internalState == .disposed
                         || playerContext.internalState == .pendingNext
                         || playerContext.internalState == .stopped
                     {
@@ -412,7 +413,7 @@ final class AudioFileStreamProcessor {
                     if let playingEntry = playerContext.audioPlayingEntry,
                        playingEntry.seekRequest.requested, playingEntry.calculatedBitrate() > 0
                     {
-                        fileStreamCallback?(.proccessSource)
+                        fileStreamCallback?(.processSource)
                         if rendererContext.waiting.value {
                             rendererContext.packetsSemaphore.signal()
                         }
@@ -457,7 +458,7 @@ final class AudioFileStreamProcessor {
                 framesToDecode = start
                 if framesToDecode == 0 {
                     fillUsedFrames(framesCount: framesAdded)
-                    continue packetProccess
+                    continue packetProcess
                 }
                 prefillLocalBufferList(bufferList: localBufferList,
                                        dataOffset: 0,
@@ -475,9 +476,9 @@ final class AudioFileStreamProcessor {
                 if status == AudioConvertStatus.done.rawValue {
                     fillUsedFrames(framesCount: framesAdded)
                     return
-                } else if status == AudioConvertStatus.proccessed.rawValue {
+                } else if status == AudioConvertStatus.processed.rawValue {
                     fillUsedFrames(framesCount: framesAdded)
-                    continue packetProccess
+                    continue packetProcess
                 } else if status != 0 {
                     fileStreamCallback?(.raiseError(.codecError))
                     return
@@ -502,9 +503,9 @@ final class AudioFileStreamProcessor {
                 if status == AudioConvertStatus.done.rawValue {
                     fillUsedFrames(framesCount: framesAdded)
                     return
-                } else if status == AudioConvertStatus.proccessed.rawValue {
+                } else if status == AudioConvertStatus.processed.rawValue {
                     fillUsedFrames(framesCount: framesAdded)
-                    continue packetProccess
+                    continue packetProcess
                 } else if status != 0 {
                     fileStreamCallback?(.raiseError(.codecError))
                     return
@@ -545,8 +546,8 @@ final class AudioFileStreamProcessor {
     }
 
     @inline(__always)
-    private func updateProccessedPackets(inPacketDescriptions: UnsafeMutablePointer<AudioStreamPacketDescription>?,
-                                         inNumberPackets: UInt32)
+    private func updateProcessedPackets(inPacketDescriptions: UnsafeMutablePointer<AudioStreamPacketDescription>?,
+                                        inNumberPackets: UInt32)
     {
         guard let inPacketDescriptions = inPacketDescriptions else { return }
         guard let readingEntry = playerContext.audioReadingEntry else { return }
@@ -618,12 +619,12 @@ private func _converterCallback(inAudioConverter _: AudioConverterRef,
     ioNumberDataPackets.pointee = convertInfo.pointee.numberOfPackets
     convertInfo.pointee.done = true
 
-    return AudioConvertStatus.proccessed.rawValue
+    return AudioConvertStatus.processed.rawValue
 }
 
 // MARK: HardwareCodedClass method
 
-private func getHardwareCodecClassDescripition(formatId: UInt32, classDesc: UnsafeMutablePointer<AudioClassDescription>) -> Bool {
+private func getHardwareCodecClassDescription(formatId: UInt32, classDesc: UnsafeMutablePointer<AudioClassDescription>) -> Bool {
     #if os(iOS)
         var size: UInt32 = 0
         let formatIdSize = UInt32(MemoryLayout.size(ofValue: formatId))

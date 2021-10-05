@@ -86,12 +86,12 @@ public class RemoteAudioSource: AudioStreamSource {
         let metadataProcessor = MetadataStreamProcessor(parser: metadataParser.eraseToAnyParser())
         let netStatusProvider = NetStatusService(network: NWPathMonitor())
         let icyheaderProcessor = IcycastHeadersProcessor()
-        let retrierTimout = Retrier(interval: .seconds(1), maxInterval: 5, underlyingQueue: nil)
+        let retrierTimeout = Retrier(interval: .seconds(1), maxInterval: 5, underlyingQueue: nil)
         self.init(networking: networking,
                   metadataStreamSource: metadataProcessor,
                   icycastHeadersProcessor: icyheaderProcessor,
                   netStatusProvider: netStatusProvider,
-                  retrier: retrierTimout,
+                  retrier: retrierTimeout,
                   url: url,
                   underlyingQueue: underlyingQueue,
                   httpHeaders: httpHeaders)
@@ -184,11 +184,11 @@ public class RemoteAudioSource: AudioStreamSource {
             handleStreamEvent(event: event)
         case let .complete(event):
             if let error = event.error {
-                delegate?.errorOccured(source: self, error: error)
+                delegate?.errorOccurred(source: self, error: error)
             } else {
                 addCompletionOperation { [weak self] in
                     guard let self = self else { return }
-                    self.delegate?.endOfFileOccured(source: self)
+                    self.delegate?.endOfFileOccurred(source: self)
                 }
             }
         }
@@ -201,7 +201,7 @@ public class RemoteAudioSource: AudioStreamSource {
                 addStreamOperation { [weak self] in
                     guard let self = self else { return }
                     if self.shouldTryParsingIcycastHeaders {
-                        let (header, extractedAudio) = self.icycastHeadersProcessor.proccess(data: audioData)
+                        let (header, extractedAudio) = self.icycastHeadersProcessor.process(data: audioData)
                         if let header = header {
                             self.shouldTryParsingIcycastHeaders = false
                             let parser = IcycastHeaderParser()
@@ -209,11 +209,10 @@ public class RemoteAudioSource: AudioStreamSource {
                             if let metadataStep = self.parsedHeaderOutput?.metadataStep {
                                 self.metadataStreamProcessor.metadataAvailable(step: metadataStep)
                             }
-
-                            let audioCount = self.processAudio(data: extractedAudio)
-                            self.relativePosition += audioCount
-                            return
                         }
+                        let audioCount = self.processAudio(data: extractedAudio)
+                        self.relativePosition += audioCount
+                        return
                     }
                     let audioCount = self.processAudio(data: audioData)
                     self.relativePosition += audioCount
@@ -233,8 +232,8 @@ public class RemoteAudioSource: AudioStreamSource {
     /// - Parameter data: The audio to be processed
     /// - Returns: An `Int` value representing the amount of audio data bytes.
     private func processAudio(data: Data) -> Int {
-        if self.metadataStreamProcessor.canProccessMetadata {
-            let extractedAudioData = self.metadataStreamProcessor.proccessMetadata(data: data)
+        if self.metadataStreamProcessor.canProcessMetadata {
+            let extractedAudioData = self.metadataStreamProcessor.processMetadata(data: data)
             self.delegate?.dataAvailable(source: self, data: extractedAudioData)
             return extractedAudioData.count
         } else {
@@ -270,9 +269,9 @@ public class RemoteAudioSource: AudioStreamSource {
         // check for error
         if statusCode == 416 { // range not satisfied error
             if length >= 0 { seekOffset = length }
-            delegate?.endOfFileOccured(source: self)
+            delegate?.endOfFileOccurred(source: self)
         } else if statusCode >= 300 {
-            delegate?.errorOccured(source: self, error: NetworkError.serverError)
+            delegate?.errorOccurred(source: self, error: NetworkError.serverError)
         }
     }
 

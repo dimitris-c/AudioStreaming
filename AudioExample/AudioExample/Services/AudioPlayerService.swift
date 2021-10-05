@@ -13,7 +13,7 @@ protocol AudioPlayerServiceDelegate: AnyObject {
     func didStartPlaying()
     func didStopPlaying()
     func statusChanged(status: AudioPlayerState)
-    func errorOccured(error: AudioPlayerError)
+    func errorOccurred(error: AudioPlayerError)
     func metadataReceived(metadata: [String: String])
 }
 
@@ -168,7 +168,7 @@ extension AudioPlayerService: AudioPlayerDelegate {
     }
 
     func audioPlayerUnexpectedError(player _: AudioPlayer, error: AudioPlayerError) {
-        delegate.invoke(invocation: { $0.errorOccured(error: error) })
+        delegate.invoke(invocation: { $0.errorOccurred(error: error) })
     }
 
     func audioPlayerDidCancel(player _: AudioPlayer, queuedItems _: [AudioEntryId]) {}

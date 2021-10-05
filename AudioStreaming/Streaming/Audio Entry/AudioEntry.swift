@@ -53,7 +53,7 @@ internal class AudioEntry {
         return Double(audioStreamFormat.mFramesPerPacket) / Double(sampleRate)
     }
 
-    private var avaragePacketByteSize: Double {
+    private var averagePacketByteSize: Double {
         let packets = processedPacketsState
         guard !packets.isEmpty else { return 0 }
         return Double(packets.sizeTotal / packets.count)
@@ -109,7 +109,7 @@ internal class AudioEntry {
             if packetsCount > estimationMinPacketsPreferred ||
                 (audioStreamFormat.mBytesPerFrame == 0 && packetsCount > estimationMinPackets)
             {
-                return avaragePacketByteSize / packetDuration * 8
+                return averagePacketByteSize / packetDuration * 8
             }
         }
         return (Double(audioStreamFormat.mBytesPerFrame) * audioStreamFormat.mSampleRate) * 8
@@ -151,12 +151,12 @@ extension AudioEntry: AudioStreamSourceDelegate {
         delegate?.dataAvailable(source: source, data: data)
     }
 
-    func errorOccured(source: CoreAudioStreamSource, error: Error) {
-        delegate?.errorOccured(source: source, error: error)
+    func errorOccurred(source: CoreAudioStreamSource, error: Error) {
+        delegate?.errorOccurred(source: source, error: error)
     }
 
-    func endOfFileOccured(source: CoreAudioStreamSource) {
-        delegate?.endOfFileOccured(source: source)
+    func endOfFileOccurred(source: CoreAudioStreamSource) {
+        delegate?.endOfFileOccurred(source: source)
     }
 
     func metadataReceived(data: [String: String]) {
