@@ -110,6 +110,7 @@ public class RemoteAudioSource: AudioStreamSource {
     func close() {
         retrierTimeout.cancel()
         netStatusService.stop()
+        streamOperationQueue.isSuspended = false
         streamOperationQueue.cancelAllOperations()
         if let streamTask = streamRequest {
             streamTask.cancel()
@@ -137,12 +138,10 @@ public class RemoteAudioSource: AudioStreamSource {
     }
 
     func suspend() {
-        streamRequest?.suspend()
         streamOperationQueue.isSuspended = true
     }
 
     func resume() {
-        streamRequest?.resume()
         streamOperationQueue.isSuspended = false
     }
 
