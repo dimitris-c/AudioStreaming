@@ -22,18 +22,18 @@ Known limitations:
 
 ### Playing an audio source over HTTP
 Note: You need to keep a reference to the `AudioPlayer` object
-```
+```swift
 let player = AudioPlayer()
 player.play(url: URL(string: "https://your-remote-url/to/audio-file.mp3")!)
 ```
 
 ### Playing a local file 
-```
+```swift
 let player = AudioPlayer()
 player.play(url: URL(fileURLWithPath: "your-local-path/to/audio-file.mp3")!)
 ```
 ### Queueing audio files
-```
+```swift
 let player = AudioPlayer()
 // when you want to queue a single url
 player.queue(url: URL(string: "https://your-remote-url/to/audio-file.mp3")!)
@@ -46,7 +46,7 @@ player.queue(urls: [
 ```
 
 ### Adjusting playback properties
-```
+```swift
 let player = AudioPlayer()
 player.play(url: URL(fileURLWithPath: "your-local-path/to/audio-file.mp3")!)
 // adjust the playback rate
@@ -72,7 +72,7 @@ player.seek(to: 10)
 ```
 
 ### Audio playback properties
-```
+```swift
 let player = AudioPlayer()
 player.play(url: URL(fileURLWithPath: "your-local-path/to/audio-file.mp3")!)
 
@@ -93,7 +93,7 @@ let state = player.stopReason
 You can inspect various callbacks by using the `delegate` property of the `AudioPlayer` to get informed about the player state, errors etc.
 View the [AudioPlayerDelegate](AudioStreaming/Streaming/AudioPlayer/AudioPlayerDelegate.swift) for more details
 
-```
+```swift
 let player = AudioPlayer()
 player.play(url: URL(fileURLWithPath: "your-local-path/to/audio-file.mp3")!)
 
@@ -107,7 +107,7 @@ func audioPlayerStateChanged(player: AudioPlayer, with newState: AudioPlayerStat
 `AudioStreaming` provides an easy way to attach/remove `AVAudioNode`(s).
 This provides a powerful way of adjusting the playback audio with various enchncements 
 
-```
+```swift
 let reverbNode = AVAudioUnitReverb()
 reverbNode.wetDryMix = 50 
 
@@ -130,7 +130,7 @@ The example project shows an example of adding a custom `AVAudioUnitEQ` node for
 
 You add a frame filter by using the `AudioPlayer`'s property `frameFiltering`.
 
-```
+```swift
 let player = AudioPlayer()
 let format = player.mainMixerNode.outputFormat(forBus: 0)
 
