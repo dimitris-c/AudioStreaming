@@ -82,7 +82,7 @@ internal final class NetworkingClient {
 
     // MARK: Private
 
-    /// Schedules the given `NetworkDataStream` to be performed immediatelly
+    /// Schedules the given `NetworkDataStream` to be performed immediately
     /// - parameter stream: The `NetworkDataStream` object to be performed
     /// - parameter request: The `URLRequest` for the `stream`
     private func setupRequest(_ stream: NetworkDataStream, request: URLRequest) {

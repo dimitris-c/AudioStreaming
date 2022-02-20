@@ -43,7 +43,7 @@ final class EqualzerViewModel {
         if enable {
             equalizerService.activate()
         } else {
-            equalizerService.deactive()
+            equalizerService.deactivate()
         }
     }
 

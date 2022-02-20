@@ -6,12 +6,12 @@ An AudioPlayer/Streaming library for iOS written in Swift, allows playback of on
 Under the hood `AudioStreaming` uses `AVAudioEngine` and `CoreAudio` for playback and provides an easy way of applying real-time [audio enhancements](https://developer.apple.com/documentation/avfaudio/audio_engine/audio_units).
 
 #### Supported audio
-- Online streaming (Shoutcast/ICY streams) with metadata parsing 
+- Online streaming (Shoutcast/ICY streams) with metadata parsing
 - AIFF, AIFC, WAVE, CAF, NeXT, ADTS, MPEG Audio Layer 3, AAC audio formats
 - M4A (_Optimized files only_)
 
 Known limitations: 
-- As described above non-optimised M4A files are not supported this is a limitation of [AudioFileStream Services](https://developer.apple.com/documentation/audiotoolbox/audio_file_stream_services?language=swift) 
+- As described above non-optimised M4A files are not supported this is a limitation of [AudioFileStream Services](https://developer.apple.com/documentation/audiotoolbox/audio_file_stream_services?language=swift)
 
 
 # Requirements
@@ -105,7 +105,7 @@ func audioPlayerStateChanged(player: AudioPlayer, with newState: AudioPlayerStat
 
 ### Adding custom audio nodes to AudioPlayer
 `AudioStreaming` provides an easy way to attach/remove `AVAudioNode`(s).
-This provides a powerful way of adjusting the playback audio with various enchncements 
+This provides a powerful way of adjusting the playback audio with various enhancements
 
 ```swift
 let reverbNode = AVAudioUnitReverb()
@@ -126,7 +126,7 @@ The example project shows an example of adding a custom `AVAudioUnitEQ` node for
 
 ### Adding custom frame filter for recording and observation of audio data
 
-`AudioStreaming` allow for custom frame fliters to be added so that recording or other observation for audio that's playing.
+`AudioStreaming` allow for custom frame filters to be added so that recording or other observation for audio that's playing.
 
 You add a frame filter by using the `AudioPlayer`'s property `frameFiltering`.
 
@@ -152,12 +152,12 @@ let record = FilterEntry(name: "record") { buffer, when in
 
 player.frameFiltering.add(entry: record)
 ```
-See the `FrameFiltering` protocol for more ways of adding and removing frame filters. 
-The callback in which you observe a filter will be run on a thread other than the main thread. 
+See the `FrameFiltering` protocol for more ways of adding and removing frame filters.
+The callback in which you observe a filter will be run on a thread other than the main thread.
 
-Under the hood the concrete class for frame filters, `FrameFilterProcessor` installs a tap on the `mainMixerNode` of  `AVAudioEngine` in which all the added fitler will be called from.
+Under the hood the concrete class for frame filters, `FrameFilterProcessor` installs a tap on the `mainMixerNode` of  `AVAudioEngine` in which all the added filter will be called from.
 
-**Note** since the `mainMixerNode` is publicly exposed extra care should be taken to not install a tap directly and also use frame filters, this result in an exception because only one tap can be installed on an output node, as per Apple's documention. 
+**Note** since the `mainMixerNode` is publicly exposed extra care should be taken to not install a tap directly and also use frame filters, this result in an exception because only one tap can be installed on an output node, as per Apple's documentation.
 
 # Installation
 
@@ -199,5 +199,5 @@ Visit [installation instructions](https://github.com/Carthage/Carthage#adding-fr
 AudioStreaming is available under the MIT license. See the LICENSE file for more info.
 
 # Attributions
-This librabry takes inspiration on the already battled-tested streaming library, [StreamingKit](https://github.com/tumtumtum/StreamingKit).
+This library takes inspiration on the already battled-tested streaming library, [StreamingKit](https://github.com/tumtumtum/StreamingKit).
 Big 🙏 to Thong Nguyen (@tumtumtum) and Matt Gallagher (@mattgallagher) for [AudioStreamer](https://github.com/mattgallagher/AudioStreamer)
