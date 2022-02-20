@@ -231,9 +231,9 @@ final class AudioFileStreamProcessor {
         case kAudioFileStreamProperty_AudioDataByteCount:
             processDataByteCount(fileStream: fileStream)
         case kAudioFileStreamProperty_AudioDataPacketCount:
-            proccessAudioDataPacketCount(fileStream: fileStream)
+            processAudioDataPacketCount(fileStream: fileStream)
         case kAudioFileStreamProperty_ReadyToProducePackets:
-            // check converter for discontious stream
+            // check converter for discontinuous stream
             processReadyToProducePackets(fileStream: fileStream)
         case kAudioFileStreamProperty_FormatList:
             processFormatList(fileStream: fileStream)
@@ -241,7 +241,7 @@ final class AudioFileStreamProcessor {
         }
     }
 
-    // MARK: AudioFileStream properties Proccessing
+    // MARK: AudioFileStream properties Processing
 
     private func processDataOffset(fileStream: AudioFileStreamID) {
         var offset: UInt64 = 0
@@ -308,7 +308,7 @@ final class AudioFileStreamProcessor {
         entry.audioStreamState.dataByteCount = audioDataByteCount
     }
 
-    private func proccessAudioDataPacketCount(fileStream: AudioFileStreamID) {
+    private func processAudioDataPacketCount(fileStream: AudioFileStreamID) {
         guard let entry = playerContext.audioReadingEntry else { return }
         var audioDataPacketCount: UInt64 = 0
         fileStreamGetProperty(value: &audioDataPacketCount, fileStream: fileStream, propertyId: kAudioFileStreamProperty_AudioDataPacketCount)

@@ -5,7 +5,7 @@
 
 import Foundation
 
-/// A convenient type that holds tasks in a two-way manner, such as `URLSessionTask` to `NetworkDataStream` and reverved
+/// A convenient type that holds tasks in a two-way manner, such as `URLSessionTask` to `NetworkDataStream` and reversed
 struct BiMap<Left, Right> where Left: Hashable, Right: Hashable {
     private var leftToRight: [Left: Right] = [:]
     private var rightToLeft: [Right: Left] = [:]

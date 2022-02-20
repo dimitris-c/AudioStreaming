@@ -34,7 +34,7 @@ final class AudioRendererContext {
         let canonicalStream = outputAudioFormat.basicStreamDescription
 
         framesRequiredToStartPlaying = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.secondsRequiredToStartPlaying)
-        framesRequiredAfterRebuffering = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.secondsRequiredToStartPlayingAfterBufferUnderun)
+        framesRequiredAfterRebuffering = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.secondsRequiredToStartPlayingAfterBufferUnderrun)
         framesRequiredForDataAfterSeekPlaying = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.gracePeriodAfterSeekInSeconds)
 
         let dataByteSize = Int(canonicalStream.mSampleRate * configuration.bufferSizeInSeconds) * Int(canonicalStream.mBytesPerFrame)
@@ -75,8 +75,8 @@ private func allocateBufferList(dataByteSize: Int) -> UnsafeMutablePointer<Audio
     let _bufferList = AudioBufferList.allocate(maximumBuffers: 1)
 
     _bufferList[0].mDataByteSize = UInt32(dataByteSize)
-    let alingment = MemoryLayout<UInt8>.alignment
-    let mData = UnsafeMutableRawPointer.allocate(byteCount: dataByteSize, alignment: alingment)
+    let alignment = MemoryLayout<UInt8>.alignment
+    let mData = UnsafeMutableRawPointer.allocate(byteCount: dataByteSize, alignment: alignment)
     _bufferList[0].mData = mData
     _bufferList[0].mNumberChannels = 2
 

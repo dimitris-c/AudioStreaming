@@ -50,21 +50,21 @@ public protocol FrameFiltering {
     /// Adds a filter entry with the given parameters
     /// - Parameters:
     ///   - named: The name of the entry to be added
-    ///   - filter: The block for the filter hanlding
+    ///   - filter: The block for the filter handling
     func add(entry named: String, filter: @escaping FilterCallback)
 
     /// Adds a filter entry with the given parameters
     /// - Parameters:
     ///   - name: The name for the new entry
     ///   - filterName: The name of a previously added filters
-    ///   - filter: The block for the filter hanlding
+    ///   - filter: The block for the filter handling
     func add(entry named: String, after filterName: String, filter: @escaping FilterCallback)
 
     /// Removes a filter entry
     /// - Parameter entry: An instance of `FilterEntry` to be removed
     func remove(entry: FilterEntry)
 
-    /// Attemps to remove a filter entry by its name
+    /// Attempts to remove a filter entry by its name
     /// - Parameter named: A `String` representing the name of the filter entry
     func remove(entry named: String)
 

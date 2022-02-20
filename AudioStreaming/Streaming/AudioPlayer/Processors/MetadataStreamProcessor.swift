@@ -12,7 +12,7 @@ protocol MetadataStreamSourceDelegate: AnyObject {
 protocol MetadataStreamSource {
     var delegate: MetadataStreamSourceDelegate? { get set }
 
-    /// Returns `true` when the stream header has indicated that we can proccess metadata, otherwise `false`.
+    /// Returns `true` when the stream header has indicated that we can process metadata, otherwise `false`.
     var canProcessMetadata: Bool { get }
 
     /// Assigns the metadata step of the metadata

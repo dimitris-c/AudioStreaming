@@ -257,7 +257,7 @@ public class RemoteAudioSource: AudioStreamSource {
             supportsSeek = acceptRanges != "none"
         }
 
-        // check to see if we have metadata to proccess
+        // check to see if we have metadata to process
         if let metadataStep = parsedHeaderOutput?.metadataStep {
             metadataStreamProcessor.metadataAvailable(step: metadataStep)
         }

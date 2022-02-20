@@ -312,7 +312,7 @@ open class AudioPlayer {
     }
 
     /// Seeks the audio to the specified time.
-    /// - Parameter time: A `Double` value specifing the time of the requested seek in seconds
+    /// - Parameter time: A `Double` value specifying the time of the requested seek in seconds
     public func seek(to time: Double) {
         guard let playingEntry = playerContext.audioPlayingEntry else {
             return
@@ -402,7 +402,7 @@ open class AudioPlayer {
             audioEngine.prepare()
             try audioEngine.start()
         } catch {
-            Logger.error("⚠️ error setuping audio engine: %@", category: .generic, args: error.localizedDescription)
+            Logger.error("⚠️ error setting up audio engine: %@", category: .generic, args: error.localizedDescription)
         }
     }
 
@@ -523,7 +523,7 @@ open class AudioPlayer {
         Logger.debug("engine stopped 🛑", category: .generic)
     }
 
-    /// Starts the audio player, reseting the buffers if requested
+    /// Starts the audio player, resetting the buffers if requested
     ///
     /// - parameter resetBuffers: A `Bool` value indicating if the buffers should be reset, prior starting the player.
     private func startPlayer(resetBuffers: Bool) {

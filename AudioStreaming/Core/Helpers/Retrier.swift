@@ -13,7 +13,7 @@ final class Retrier {
     private let maxInterval: Int
     private let timeoutTimer: DispatchTimerSource
 
-    /// Initiliazes a new object with the given parameters
+    /// Initializes a new object with the given parameters
     /// - Parameters:
     ///   - interval: The Mach absolute time at which to execute the dispatch source's event handler.
     ///   - maxInterval: The maximum interval in which the internal timer will retry the callback.

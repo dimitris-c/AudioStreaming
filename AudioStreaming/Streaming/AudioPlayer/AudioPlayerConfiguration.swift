@@ -13,11 +13,11 @@ public struct AudioPlayerConfiguration: Equatable {
     /// Number of seconds of audio required to before playback first starts.
     /// - note: Must be larger that `bufferSizeInSeconds`
     let secondsRequiredToStartPlaying: Double
-    /// Number of seconds of audio required after seek occcurs.
+    /// Number of seconds of audio required after seek occurs.
     let gracePeriodAfterSeekInSeconds: Double
-    /// Number of seconds of audio required to before playback resumes after a buffer underun
+    /// Number of seconds of audio required to before playback resumes after a buffer underrun
     /// - note: Must be larger that `bufferSizeInSeconds`
-    let secondsRequiredToStartPlayingAfterBufferUnderun: Int
+    let secondsRequiredToStartPlayingAfterBufferUnderrun: Int
 
     /// Enables the internal logs
     let enableLogs: Bool
@@ -26,7 +26,7 @@ public struct AudioPlayerConfiguration: Equatable {
                                                            bufferSizeInSeconds: 10,
                                                            secondsRequiredToStartPlaying: 1,
                                                            gracePeriodAfterSeekInSeconds: 0.5,
-                                                           secondsRequiredToStartPlayingAfterBufferUnderun: 1,
+                                                           secondsRequiredToStartPlayingAfterBufferUnderrun: 1,
                                                            enableLogs: false)
     /// Initializes the configuration for the `AudioPlayer`
     ///
@@ -35,22 +35,22 @@ public struct AudioPlayerConfiguration: Equatable {
     /// - parameter flushQueueOnSeek: All pending items will be flushed when seeking a track if this is set to `true`
     /// - parameter bufferSizeInSeconds: The size of the decompressed buffer.
     /// - parameter secondsRequiredToStartPlaying: Number of seconds of audio required to before playback first starts.
-    /// - parameter gracePeriodAfterSeekInSeconds: Number of seconds of audio required after seek occcurs.
-    /// - parameter secondsRequiredToStartPlayingAfterBufferUnderun: Number of seconds of audio required to before playback resumes after a buffer underun
+    /// - parameter gracePeriodAfterSeekInSeconds: Number of seconds of audio required after seek occurs.
+    /// - parameter secondsRequiredToStartPlayingAfterBufferUnderrun: Number of seconds of audio required to before playback resumes after a buffer underrun
     /// - parameter enableLogs: Enables the internal logs
     ///
     public init(flushQueueOnSeek: Bool = true,
                 bufferSizeInSeconds: Double = 10,
                 secondsRequiredToStartPlaying: Double = 1,
                 gracePeriodAfterSeekInSeconds: Double = 0.5,
-                secondsRequiredToStartPlayingAfterBufferUnderun: Int = 1,
+                secondsRequiredToStartPlayingAfterBufferUnderrun: Int = 1,
                 enableLogs: Bool = false)
     {
         self.flushQueueOnSeek = flushQueueOnSeek
         self.bufferSizeInSeconds = bufferSizeInSeconds
         self.secondsRequiredToStartPlaying = secondsRequiredToStartPlaying
         self.gracePeriodAfterSeekInSeconds = gracePeriodAfterSeekInSeconds
-        self.secondsRequiredToStartPlayingAfterBufferUnderun = secondsRequiredToStartPlayingAfterBufferUnderun
+        self.secondsRequiredToStartPlayingAfterBufferUnderrun = secondsRequiredToStartPlayingAfterBufferUnderrun
         self.enableLogs = enableLogs
     }
 
@@ -70,15 +70,15 @@ public struct AudioPlayerConfiguration: Equatable {
             ? defaults.gracePeriodAfterSeekInSeconds
             : self.gracePeriodAfterSeekInSeconds
 
-        let secondsRequiredToStartPlayingAfterBufferUnderun = self.secondsRequiredToStartPlayingAfterBufferUnderun == 0
-            ? defaults.secondsRequiredToStartPlayingAfterBufferUnderun
-            : self.secondsRequiredToStartPlayingAfterBufferUnderun
+        let secondsRequiredToStartPlayingAfterBufferUnderrun = self.secondsRequiredToStartPlayingAfterBufferUnderrun == 0
+            ? defaults.secondsRequiredToStartPlayingAfterBufferUnderrun
+            : self.secondsRequiredToStartPlayingAfterBufferUnderrun
 
         return AudioPlayerConfiguration(flushQueueOnSeek: flushQueueOnSeek,
                                         bufferSizeInSeconds: bufferSizeInSeconds,
                                         secondsRequiredToStartPlaying: secondsRequiredToStartPlaying,
                                         gracePeriodAfterSeekInSeconds: gracePeriodAfterSeekInSeconds,
-                                        secondsRequiredToStartPlayingAfterBufferUnderun: secondsRequiredToStartPlayingAfterBufferUnderun,
+                                        secondsRequiredToStartPlayingAfterBufferUnderrun: secondsRequiredToStartPlayingAfterBufferUnderrun,
                                         enableLogs: enableLogs)
     }
 }
