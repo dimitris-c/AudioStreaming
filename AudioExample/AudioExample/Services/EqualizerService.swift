@@ -45,7 +45,7 @@ final class EqualizerService {
         playerService.add(eqUnit)
     }
 
-    func inactive() {
+    func deactivate() {
         isActivated = false
         playerService.remove(eqUnit)
     }
