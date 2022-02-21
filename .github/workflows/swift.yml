@@ -17,7 +17,7 @@ jobs:
        DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
     strategy:
       matrix:
-        destination: ["OS=latest,name=iPhone 13 Pro", "OS=13.0,name=iPhone XS"]
+        destination: ["OS=latest,name=iPhone 13 Pro"]
     steps:
       - uses: actions/checkout@v2
       - name: iOS - ${{ matrix.destination }}
