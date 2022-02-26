@@ -47,7 +47,7 @@ final class NetStatusService: NetStatusProvider {
 
     init(network: NWPathMonitor) {
         self.network = network
-        monitorQueue = DispatchQueue(label: "net.path.queue", qos: .userInitiated)
+        monitorQueue = DispatchQueue(label: "net.path.queue", qos: .utility)
     }
 
     deinit {
