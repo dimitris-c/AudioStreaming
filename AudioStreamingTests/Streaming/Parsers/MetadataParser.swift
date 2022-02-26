@@ -50,6 +50,26 @@ class MetadataParserTests: XCTestCase {
         }
     }
 
+    func testParserOutputsCorrectResultWhenEntryContainsEqualSign() throws {
+        let string = "StreamTitle=\'Gramatik - In This Whole World (Original Mix)\';StreamUrl=\'\';track_info=\'k4Smc3RhdHVzoUihQNJiGp6BpHR5cGWhVKJpZKhNWDUxMTYzNISmc3RhdHVzoUOhQNJiGp9cpHR5cGWhVKJpZKhNWDUxMDM3MoSmc3RhdHVzoUOhQNJiGqAqpHR5cGWhVKJpZKhNWDUxMjA5Ng==\';UTC=\'20220226T214447.206\';\0\0\0\0\0\0\0\0\0"
+        let data = string.data(using: .utf8)!
+
+        let parser = MetadataParser()
+
+        let output = parser.parse(input: data)
+
+        switch output {
+        case let .success(values):
+            XCTAssertFalse(values.isEmpty)
+            XCTAssertEqual(values["StreamTitle"], "Gramatik - In This Whole World (Original Mix)")
+            XCTAssertEqual(values["StreamUrl"], "")
+            XCTAssertEqual(values["track_info"], "k4Smc3RhdHVzoUihQNJiGp6BpHR5cGWhVKJpZKhNWDUxMTYzNISmc3RhdHVzoUOhQNJiGp9cpHR5cGWhVKJpZKhNWDUxMDM3MoSmc3RhdHVzoUOhQNJiGqAqpHR5cGWhVKJpZKhNWDUxMjA5Ng==")
+            XCTAssertEqual(values["UTC"], "20220226T214447.206")
+        case .failure:
+            XCTFail()
+        }
+    }
+
     func testParserOutputsFailureOnEmptyStringData() throws {
         let data = "".data(using: .utf8)!
         let parser = MetadataParser()
