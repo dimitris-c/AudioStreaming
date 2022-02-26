@@ -16,7 +16,6 @@ struct EQBand {
 }
 
 final class EqualzerViewModel {
-
     private var bands: [EQBand] = []
 
     private let equalizerService: EqualizerService
@@ -31,7 +30,7 @@ final class EqualzerViewModel {
         bands = equalizerService.bands.map { item in
             var measurement = item.frequency
             var frequency = String(Int(measurement))
-            if item.frequency >= 1_000 {
+            if item.frequency >= 1000 {
                 measurement = item.frequency / 1000
                 frequency = "\(String(Int(measurement)))K"
             }

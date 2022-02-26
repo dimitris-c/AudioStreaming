@@ -9,10 +9,9 @@
 import MediaPlayer
 
 final class NowPlayingCenter {
-
     private let infoCenter: MPNowPlayingInfoCenter
 
-    init(infoCenter: MPNowPlayingInfoCenter = .default()){
+    init(infoCenter: MPNowPlayingInfoCenter = .default()) {
         self.infoCenter = infoCenter
     }
 

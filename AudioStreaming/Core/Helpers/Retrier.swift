@@ -38,6 +38,7 @@ final class Retrier {
 
     /// Cancels retrying
     func cancel() {
+        interval = .seconds(1)
         timeoutTimer.removeHandler()
         timeoutTimer.suspend()
     }

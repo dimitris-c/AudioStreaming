@@ -18,14 +18,15 @@ final class PlayerViewModel {
     private let playerService: AudioPlayerService
     private let playlistItemsService: PlaylistItemsService
 
-    private let routeTo: ((AppCoordinator.Route) -> Void)
+    private let routeTo: (AppCoordinator.Route) -> Void
     private var currentPlayingItemIndex: Int?
 
     var reloadContent: ((ReloadAction) -> Void)?
 
     init(playlistItemsService: PlaylistItemsService,
          playerService: AudioPlayerService,
-         routeTo: @escaping (AppCoordinator.Route) -> Void) {
+         routeTo: @escaping (AppCoordinator.Route) -> Void)
+    {
         self.playlistItemsService = playlistItemsService
         self.playerService = playerService
         self.routeTo = routeTo

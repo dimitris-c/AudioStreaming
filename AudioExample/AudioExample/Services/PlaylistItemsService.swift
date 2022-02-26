@@ -80,7 +80,7 @@ final class PlaylistItemsService {
 func provideInitialPlaylistItems() -> [PlaylistItem] {
     let allCases = AudioContent.allCases
     let casesForQueueing: [AudioContent] = [.piano, .local, .khruangbin]
-    let allItems = allCases.map { PlaylistItem.init(content: $0 , queues: false) }
-    let casesForQueuingItems = casesForQueueing.map { PlaylistItem.init(content: $0 , queues: true) }
+    let allItems = allCases.map { PlaylistItem(content: $0, queues: false) }
+    let casesForQueuingItems = casesForQueueing.map { PlaylistItem(content: $0, queues: true) }
     return allItems + casesForQueuingItems
 }

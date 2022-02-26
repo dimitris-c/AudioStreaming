@@ -9,12 +9,14 @@ import Network
 enum NetConnectionType: Equatable {
     case cellular(connected: Bool)
     case wifi(connected: Bool)
+    case other(connected: Bool)
     case undetermined
 
     var isConnected: Bool {
         switch self {
         case let .cellular(connected),
-             let .wifi(connected):
+             let .wifi(connected),
+             let .other(connected):
             return connected
         default:
             return false
@@ -39,15 +41,13 @@ final class NetStatusService: NetStatusProvider {
         network.currentPath.toNetConnectionType()
     }
 
-    private var currentConnectionType: NetConnectionType = .undetermined
-
     private let network: NWPathMonitor
 
     private let monitorQueue: DispatchQueue
 
     init(network: NWPathMonitor) {
         self.network = network
-        monitorQueue = DispatchQueue(label: "net.path.queue", qos: .background)
+        monitorQueue = DispatchQueue(label: "net.path.queue", qos: .utility)
     }
 
     deinit {
@@ -59,20 +59,15 @@ final class NetStatusService: NetStatusProvider {
     /// - parameter connectionChange: A callback block to listen to changes of the network type, this skips duplicates.
     /// - Note:  The callback will be executed on the main thread.
     func start(connectionChange: @escaping (NetConnectionType) -> Void) {
-        network.pathUpdateHandler = { [weak self] path in
-            guard let self = self else { return }
-            let connecionType = path.toNetConnectionType()
-            if self.currentConnectionType != connecionType {
-                connectionChange(self.connectionType)
-                self.currentConnectionType = self.connectionType
-            }
+        network.pathUpdateHandler = { path in
+            let connectionType = path.toNetConnectionType()
+            connectionChange(connectionType)
         }
         startIfNeeded()
     }
 
     func stop() {
         network.cancel()
-        network.pathUpdateHandler = nil
     }
 
     func startIfNeeded() {
@@ -85,12 +80,17 @@ extension NWPath {
     func toNetConnectionType() -> NetConnectionType {
         let isCellular = usesInterfaceType(.cellular)
         let isWifi = usesInterfaceType(.wifi)
+        let isOther = usesInterfaceType(.loopback)
+            || usesInterfaceType(.other)
+            || usesInterfaceType(.wiredEthernet)
         let isConnected = status == .satisfied
 
         if isCellular {
             return .cellular(connected: isConnected)
         } else if isWifi {
             return .wifi(connected: isConnected)
+        } else if isOther {
+            return .other(connected: isConnected)
         }
 
         return .undetermined

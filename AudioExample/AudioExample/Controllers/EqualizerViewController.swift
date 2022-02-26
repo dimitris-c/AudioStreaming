@@ -9,7 +9,6 @@
 import UIKit
 
 class EqualizerViewController: UIViewController {
-
     private lazy var enableTextLabel = UILabel()
     private lazy var enableButton = UISwitch()
 
@@ -22,7 +21,8 @@ class EqualizerViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
     }
 
-    required init?(coder: NSCoder) {
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
@@ -69,7 +69,7 @@ class EqualizerViewController: UIViewController {
                 stackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
                 stackView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
                 stackView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-                stackView.heightAnchor.constraint(equalTo: view.safeAreaLayoutGuide.heightAnchor, multiplier: 0.8)
+                stackView.heightAnchor.constraint(equalTo: view.safeAreaLayoutGuide.heightAnchor, multiplier: 0.8),
             ]
         )
     }
@@ -86,7 +86,7 @@ class EqualizerViewController: UIViewController {
 
     private func buildSliders() -> [UIView] {
         var sliders = [UIView]()
-        for index in 0..<viewModel.numberOfBands() {
+        for index in 0 ..< viewModel.numberOfBands() {
             guard let item = viewModel.band(at: index) else { continue }
             let slider = buildSlider(item: item, index: index)
             sliders.append(slider)

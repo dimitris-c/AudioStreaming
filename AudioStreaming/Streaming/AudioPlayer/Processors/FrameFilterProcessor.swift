@@ -33,7 +33,6 @@ public struct FilterEntry: Equatable {
 }
 
 public protocol FrameFiltering {
-
     /// A Boolean value indicating whether there are filter entries
     var hasEntries: Bool { get }
 
@@ -73,7 +72,6 @@ public protocol FrameFiltering {
 }
 
 final class FrameFilterProcessor: NSObject, FrameFiltering {
-
     public var hasEntries: Bool {
         lock.lock(); defer { lock.unlock() }
         return !entries.isEmpty
