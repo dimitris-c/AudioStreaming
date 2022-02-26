@@ -26,7 +26,6 @@ import Foundation
 /// ```
 
 final class IcycastHeadersProcessor {
-
     private var icecastHeaders = Data(capacity: 1024)
     private var searchComplete = false
     private var iceHeaderAvailable = false
@@ -72,8 +71,9 @@ final class IcycastHeadersProcessor {
 
                 if icecastHeaders.count >= icyPrefix.count {
                     // in case the first 4 chars are not "ICY " nor "HTTP" then we stop the flow
-                    if icecastHeaders[..<icyPrefix.count].elementsEqual(icyPrefix) == false &&
-                        icecastHeaders[..<httpPrefix.count].elementsEqual(httpPrefix) == false {
+                    if icecastHeaders[..<icyPrefix.count].elementsEqual(icyPrefix) == false,
+                       icecastHeaders[..<httpPrefix.count].elementsEqual(httpPrefix) == false
+                    {
                         iceHeaderAvailable = false
                         searchComplete = true
                     }

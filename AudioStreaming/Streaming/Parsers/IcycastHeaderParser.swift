@@ -9,9 +9,7 @@
 import Foundation
 
 struct IcycastHeaderParser: Parser {
-
     func parse(input: Data) -> HTTPHeaderParserOutput? {
-
         guard let icecastValue = String(data: input, encoding: .utf8) else {
             return nil
         }

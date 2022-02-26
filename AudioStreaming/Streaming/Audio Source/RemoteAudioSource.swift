@@ -264,7 +264,7 @@ public class RemoteAudioSource: AudioStreamSource {
 
     private func checkHTTP(statusCode: Int) {
         // check for error
-        if statusCode == 416 { // range not satisfied errord
+        if statusCode == 416 { // range not satisfied error
             if length >= 0 { seekOffset = length }
             delegate?.endOfFileOccurred(source: self)
         } else if statusCode >= 300 {

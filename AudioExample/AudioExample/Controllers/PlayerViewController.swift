@@ -51,7 +51,7 @@ class PlayerViewController: UIViewController {
                                                            style: .plain,
                                                            target: self,
                                                            action: #selector(showEqualizer))
-        
+
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.delegate = self
         tableView.dataSource = self
@@ -92,12 +92,13 @@ class PlayerViewController: UIViewController {
 
     @objc private func addNowPlaylistItem() {
         let controller = UIAlertController(title: "Add new item", message: "", preferredStyle: .alert)
-        controller.addTextField { (textField) in
+        controller.addTextField { textField in
             textField.placeholder = "Insert url here"
         }
-        let saveAction = UIAlertAction(title: "Save", style: .default) { [viewModel] action in
+        let saveAction = UIAlertAction(title: "Save", style: .default) { [viewModel] _ in
             if let textfield = controller.textFields?.first,
-               let text = textfield.text {
+               let text = textfield.text
+            {
                 viewModel.add(urlString: text)
             }
         }
@@ -105,7 +106,7 @@ class PlayerViewController: UIViewController {
 
         controller.addAction(saveAction)
         controller.addAction(cancelAction)
-        self.present(controller, animated: true, completion: nil)
+        present(controller, animated: true, completion: nil)
     }
 }
 
@@ -149,14 +150,13 @@ extension PlayerViewController: UITableViewDelegate {
     }
 }
 
-
 final class PlaylistTableViewCell: UITableViewCell {
-    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+    override init(style _: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: .subtitle, reuseIdentifier: reuseIdentifier)
     }
 
     @available(*, unavailable)
-    required init?(coder: NSCoder) {
+    required init?(coder _: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 }

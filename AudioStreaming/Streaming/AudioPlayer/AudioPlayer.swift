@@ -470,7 +470,7 @@ open class AudioPlayer {
             if let first = customAttachedNodes.first {
                 audioEngine.connect(rateNode, to: first, format: nil)
             }
-            for index in 0..<customAttachedNodes.count - 1 {
+            for index in 0 ..< customAttachedNodes.count - 1 {
                 let current = customAttachedNodes[index]
                 let next = customAttachedNodes[index + 1]
                 let format = current.inputFormat(forBus: 0)

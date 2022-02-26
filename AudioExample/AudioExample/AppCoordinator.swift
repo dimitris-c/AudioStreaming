@@ -9,7 +9,6 @@
 import UIKit
 
 final class AppCoordinator {
-
     enum Route {
         case equalizer
     }
@@ -44,8 +43,8 @@ final class AppCoordinator {
 
     private func routeTo(_ route: AppCoordinator.Route) {
         switch route {
-            case .equalizer:
-                showEqualizerControls()
+        case .equalizer:
+            showEqualizerControls()
         }
     }
 

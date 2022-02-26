@@ -10,7 +10,7 @@ import AVFoundation
 
 final class EqualizerService {
     private let playerService: AudioPlayerService
-    private let _freqs = [32, 64, 128, 250, 500, 1_000, 2_000, 4_000, 8_000, 16_000]
+    private let _freqs = [32, 64, 128, 250, 500, 1000, 2000, 4000, 8000, 16000]
     private let eqUnit: AVAudioUnitEQ
 
     var bands: [AVAudioUnitEQFilterParameters] {
@@ -23,7 +23,7 @@ final class EqualizerService {
         self.playerService = playerService
 
         eqUnit = AVAudioUnitEQ(numberOfBands: _freqs.count)
-        for i in 0..<_freqs.count {
+        for i in 0 ..< _freqs.count {
             eqUnit.bands[i].bypass = false
             eqUnit.bands[i].filterType = .parametric
             eqUnit.bands[i].frequency = Float(_freqs[i])

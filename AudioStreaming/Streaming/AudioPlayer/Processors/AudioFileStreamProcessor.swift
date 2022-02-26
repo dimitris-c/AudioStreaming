@@ -195,7 +195,7 @@ final class AudioFileStreamProcessor {
             }
             guard let converter = audioConverter else {
                 fileStreamCallback?(.raiseError(.audioSystemError(.fileStreamError(.unknownError))))
-                 return
+                return
             }
             guard AudioConverterSetProperty(converter, kAudioConverterDecompressionMagicCookie, cookieSize, cookie) == noErr else {
                 fileStreamCallback?(.raiseError(.audioSystemError(.fileStreamError(.unknownError))))
@@ -265,7 +265,7 @@ final class AudioFileStreamProcessor {
         var size = UInt32(4)
         AudioFileStreamGetProperty(fileStream, kAudioFileStreamProperty_FileFormat, &size, &fileFormat)
         if let stringFileFormat = String(data: Data(fileFormat), encoding: .utf8) {
-            self.currentFileFormat = stringFileFormat
+            currentFileFormat = stringFileFormat
         }
     }
 
@@ -378,7 +378,7 @@ final class AudioFileStreamProcessor {
         }
 
         updateProcessedPackets(inPacketDescriptions: inPacketDescriptions,
-                                inNumberPackets: inNumberPackets)
+                               inNumberPackets: inNumberPackets)
 
         var status: OSStatus = noErr
         packetProcess: while status == noErr {
