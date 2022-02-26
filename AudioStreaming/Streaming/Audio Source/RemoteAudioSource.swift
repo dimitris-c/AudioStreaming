@@ -109,7 +109,6 @@ public class RemoteAudioSource: AudioStreamSource {
 
     func close() {
         retrierTimeout.cancel()
-        netStatusService.stop()
         streamOperationQueue.isSuspended = false
         streamOperationQueue.cancelAllOperations()
         if let streamTask = streamRequest {
@@ -152,8 +151,8 @@ public class RemoteAudioSource: AudioStreamSource {
             guard let self = self else { return }
             guard connection.isConnected else { return }
             if self.waitingForNetwork {
+                self.seek(at: self.supportsSeek ? self.position : 0 )
                 self.waitingForNetwork = false
-                self.seek(at: self.position)
             }
         }
     }
@@ -161,14 +160,13 @@ public class RemoteAudioSource: AudioStreamSource {
     private func performOpen(seek seekOffset: Int) {
         let urlRequest = buildUrlRequest(with: url, seekIfNeeded: seekOffset)
 
-        let request = networkingClient.stream(request: urlRequest)
+        streamRequest = networkingClient.stream(request: urlRequest)
             .responseStream { [weak self] event in
                 guard let self = self else { return }
                 self.handleResponse(event: event)
             }
             .resume()
 
-        streamRequest = request
         metadataStreamProcessor.delegate = self
     }
 
@@ -231,12 +229,12 @@ public class RemoteAudioSource: AudioStreamSource {
     /// - Parameter data: The audio to be processed
     /// - Returns: An `Int` value representing the amount of audio data bytes.
     private func processAudio(data: Data) -> Int {
-        if self.metadataStreamProcessor.canProcessMetadata {
-            let extractedAudioData = self.metadataStreamProcessor.processMetadata(data: data)
-            self.delegate?.dataAvailable(source: self, data: extractedAudioData)
+        if metadataStreamProcessor.canProcessMetadata {
+            let extractedAudioData = metadataStreamProcessor.processMetadata(data: data)
+            delegate?.dataAvailable(source: self, data: extractedAudioData)
             return extractedAudioData.count
         } else {
-            self.delegate?.dataAvailable(source: self, data: data)
+            delegate?.dataAvailable(source: self, data: data)
             return data.count
         }
     }
@@ -266,11 +264,14 @@ public class RemoteAudioSource: AudioStreamSource {
 
     private func checkHTTP(statusCode: Int) {
         // check for error
-        if statusCode == 416 { // range not satisfied error
+        if statusCode == 416 { // range not satisfied errord
             if length >= 0 { seekOffset = length }
             delegate?.endOfFileOccurred(source: self)
         } else if statusCode >= 300 {
-            delegate?.errorOccurred(source: self, error: NetworkError.serverError)
+            delegate?.errorOccurred(
+                source: self,
+                error: NetworkError.serverError
+            )
         }
     }
 
@@ -287,7 +288,7 @@ public class RemoteAudioSource: AudioStreamSource {
         urlRequest.addValue("1", forHTTPHeaderField: "Icy-MetaData")
         urlRequest.addValue("identity", forHTTPHeaderField: "Accept-Encoding")
 
-        if supportsSeek && seekOffset > 0 {
+        if supportsSeek, seekOffset > 0 {
             urlRequest.addValue("bytes=\(seekOffset)-", forHTTPHeaderField: "Range")
         }
         return urlRequest
@@ -296,7 +297,7 @@ public class RemoteAudioSource: AudioStreamSource {
     private func retryOnError() {
         retrierTimeout.retry { [weak self] in
             guard let self = self else { return }
-            self.seek(at: self.position)
+            self.seek(at: self.supportsSeek ? self.position : 0)
         }
     }
 
