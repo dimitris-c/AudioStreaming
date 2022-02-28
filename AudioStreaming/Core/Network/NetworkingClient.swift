@@ -13,11 +13,14 @@ enum DataStreamError: Error {
 public enum NetworkError: Error, Equatable {
     case failure(Error)
     case serverError
+    case missingData
     public static func == (lhs: NetworkError, rhs: NetworkError) -> Bool {
         switch (lhs, rhs) {
         case (.failure, failure):
             return true
         case (.serverError, .serverError):
+            return true
+        case (.missingData, .missingData):
             return true
         default:
             return false

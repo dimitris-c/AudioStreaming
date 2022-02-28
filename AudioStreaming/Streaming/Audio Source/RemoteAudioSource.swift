@@ -151,7 +151,7 @@ public class RemoteAudioSource: AudioStreamSource {
             guard let self = self else { return }
             guard connection.isConnected else { return }
             if self.waitingForNetwork {
-                self.seek(at: self.supportsSeek ? self.position : 0 )
+                self.seek(at: self.supportsSeek ? self.position : 0)
                 self.waitingForNetwork = false
             }
         }
@@ -177,8 +177,10 @@ public class RemoteAudioSource: AudioStreamSource {
         case let .response(urlResponse):
             parseResponseHeader(response: urlResponse)
             streamOperationQueue.isSuspended = false
-        case let .stream(event):
-            handleStreamEvent(event: event)
+        case let .stream(.success(response)):
+            handleSuccessfulStreamEvent(response: response)
+        case let .stream(.failure(error)):
+            handleFailedStreamEvent(error: error)
         case let .complete(event):
             if let error = event.error {
                 delegate?.errorOccurred(source: self, error: error)
@@ -191,38 +193,39 @@ public class RemoteAudioSource: AudioStreamSource {
         }
     }
 
-    private func handleStreamEvent(event: NetworkDataStream.StreamResult) {
-        switch event {
-        case let .success(value):
-            if let audioData = value.data {
-                addStreamOperation { [weak self] in
-                    guard let self = self else { return }
-                    if self.shouldTryParsingIcycastHeaders {
-                        let (header, extractedAudio) = self.icycastHeadersProcessor.process(data: audioData)
-                        if let header = header {
-                            self.shouldTryParsingIcycastHeaders = false
-                            let parser = IcycastHeaderParser()
-                            self.parsedHeaderOutput = parser.parse(input: header)
-                            if let metadataStep = self.parsedHeaderOutput?.metadataStep {
-                                self.metadataStreamProcessor.metadataAvailable(step: metadataStep)
-                            }
-                        }
-                        let audioCount = self.processAudio(data: extractedAudio)
-                        self.relativePosition += audioCount
-                        return
+    private func handleSuccessfulStreamEvent(response: NetworkDataStream.Response) {
+        guard let audioData = response.data else {
+            self.delegate?.errorOccurred(source: self, error: NetworkError.missingData)
+            return
+        }
+        addStreamOperation { [weak self] in
+            guard let self = self else { return }
+            if self.shouldTryParsingIcycastHeaders {
+                let (header, extractedAudio) = self.icycastHeadersProcessor.process(data: audioData)
+                if let header = header {
+                    self.shouldTryParsingIcycastHeaders = false
+                    let parser = IcycastHeaderParser()
+                    self.parsedHeaderOutput = parser.parse(input: header)
+                    if let metadataStep = self.parsedHeaderOutput?.metadataStep {
+                        self.metadataStreamProcessor.metadataAvailable(step: metadataStep)
                     }
-                    let audioCount = self.processAudio(data: audioData)
-                    self.relativePosition += audioCount
                 }
-            }
-        case .failure:
-            if !netStatusService.isConnected {
-                waitingForNetwork = true
+                let audioCount = self.processAudio(data: extractedAudio)
+                self.relativePosition += audioCount
                 return
             }
-            waitingForNetwork = false
-            retryOnError()
+            let audioCount = self.processAudio(data: audioData)
+            self.relativePosition += audioCount
         }
+    }
+
+    private func handleFailedStreamEvent(error: Error) {
+        if !netStatusService.isConnected {
+            waitingForNetwork = true
+            return
+        }
+        waitingForNetwork = false
+        retryOnError()
     }
 
     /// Processing audio data, extracting metadata if needed.
