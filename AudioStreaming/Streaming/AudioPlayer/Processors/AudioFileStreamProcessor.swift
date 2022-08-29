@@ -291,7 +291,7 @@ final class AudioFileStreamProcessor {
                     packetBufferSize = 2048 // default value
                 }
             }
-            entry.lock.around {
+            entry.lock.withLock {
                 entry.processedPacketsState.bufferSize = packetBufferSize
             }
 

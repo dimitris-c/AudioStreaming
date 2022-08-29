@@ -645,7 +645,7 @@ open class AudioPlayer {
     }
 
     private func processFinishPlaying(entry: AudioEntry?, with nextEntry: AudioEntry?) {
-        let playingEntry = playerContext.entriesLock.around { playerContext.audioPlayingEntry }
+        let playingEntry = playerContext.entriesLock.withLock { playerContext.audioPlayingEntry }
         guard entry == playingEntry else { return }
 
         let isPlayingSameItemProbablySeek = playerContext.audioPlayingEntry === nextEntry
@@ -670,10 +670,10 @@ open class AudioPlayer {
 
         if let nextEntry = nextEntry {
             if !isPlayingSameItemProbablySeek {
-                nextEntry.lock.around {
+                nextEntry.lock.withLock {
                     nextEntry.seekTime = 0
                 }
-                nextEntry.seekRequest.lock.around {
+                nextEntry.seekRequest.lock.withLock {
                     nextEntry.seekRequest.requested = false
                 }
             }

@@ -54,12 +54,8 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
         inputStream.delegate = nil
     }
 
-    func suspend() {
-        guard let inputStream = inputStream else {
-            return
-        }
-        CFReadStreamSetDispatchQueue(inputStream, nil)
-    }
+    // no-op
+    func suspend() { }
 
     func resume() {
         guard let inputStream = inputStream else {
@@ -69,8 +65,6 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
     }
 
     func seek(at offset: Int) {
-        close()
-
         do {
             try performOpen(seek: offset)
         } catch {
@@ -79,21 +73,18 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
     }
 
     private func performOpen(seek seekOffset: Int) throws {
-        guard let inputStream = InputStream(url: url) else {
-            throw AudioSystemError.playerStartError
-        }
-        self.inputStream = inputStream
 
         var reopened = false
-        let streamStatus = inputStream.streamStatus
-        if streamStatus == .notOpen || streamStatus == .error {
+        let streamStatus = inputStream?.streamStatus ?? .closed
+        if streamStatus == .notOpen || streamStatus == .closed || streamStatus == .error || streamStatus == .atEnd {
             reopened = true
             close()
-            open(inputStream: inputStream)
+            try open()
         }
 
-        let attributes = try fileManager.attributesOfItem(atPath: url.path)
-        length = (attributes[.size] as? Int) ?? 0
+        guard let inputStream = inputStream else {
+            return
+        }
 
         if inputStream.setProperty(seekOffset, forKey: .fileCurrentOffsetKey) {
             position = seekOffset
@@ -119,10 +110,17 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
         }
     }
 
-    private func open(inputStream: InputStream) {
+    private func open() throws {
+        guard let inputStream = InputStream(url: url) else {
+            throw AudioSystemError.playerStartError
+        }
+        self.inputStream = inputStream
         CFReadStreamSetDispatchQueue(inputStream, underlyingQueue)
         inputStream.delegate = self
         inputStream.open()
+
+        let attributes = try fileManager.attributesOfItem(atPath: url.path)
+        length = (attributes[.size] as? Int) ?? 0
     }
 
     private func getCurrentOffsetFromStream() -> Int {
@@ -142,8 +140,6 @@ extension FileAudioSource: StreamDelegate {
             delegate?.endOfFileOccurred(source: self)
         case .errorOccurred:
             delegate?.errorOccurred(source: self, error: AudioPlayerError.codecError)
-        case .endEncountered:
-            delegate?.endOfFileOccurred(source: self)
         default:
             break
         }

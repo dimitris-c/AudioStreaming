@@ -77,9 +77,10 @@ internal final class NetworkingClient {
     }
 
     internal func remove(task: NetworkDataStream) {
-        tasksLock.lock(); defer { tasksLock.unlock() }
-        if !tasks.isEmpty {
-            tasks[task] = nil
+        tasksLock.withLock {
+            if !tasks.isEmpty {
+                tasks[task] = nil
+            }
         }
     }
 
@@ -100,13 +101,15 @@ internal final class NetworkingClient {
 
 extension NetworkingClient: StreamTaskProvider {
     internal func dataStream(for request: URLSessionTask) -> NetworkDataStream? {
-        tasksLock.lock(); defer { tasksLock.unlock() }
-        return tasks[request] ?? nil
+        tasksLock.withLock {
+            tasks[request] ?? nil
+        }
     }
 
     internal func sessionTask(for stream: NetworkDataStream) -> URLSessionTask? {
-        tasksLock.lock(); defer { tasksLock.unlock() }
-        return tasks[stream] ?? nil
+        tasksLock.withLock {
+            tasks[stream] ?? nil
+        }
     }
 }
 

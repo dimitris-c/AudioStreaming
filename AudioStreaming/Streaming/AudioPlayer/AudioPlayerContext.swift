@@ -6,12 +6,12 @@
 import Foundation
 
 internal final class AudioPlayerContext {
-    var stopReason: Protected<AudioPlayerStopReason>
+    var stopReason: Atomic<AudioPlayerStopReason>
 
-    var state: Protected<AudioPlayerState>
+    var state: Atomic<AudioPlayerState>
     var stateChanged: ((_ oldState: AudioPlayerState, _ newState: AudioPlayerState) -> Void)?
 
-    var muted: Protected<Bool>
+    var muted: Atomic<Bool>
 
     var internalState: AudioPlayer.InternalState {
         playerInternalState.value
@@ -24,12 +24,12 @@ internal final class AudioPlayerContext {
     /// This is the player's internal state to use
     /// - NOTE: Do not use directly instead use the `internalState` to set and get the property
     /// or the `setInternalState(to:when:)`method
-    private var playerInternalState = Protected<AudioPlayer.InternalState>(.initial)
+    private var playerInternalState = Atomic<AudioPlayer.InternalState>(.initial)
 
     init() {
-        stopReason = Protected<AudioPlayerStopReason>(.none)
-        state = Protected<AudioPlayerState>(.ready)
-        muted = Protected<Bool>(false)
+        stopReason = Atomic<AudioPlayerStopReason>(.none)
+        state = Atomic<AudioPlayerState>(.ready)
+        muted = Atomic<Bool>(false)
         entriesLock = UnfairLock()
     }
 

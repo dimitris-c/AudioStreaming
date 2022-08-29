@@ -17,14 +17,14 @@ final class PlayerQueueEntries {
 
     /// Returns `true` when both underlying entries are empty
     var isEmpty: Bool {
-        lock.around {
+        lock.withLock {
             bufferring.isEmpty && upcoming.isEmpty
         }
     }
 
     /// Returns the count of both underlying entries
     var count: Int {
-        lock.around {
+        lock.withLock {
             bufferring.count + upcoming.count
         }
     }

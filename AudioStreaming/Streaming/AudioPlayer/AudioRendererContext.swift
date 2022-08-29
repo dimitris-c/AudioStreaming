@@ -9,7 +9,7 @@ import CoreAudio
 internal var maxFramesPerSlice: AVAudioFrameCount = 8192
 
 final class AudioRendererContext {
-    var waiting = Protected<Bool>(false)
+    var waiting = Atomic<Bool>(false)
 
     let lock = UnfairLock()
 
@@ -24,7 +24,7 @@ final class AudioRendererContext {
     let framesRequiredAfterRebuffering: UInt32
     let framesRequiredForDataAfterSeekPlaying: UInt32
 
-    var waitingForDataAfterSeekFrameCount = Protected<Int32>(0)
+    var waitingForDataAfterSeekFrameCount = Atomic<Int32>(0)
 
     private let configuration: AudioPlayerConfiguration
 

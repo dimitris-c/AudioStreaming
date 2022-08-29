@@ -13,10 +13,10 @@ final class Atomic<Value> {
         _value = value
     }
 
-    var value: Value { lock.around { _value } }
+    var value: Value { lock.withLock { _value } }
 
     func write(_ transform: (inout Value) -> Void) {
-        lock.around { transform(&self._value) }
+        lock.withLock { transform(&self._value) }
     }
 }
 

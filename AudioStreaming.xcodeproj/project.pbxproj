@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		98CC396E28BD651E006C9FF9 /* Atomic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98CC396D28BD651E006C9FF9 /* Atomic.swift */; };
 		B500732024D00BAC00BB4475 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B500731F24D00BAC00BB4475 /* Logger.swift */; };
 		B514657F248E3884005C03F7 /* DispatchTimerSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = B514657E248E3884005C03F7 /* DispatchTimerSource.swift */; };
 		B51B9F9A24DBE5BF00BDEAA2 /* AVAudioFormat+Convenience.swift in Sources */ = {isa = PBXBuildFile; fileRef = B51B9F9924DBE5BF00BDEAA2 /* AVAudioFormat+Convenience.swift */; };
@@ -64,8 +65,7 @@
 		B5EF9557247E9439003E8FF8 /* AudioStreamSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5EF9556247E9439003E8FF8 /* AudioStreamSource.swift */; };
 		B5EF955B247EBCB3003E8FF8 /* AudioFileType.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5EF955A247EBCB3003E8FF8 /* AudioFileType.swift */; };
 		B5EF955D247ECBB1003E8FF8 /* RemoteAudioSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5EF955C247ECBB1003E8FF8 /* RemoteAudioSource.swift */; };
-		B5F883B62476DADB00D277C1 /* Protected.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5F883B52476DADB00D277C1 /* Protected.swift */; };
-		B5F883BA2477CEFC00D277C1 /* ProtectedTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5F883B82477CBF600D277C1 /* ProtectedTests.swift */; };
+		B5F883BA2477CEFC00D277C1 /* AtomicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5F883B82477CBF600D277C1 /* AtomicTests.swift */; };
 		B5F883C32477DC4400D277C1 /* NetworkDataStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5F883C22477DC4400D277C1 /* NetworkDataStream.swift */; };
 		B5FB6C0525516507002C0A37 /* AudioConverter+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5FB6C0425516507002C0A37 /* AudioConverter+Helpers.swift */; };
 /* End PBXBuildFile section */
@@ -94,6 +94,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		98CC396D28BD651E006C9FF9 /* Atomic.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Atomic.swift; sourceTree = "<group>"; };
 		B500731F24D00BAC00BB4475 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		B514657E248E3884005C03F7 /* DispatchTimerSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DispatchTimerSource.swift; sourceTree = "<group>"; };
 		B51B9F9924DBE5BF00BDEAA2 /* AVAudioFormat+Convenience.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AVAudioFormat+Convenience.swift"; sourceTree = "<group>"; };
@@ -158,8 +159,7 @@
 		B5EF9556247E9439003E8FF8 /* AudioStreamSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioStreamSource.swift; sourceTree = "<group>"; };
 		B5EF955A247EBCB3003E8FF8 /* AudioFileType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioFileType.swift; sourceTree = "<group>"; };
 		B5EF955C247ECBB1003E8FF8 /* RemoteAudioSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteAudioSource.swift; sourceTree = "<group>"; };
-		B5F883B52476DADB00D277C1 /* Protected.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Protected.swift; sourceTree = "<group>"; };
-		B5F883B82477CBF600D277C1 /* ProtectedTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtectedTests.swift; sourceTree = "<group>"; };
+		B5F883B82477CBF600D277C1 /* AtomicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AtomicTests.swift; sourceTree = "<group>"; };
 		B5F883C22477DC4400D277C1 /* NetworkDataStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkDataStream.swift; sourceTree = "<group>"; };
 		B5FB6C0425516507002C0A37 /* AudioConverter+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AudioConverter+Helpers.swift"; sourceTree = "<group>"; };
 		B5FFF5FD2549FA02006BBB7C /* AudioExample.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = AudioExample.xctestplan; sourceTree = "<group>"; };
@@ -321,11 +321,11 @@
 		B592E13025460883008866FB /* Helpers */ = {
 			isa = PBXGroup;
 			children = (
+				98CC396D28BD651E006C9FF9 /* Atomic.swift */,
 				B573733F254DE43E003DFBEC /* measure.swift */,
 				B514657E248E3884005C03F7 /* DispatchTimerSource.swift */,
 				B57829CE2548B32B00C78D36 /* Lock.swift */,
 				B500731F24D00BAC00BB4475 /* Logger.swift */,
-				B5F883B52476DADB00D277C1 /* Protected.swift */,
 				B54C3E55255F286D00B356F2 /* Retrier.swift */,
 			);
 			path = Helpers;
@@ -443,7 +443,7 @@
 			isa = PBXGroup;
 			children = (
 				B5EF954A247DA450003E8FF8 /* Network */,
-				B5F883B82477CBF600D277C1 /* ProtectedTests.swift */,
+				B5F883B82477CBF600D277C1 /* AtomicTests.swift */,
 				B51FE0C12488F96A00F2A4D2 /* QueueTests.swift */,
 				B592E12825460146008866FB /* BiMapTests.swift */,
 				B592E133254608B4008866FB /* DispatchTimerSourceTests.swift */,
@@ -599,6 +599,7 @@
 				B5838640254584A50087A712 /* ProcessedPackets.swift in Sources */,
 				B54C3E56255F286D00B356F2 /* Retrier.swift in Sources */,
 				B59DF10424916FD50043C498 /* DispatchQueue+Helpers.swift in Sources */,
+				98CC396E28BD651E006C9FF9 /* Atomic.swift in Sources */,
 				B5B3B7CC248647ED00656828 /* AudioPlayerState.swift in Sources */,
 				B51B9F9A24DBE5BF00BDEAA2 /* AVAudioFormat+Convenience.swift in Sources */,
 				B51FE0C624890CCB00F2A4D2 /* PlayerQueueEntries.swift in Sources */,
@@ -638,7 +639,6 @@
 				B5838648254584D90087A712 /* SeekRequest.swift in Sources */,
 				B5D82E65255DD562009EDAA4 /* NetStatusService.swift in Sources */,
 				B55CE97824813BCA0001C498 /* UnsafeMutablePointer+Helpers.swift in Sources */,
-				B5F883B62476DADB00D277C1 /* Protected.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -651,7 +651,7 @@
 				B51FE0C824892D1600F2A4D2 /* PlayerQueueEntriesTest.swift in Sources */,
 				B55CEABA248530C00001C498 /* MetadataParser.swift in Sources */,
 				B51FE0C22488F96A00F2A4D2 /* QueueTests.swift in Sources */,
-				B5F883BA2477CEFC00D277C1 /* ProtectedTests.swift in Sources */,
+				B5F883BA2477CEFC00D277C1 /* AtomicTests.swift in Sources */,
 				B592E134254608B4008866FB /* DispatchTimerSourceTests.swift in Sources */,
 				B55CEAB82485172D0001C498 /* HTTPHeaderParserTests.swift in Sources */,
 				B592E12925460146008866FB /* BiMapTests.swift in Sources */,

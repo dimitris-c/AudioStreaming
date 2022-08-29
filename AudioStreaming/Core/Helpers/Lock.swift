@@ -8,28 +8,18 @@ import Foundation
 protocol Lock {
     func lock()
     func unlock()
-}
 
-extension Lock {
     // Execute a closure while acquiring a lock and returns the closure value
-    @inline(__always)
-    func around<Value>(_ closure: () -> Value) -> Value {
-        lock(); defer { unlock() }
-        return closure()
-    }
+    func withLock<Result>(body: () throws -> Result) rethrows -> Result
 
     // Execute a closure while acquiring a lock
-    @inline(__always)
-    func around(_ closure: () -> Void) {
-        lock(); defer { unlock() }
-        closure()
-    }
+    func withLock(body: () -> Void)
 }
 
 /// A wrapper for `os_unfair_lock`
 /// - Tag: UnfairLock
 final class UnfairLock: Lock {
-    private let unfairLock: os_unfair_lock_t
+    @usableFromInline let unfairLock: UnsafeMutablePointer<os_unfair_lock>
 
     internal init() {
         unfairLock = .allocate(capacity: 1)
@@ -37,15 +27,32 @@ final class UnfairLock: Lock {
     }
 
     deinit {
-        unfairLock.deinitialize(count: 1)
         unfairLock.deallocate()
     }
 
+    @inlinable
+    @inline(__always)
+    func withLock<Result>(body: () throws -> Result) rethrows -> Result {
+        os_unfair_lock_lock(unfairLock)
+        defer { os_unfair_lock_unlock(unfairLock) }
+        return try body()
+    }
+
+    @inlinable
+    @inline(__always)
+    func withLock(body: () -> Void) {
+        os_unfair_lock_lock(unfairLock)
+        defer { os_unfair_lock_unlock(unfairLock) }
+        body()
+    }
+
+    @inlinable
     @inline(__always)
     internal func lock() {
         os_unfair_lock_lock(unfairLock)
     }
 
+    @inlinable
     @inline(__always)
     internal func unlock() {
         os_unfair_lock_unlock(unfairLock)
