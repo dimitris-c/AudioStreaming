@@ -679,8 +679,8 @@ open class AudioPlayer {
             }
             playerContext.entriesLock.lock()
             playerContext.audioPlayingEntry = nextEntry
+            let playingQueueEntryId = playerContext.audioPlayingEntry?.id ?? AudioEntryId(id: "")
             playerContext.entriesLock.unlock()
-            let playingQueueEntryId = playingEntry?.id ?? AudioEntryId(id: "")
 
             notifyDelegateEntryFinishedPlaying(entry, isPlayingSameItemProbablySeek)
             if !isPlayingSameItemProbablySeek {
