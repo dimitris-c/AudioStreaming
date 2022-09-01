@@ -16,7 +16,9 @@ enum AudioContent: Int, CaseIterable {
     case radiox
     case khruangbin
     case piano
+    case remoteWave
     case local
+    case localWave
 
     var title: String {
         switch self {
@@ -34,8 +36,37 @@ enum AudioContent: Int, CaseIterable {
             return "Khruangbin (mp3 preview)"
         case .piano:
             return "Piano (mp3)"
+        case .remoteWave:
+            return "Sample remote (wave)"
         case .local:
-            return "Local file (mp3)"
+            return "Jazzy Frenchy (local mp3)"
+        case .localWave:
+            return "Local file (local wave)"
+        }
+    }
+
+    var subtitle: String? {
+        switch self {
+        case .offradio:
+            return nil
+        case .enlefko:
+            return nil
+        case .pepper966:
+            return nil
+        case .kosmos:
+            return nil
+        case .radiox:
+            return nil
+        case .khruangbin:
+            return nil
+        case .piano:
+            return nil
+        case .remoteWave:
+            return nil
+        case .local:
+            return "Music by: bensound.com"
+        case .localWave:
+            return "Music by: bensound.com"
         }
     }
 
@@ -46,7 +77,7 @@ enum AudioContent: Int, CaseIterable {
         case .offradio:
             return URL(string: "https://s3.yesstreaming.net:17062/stream")!
         case .pepper966:
-            return URL(string: "https://ample-09.radiojar.com/pepper.m4a?1593699983=&rj-tok=AAABcw_1KyMAIViq2XpI098ZSQ&rj-ttl=5")!
+            return URL(string: "https://n04.radiojar.com/pepper.m4a?1662039818=&rj-tok=AAABgvlUaioALhdOXDt0mgajoA&rj-ttl=5")!
         case .kosmos:
             return URL(string: "https://radiostreaming.ert.gr/ert-kosmos")!
         case .radiox:
@@ -58,6 +89,11 @@ enum AudioContent: Int, CaseIterable {
         case .local:
             let path = Bundle.main.path(forResource: "bensound-jazzyfrenchy", ofType: "mp3")!
             return URL(fileURLWithPath: path)
+        case .localWave:
+            let path = Bundle.main.path(forResource: "hipjazz", ofType: "wav")!
+            return URL(fileURLWithPath: path)
+        case .remoteWave:
+            return URL(string: "https://file-examples.com/storage/fe183d9197630fb5c969255/2017/11/file_example_WAV_5MG.wav")!
         }
     }
 }

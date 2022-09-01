@@ -121,7 +121,8 @@ extension PlayerViewController: UITableViewDataSource {
             return cell
         }
         cell.textLabel?.text = item.name
-        cell.detailTextLabel?.text = item.queues ? "Queue item" : nil
+        let queuedItem = item.queues ? "Queue item" : nil
+        cell.detailTextLabel?.text = queuedItem ?? item.subtitle
         update(status: item.status, of: cell)
         return cell
     }

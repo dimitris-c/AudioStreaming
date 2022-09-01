@@ -48,7 +48,7 @@ final class PlayerViewModel {
             print("malformed url error")
             return
         }
-        playlistItemsService.add(item: PlaylistItem(url: url, name: urlString, status: .stopped, queues: false))
+        playlistItemsService.add(item: PlaylistItem(url: url, name: urlString, subtitle: nil, status: .stopped, queues: false))
         reloadContent?(.all)
     }
 

@@ -198,7 +198,6 @@ final class AudioPlayerRenderProcessor: NSObject {
                                 state.contains(.running) && state != .playing
                             }
                         }
-                        rendererContext.waitingForDataAfterSeekFrameCount.write { $0 = 0 }
                     }
                 } else {
                     rendererContext.waitingForDataAfterSeekFrameCount.write { $0 = 0 }

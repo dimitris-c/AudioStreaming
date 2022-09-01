@@ -140,7 +140,7 @@ open class AudioPlayer {
         entriesQueue = PlayerQueueEntries()
 
         serializationQueue = DispatchQueue(label: "streaming.core.queue", qos: .userInitiated)
-        sourceQueue = DispatchQueue(label: "source.queue", qos: .userInitiated)
+        sourceQueue = DispatchQueue(label: "source.queue", qos: .default)
 
         entryProvider = AudioEntryProvider(networkingClient: NetworkingClient(),
                                            underlyingQueue: sourceQueue,

@@ -116,7 +116,7 @@ final class AudioFileStreamProcessor {
         readingEntry.lock.unlock()
 
         let bitrate = readingEntry.calculatedBitrate()
-        if readingEntry.processedPacketsState.count > 0, bitrate > 0 {
+        if readingEntry.packetDuration > 0, bitrate > 0 {
             var ioFlags = AudioFileStreamSeekFlags(rawValue: 0)
             var packetsAlignedByteOffset: Int64 = 0
             let seekPacket = Int64(floor(readingEntry.seekRequest.time / readingEntry.packetDuration))
@@ -278,6 +278,9 @@ final class AudioFileStreamProcessor {
             if entry.audioStreamFormat.mFormatID == 0 {
                 entry.audioStreamFormat = audioStreamFormat
             }
+
+            entry.sampleRate = Float(audioStreamFormat.mSampleRate)
+            entry.packetDuration = Double(audioStreamFormat.mFramesPerPacket) / Double(entry.sampleRate)
 
             var packetBufferSize: UInt32 = 0
             var status = fileStreamGetProperty(value: &packetBufferSize,

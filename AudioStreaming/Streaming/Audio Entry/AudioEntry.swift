@@ -22,9 +22,7 @@ internal class AudioEntry {
     let id: AudioEntryId
 
     /// The sample rate from the `audioStreamFormat`
-    var sampleRate: Float {
-        Float(audioStreamFormat.mSampleRate)
-    }
+    var sampleRate: Float
 
     var audioFileHint: AudioFileTypeID {
         source.audioFileHint
@@ -49,9 +47,7 @@ internal class AudioEntry {
     private(set) var framesState: EntryFramesState
     private(set) var processedPacketsState: ProcessedPacketsState
 
-    var packetDuration: Double {
-        return Double(audioStreamFormat.mFramesPerPacket) / Double(sampleRate)
-    }
+    var packetDuration: Double
 
     private var averagePacketByteSize: Double {
         let packets = processedPacketsState
@@ -72,6 +68,8 @@ internal class AudioEntry {
         processedPacketsState = ProcessedPacketsState()
         framesState = EntryFramesState()
         audioStreamState = AudioStreamState()
+        sampleRate = 0
+        packetDuration = 0
     }
 
     func close() {
