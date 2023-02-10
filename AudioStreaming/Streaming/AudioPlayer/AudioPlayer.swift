@@ -132,6 +132,14 @@ open class AudioPlayer {
 
     var entriesQueue: PlayerQueueEntries
 
+    /// The audio pauses automatically when the audio route is changed back to build in speakers
+    var automaticallyPauseOnNoisyRouteChange = true
+    
+    /// token for AVAudioSession.routeChangeNotification
+    private var nt1: Any? = nil
+    /// token for AVAudioSession.interruptionNotification
+    private var nt2: Any? = nil
+    
     public init(configuration: AudioPlayerConfiguration = .default) {
         self.configuration = configuration.normalizeValues()
 
@@ -158,6 +166,7 @@ open class AudioPlayer {
 
         configPlayerContext()
         configPlayerNode()
+        configSystemNotifications()
         setupEngine()
     }
 
@@ -422,6 +431,17 @@ open class AudioPlayer {
         }
     }
 
+    /// Starts listening for system notifications
+    private func configSystemNotifications() {
+        nt1 = NotificationCenter.default.addObserver(forName: AVAudioSession.routeChangeNotification, object: nil, queue: .main, using: { [weak self] (notification) in
+            self?.handleRouteChange(notification: notification)
+        })
+        
+        nt2 = NotificationCenter.default.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main, using: { [weak self] (notification) in
+            self?.handleInterruption(notification: notification)
+        })
+    }
+    
     /// Attaches callbacks to the `playerContext` and `renderProcessor`.
     private func configPlayerContext() {
         playerContext.stateChanged = { [weak self] oldValue, newValue in
@@ -731,6 +751,81 @@ open class AudioPlayer {
         }
         Logger.error("Error: %@", category: .generic, args: error.localizedDescription)
     }
+    
+    /// Audio routing changed
+    /// see: https://developer.apple.com/documentation/avfaudio/avaudiosession/responding_to_audio_session_route_changes
+    /// Pauses audio, when returning to internal speakers
+    private func handleRouteChange(notification: Notification) {
+        
+        guard automaticallyPauseOnNoisyRouteChange else {
+            return
+        }
+        
+        guard let userInfo = notification.userInfo,
+            let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
+            let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else {
+                return
+        }
+        
+        switch reason {
+        case .newDeviceAvailable:
+            break
+        case .oldDeviceUnavailable:
+            let session = AVAudioSession.sharedInstance()
+            if hasBuiltInSpeaker(in: session.currentRoute) {
+                if state == .playing || state == .bufferring {
+                    pause()
+                    delegate?.audioPlayerDidPauseOnNoisyRouteChange(player: self)
+                }
+            }
+        default:
+            break
+        }
+        
+    }
+
+    /// Determines if routeDescription contains build in speakers
+    private func hasBuiltInSpeaker(in routeDescription: AVAudioSessionRouteDescription) -> Bool {
+        return !routeDescription.outputs.filter({$0.portType == .builtInSpeaker}).isEmpty
+    }
+    
+    /// Audio interrupted
+    /// see: https://developer.apple.com/documentation/avfaudio/avaudiosession/responding_to_audio_session_interruptions
+    /// Pauses the audio gracefully
+    private func handleInterruption(notification: Notification) {
+        
+        guard let userInfo = notification.userInfo,
+            let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+            let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
+                return
+        }
+
+        switch type {
+        case .began:
+            
+            if state == .playing || state == .bufferring {
+                pause()
+            }
+            delegate?.audioPlayerWasInterrupted(player: self)
+            
+        case .ended:
+            
+            guard let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt else { return }
+            let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
+            if options.contains(.shouldResume) {
+                if state == .paused {
+                    resume()
+                }
+            }
+            delegate?.audioPlayerInterruptionDidEnd(player: self)
+            
+        default:
+            break
+        }
+        
+    }
+    
+    
 }
 
 extension AudioPlayer: AudioStreamSourceDelegate {
