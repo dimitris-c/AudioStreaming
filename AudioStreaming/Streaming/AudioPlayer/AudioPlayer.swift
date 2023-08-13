@@ -108,7 +108,7 @@ open class AudioPlayer {
     private var stateBeforePaused: InternalState = .initial
 
     /// The underlying `AVAudioEngine` object
-    private let audioEngine = AVAudioEngine()
+    private let audioEngine: AVAudioEngine
     /// An `AVAudioUnit` object that represents the audio player
     private(set) var player = AVAudioUnit()
     /// An `AVAudioUnitTimePitch` that controls the playback rate of the audio engine
@@ -134,7 +134,8 @@ open class AudioPlayer {
 
     public init(configuration: AudioPlayerConfiguration = .default) {
         self.configuration = configuration.normalizeValues()
-
+        let engine = AVAudioEngine()
+        self.audioEngine = engine
         rendererContext = AudioRendererContext(configuration: configuration, outputAudioFormat: outputAudioFormat)
         playerContext = AudioPlayerContext()
         entriesQueue = PlayerQueueEntries()
@@ -150,12 +151,14 @@ open class AudioPlayer {
                                                        rendererContext: rendererContext,
                                                        outputAudioFormat: outputAudioFormat.basicStreamDescription)
 
-        frameFilterProcessor = FrameFilterProcessor(mixerNode: audioEngine.mainMixerNode)
-
         playerRenderProcessor = AudioPlayerRenderProcessor(playerContext: playerContext,
                                                            rendererContext: rendererContext,
                                                            outputAudioFormat: outputAudioFormat.basicStreamDescription)
 
+        
+        frameFilterProcessor = FrameFilterProcessor(mixerNodeProvider: {
+            engine.mainMixerNode
+        })
         configPlayerContext()
         configPlayerNode()
         setupEngine()
