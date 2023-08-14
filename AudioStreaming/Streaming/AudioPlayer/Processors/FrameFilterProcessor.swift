@@ -78,14 +78,17 @@ final class FrameFilterProcessor: NSObject, FrameFiltering {
     }
 
     private let lock = UnfairLock()
-    private let mixerNode: AVAudioMixerNode
+    private let mixerNodeProvider: (() -> AVAudioMixerNode)
+    private lazy var mixerNode: AVAudioMixerNode = {
+        return mixerNodeProvider()
+    }()
 
     private(set) var entries: [FilterEntry] = []
 
     private var hasInstalledTap: Bool = false
 
-    init(mixerNode: AVAudioMixerNode) {
-        self.mixerNode = mixerNode
+    init(mixerNodeProvider: @escaping (() -> AVAudioMixerNode)) {
+        self.mixerNodeProvider = mixerNodeProvider
     }
 
     public func add(entry: FilterEntry) {
