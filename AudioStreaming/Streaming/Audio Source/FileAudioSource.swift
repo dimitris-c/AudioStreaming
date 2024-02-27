@@ -73,14 +73,8 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
     }
 
     private func performOpen(seek seekOffset: Int) throws {
-
-        var reopened = false
-        let streamStatus = inputStream?.streamStatus ?? .closed
-        if streamStatus == .notOpen || streamStatus == .closed || streamStatus == .error || streamStatus == .atEnd {
-            reopened = true
-            close()
-            try open()
-        }
+        close()
+        try open()
 
         guard let inputStream = inputStream else {
             return
@@ -90,11 +84,6 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
             position = seekOffset
         } else {
             position = 0
-        }
-        if !reopened {
-            if inputStream.hasBytesAvailable {
-                dataAvailable()
-            }
         }
     }
 
