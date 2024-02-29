@@ -142,23 +142,28 @@ open class AudioPlayer {
 
         serializationQueue = DispatchQueue(label: "streaming.core.queue", qos: .userInitiated)
         sourceQueue = DispatchQueue(label: "source.queue", qos: .default)
-
-        entryProvider = AudioEntryProvider(networkingClient: NetworkingClient(),
-                                           underlyingQueue: sourceQueue,
-                                           outputAudioFormat: outputAudioFormat)
-
-        fileStreamProcessor = AudioFileStreamProcessor(playerContext: playerContext,
-                                                       rendererContext: rendererContext,
-                                                       outputAudioFormat: outputAudioFormat.basicStreamDescription)
-
-        playerRenderProcessor = AudioPlayerRenderProcessor(playerContext: playerContext,
-                                                           rendererContext: rendererContext,
-                                                           outputAudioFormat: outputAudioFormat.basicStreamDescription)
-
         
-        frameFilterProcessor = FrameFilterProcessor(mixerNodeProvider: {
-            engine.mainMixerNode
-        })
+        entryProvider = AudioEntryProvider(
+            networkingClient: NetworkingClient(),
+            underlyingQueue: sourceQueue,
+            outputAudioFormat: outputAudioFormat
+        )
+        
+        fileStreamProcessor = AudioFileStreamProcessor(
+            playerContext: playerContext,
+            rendererContext: rendererContext,
+            outputAudioFormat: outputAudioFormat.basicStreamDescription)
+        
+        playerRenderProcessor = AudioPlayerRenderProcessor(
+            playerContext: playerContext,
+            rendererContext: rendererContext,
+            outputAudioFormat: outputAudioFormat.basicStreamDescription)
+        
+        frameFilterProcessor = FrameFilterProcessor(
+            mixerNodeProvider: {
+                engine.mainMixerNode
+            }
+        )
         configPlayerContext()
         configPlayerNode()
         setupEngine()
@@ -653,24 +658,6 @@ open class AudioPlayer {
 
         let isPlayingSameItemProbablySeek = playerContext.audioPlayingEntry === nextEntry
 
-        let notifyDelegateEntryFinishedPlaying: (AudioEntry?, Bool) -> Void = { [weak self] entry, _ in
-            guard let self = self else { return }
-            if let entry = entry, !isPlayingSameItemProbablySeek {
-                let entryId = entry.id
-                let progressInFrames = entry.progressInFrames()
-                let progress = Double(progressInFrames) / self.outputAudioFormat.basicStreamDescription.mSampleRate
-                let duration = entry.duration()
-
-                asyncOnMain {
-                    self.delegate?.audioPlayerDidFinishPlaying(player: self,
-                                                               entryId: entryId,
-                                                               stopReason: self.stopReason,
-                                                               progress: progress,
-                                                               duration: duration)
-                }
-            }
-        }
-
         if let nextEntry = nextEntry {
             if !isPlayingSameItemProbablySeek {
                 nextEntry.lock.withLock {
@@ -685,7 +672,22 @@ open class AudioPlayer {
             let playingQueueEntryId = playerContext.audioPlayingEntry?.id ?? AudioEntryId(id: "")
             playerContext.entriesLock.unlock()
 
-            notifyDelegateEntryFinishedPlaying(entry, isPlayingSameItemProbablySeek)
+            if let entry = entry, !isPlayingSameItemProbablySeek {
+                let entryId = entry.id
+                let progressInFrames = entry.progressInFrames()
+                let progress = Double(progressInFrames) / self.outputAudioFormat.basicStreamDescription.mSampleRate
+                let duration = entry.duration()
+                asyncOnMain { [weak self] in
+                    guard let self else { return }
+                    self.delegate?.audioPlayerDidFinishPlaying(
+                        player: self,
+                        entryId: entryId,
+                        stopReason: self.stopReason,
+                        progress: progress,
+                        duration: duration
+                    )
+                }
+            }
             if !isPlayingSameItemProbablySeek {
                 playerContext.setInternalState(to: .waitingForData)
 
@@ -695,10 +697,29 @@ open class AudioPlayer {
                 }
             }
         } else {
-            notifyDelegateEntryFinishedPlaying(entry, isPlayingSameItemProbablySeek)
             playerContext.entriesLock.lock()
             playerContext.audioPlayingEntry = nil
             playerContext.entriesLock.unlock()
+            if let entry = entry, !isPlayingSameItemProbablySeek {
+                let entryId = entry.id
+                let progressInFrames = entry.progressInFrames()
+                let progress = Double(progressInFrames) / self.outputAudioFormat.basicStreamDescription.mSampleRate
+                let duration = entry.duration()
+
+                sourceQueue.async { [weak self] in
+                    guard let self else { return }
+                    self.processSource()
+                    asyncOnMain {
+                        self.delegate?.audioPlayerDidFinishPlaying(
+                            player: self,
+                            entryId: entryId,
+                            stopReason: self.stopReason,
+                            progress: progress,
+                            duration: duration
+                        )
+                    }
+                }
+            }
         }
         sourceQueue.async { [weak self] in
             self?.processSource()

@@ -30,26 +30,27 @@ extension AudioPlayer {
 /// Helper method that returns `AudioPlayerState` and `StopReason` based on the given `InternalState`
 /// - Parameter internalState: A value of `InternalState`
 /// - Returns: A tuple of `(AudioPlayerState, AudioPlayerStopReason)`
-func playerStateAndStopReason(for internalState: AudioPlayer.InternalState) -> (state: AudioPlayerState,
-                                                                                stopReason: AudioPlayerStopReason)
+func playerStateAndStopReason(
+    for internalState: AudioPlayer.InternalState
+) -> (state: AudioPlayerState, stopReason: AudioPlayerStopReason?)
 {
     switch internalState {
     case .initial:
-        return (.ready, .none)
+        return (.ready, AudioPlayerStopReason.none)
     case .running, .playing, .waitingForDataAfterSeek:
-        return (.playing, .none)
+        return (.playing, AudioPlayerStopReason.none)
     case .pendingNext, .rebuffering, .waitingForData:
-        return (.bufferring, .none)
+        return (.bufferring, AudioPlayerStopReason.none)
     case .stopped:
-        return (.stopped, .userAction)
+        return (.stopped, nil)
     case .paused:
-        return (.paused, .none)
+        return (.paused, AudioPlayerStopReason.none)
     case .disposed:
         return (.disposed, .userAction)
     case .error:
-        return (.error, .error)
+        return (.error, AudioPlayerStopReason.error)
     default:
-        return (.ready, .none)
+        return (.ready, AudioPlayerStopReason.none)
     }
 }
 

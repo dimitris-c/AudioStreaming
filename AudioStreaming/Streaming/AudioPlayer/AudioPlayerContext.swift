@@ -42,7 +42,9 @@ internal final class AudioPlayerContext {
                                    when inState: ((AudioPlayer.InternalState) -> Bool)? = nil)
     {
         let newValues = playerStateAndStopReason(for: state)
-        stopReason.write { $0 = newValues.stopReason }
+        if let stopReason = newValues.stopReason {
+            self.stopReason.write { $0 = stopReason }
+        }
         guard state != internalState else { return }
         if let inState = inState, !inState(internalState) {
             return
