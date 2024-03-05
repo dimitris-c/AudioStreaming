@@ -13,7 +13,6 @@ final class AppCoordinator {
     enum Route {
         case equalizer
     }
-    var player: AVPlayer?
 
     private var navigationController: UINavigationController?
 
