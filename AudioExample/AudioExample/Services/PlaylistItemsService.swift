@@ -14,6 +14,7 @@ struct PlaylistItem: Equatable {
         case paused
         case buffering
         case stopped
+        case error
     }
 
     let url: URL

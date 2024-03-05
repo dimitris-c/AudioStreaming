@@ -92,7 +92,12 @@ extension PlayerViewModel: AudioPlayerServiceDelegate {
         case .stopped:
             playlistItemsService.setStatus(for: item, status: .stopped)
             reloadContent?(.item(IndexPath(item: item, section: 0)))
+        case .error:
+            playlistItemsService.setStatus(for: item, status: .error)
+            reloadContent?(.item(IndexPath(item: item, section: 0)))
         default:
+            playlistItemsService.setStatus(for: item, status: .stopped)
+            reloadContent?(.all)
             break
         }
     }

@@ -22,6 +22,12 @@ struct HTTPHeaderParserOutput {
     let typeId: AudioFileTypeID
     // Metadata Support
     let metadataStep: Int
+    let seekable: Bool
+    
+    var isMp4AndSeekable: Bool {
+        (typeId == kAudioFileMPEG4Type || typeId == kAudioFileM4AType) && seekable
+    }
+    
 }
 
 protocol HTTPHeaderParsing: Parser {
@@ -69,10 +75,13 @@ struct HTTPHeaderParser: HTTPHeaderParsing {
         {
             metadataStep = intValue
         }
-
-        return HTTPHeaderParserOutput(fileLength: fileLength,
-                                      typeId: typeId,
-                                      metadataStep: metadataStep)
+        
+        return HTTPHeaderParserOutput(
+            fileLength: fileLength,
+            typeId: typeId,
+            metadataStep: metadataStep,
+            seekable: input.statusCode == 206
+        )
     }
 }
 

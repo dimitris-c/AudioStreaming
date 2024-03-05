@@ -148,22 +148,25 @@ final class AudioPlayerService {
 }
 
 extension AudioPlayerService: AudioPlayerDelegate {
-    func audioPlayerDidStartPlaying(player _: AudioPlayer, with _: AudioEntryId) {
+    func audioPlayerDidStartPlaying(player _: AudioPlayer, with id: AudioEntryId) {
+        print("audioPlayerDidStartPlaying entryId: \(id)")
         delegate.invoke(invocation: { $0.didStartPlaying() })
     }
 
     func audioPlayerDidFinishBuffering(player _: AudioPlayer, with _: AudioEntryId) {}
 
     func audioPlayerStateChanged(player _: AudioPlayer, with newState: AudioPlayerState, previous _: AudioPlayerState) {
+        print("audioPlayerDidStartPlaying newState: \(newState)")
         delegate.invoke(invocation: { $0.statusChanged(status: newState) })
     }
 
     func audioPlayerDidFinishPlaying(player _: AudioPlayer,
-                                     entryId _: AudioEntryId,
-                                     stopReason _: AudioPlayerStopReason,
+                                     entryId id: AudioEntryId,
+                                     stopReason reason: AudioPlayerStopReason,
                                      progress _: Double,
                                      duration _: Double)
     {
+        print("audioPlayerDidFinishPlaying entryId: \(id), reason: \(reason)")
         delegate.invoke(invocation: { $0.didStopPlaying() })
     }
 

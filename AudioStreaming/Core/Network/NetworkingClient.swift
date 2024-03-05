@@ -83,6 +83,21 @@ internal final class NetworkingClient {
             }
         }
     }
+    
+    @discardableResult
+    internal func task(request: URLRequest, completion: @escaping (Result<Data, Error>) -> Void) -> URLSessionDataTask {
+        let task = session.dataTask(with: request) { data, _, error in
+            if let error {
+                completion(Result<Data, Error>.failure(error))
+                return
+            }
+            if let data {
+                completion(Result<Data, Error>.success(data))
+            }
+        }
+        task.resume()
+        return task
+    }
 
     // MARK: Private
 

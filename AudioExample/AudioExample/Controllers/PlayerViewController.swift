@@ -139,7 +139,11 @@ extension PlayerViewController: UITableViewDataSource {
             cell.accessoryView = UIImageView(image: UIImage(systemName: "pause.fill"))
         case .stopped:
             cell.accessoryView = nil
+        case .error:
+            cell.accessoryView = UIImageView(image: UIImage(systemName: "exclamationmark.octagon"))
+            cell.accessoryView?.tintColor = .red
         }
+        guard status != .error else { return }
         cell.accessoryView?.tintColor = .systemTeal
     }
 }
