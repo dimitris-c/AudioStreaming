@@ -514,6 +514,7 @@ open class AudioPlayer {
     /// Pauses the audio engine and stops the player's hardware
     private func pauseEngine() {
         guard isEngineRunning else { return }
+        audioEngine.reset()
         audioEngine.pause()
         player.auAudioUnit.stopHardware()
         Logger.debug("engine paused ⏸", category: .generic)
