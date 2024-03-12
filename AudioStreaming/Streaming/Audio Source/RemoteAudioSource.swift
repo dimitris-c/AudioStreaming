@@ -165,10 +165,10 @@ public class RemoteAudioSource: AudioStreamSource {
         if seekOffset == 0 {
             initialRequest { [weak self] in
                 guard let self else { return }
-                if parsedHeaderOutput?.isMp4AndSeekable == true {
-                    handleMp4Files()
+                if self.parsedHeaderOutput?.isMp4AndSeekable == true {
+                    self.handleMp4Files()
                 } else {
-                    doPerfomOpen(seek: 0)
+                    self.doPerfomOpen(seek: 0)
                 }
             }
         } else {

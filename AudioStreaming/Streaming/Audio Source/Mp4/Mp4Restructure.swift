@@ -127,15 +127,15 @@ final class Mp4Restructure {
                     break
                 case let .stream(.success(response)):
                     guard let data = response.data else {
-                        audioData = Data()
+                        self.audioData = Data()
                         completion(.failure(Mp4RestructureError.unableToRestructureData))
                         return
                     }
-                    audioData.append(data)
-                    let value = self.checkIsOptimized(data: audioData)
+                    self.audioData.append(data)
+                    let value = self.checkIsOptimized(data: self.audioData)
                     if let offset = value.offset, !value.optimized {
                         // stop request, fetch moov and restructure
-                        audioData = Data()
+                        self.audioData = Data()
                         task?.cancel()
                         task = nil
                         self.fetchAndRestructureMoovAtom(offset: offset) { result in
@@ -150,9 +150,9 @@ final class Mp4Restructure {
                             }
                         }
                     } else {
-                        audioData = Data()
-                        task?.cancel()
-                        task = nil
+                        self.audioData = Data()
+                        self.task?.cancel()
+                        self.task = nil
                         completion(.success(nil))
                     }
                     break
