@@ -136,8 +136,8 @@ final class Mp4Restructure {
                     if let offset = value.offset, !value.optimized {
                         // stop request, fetch moov and restructure
                         self.audioData = Data()
-                        task?.cancel()
-                        task = nil
+                        self.task?.cancel()
+                        self.task = nil
                         self.fetchAndRestructureMoovAtom(offset: offset) { result in
                             switch result {
                             case .success(let value):
