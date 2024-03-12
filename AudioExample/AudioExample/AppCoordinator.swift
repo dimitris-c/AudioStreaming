@@ -6,8 +6,8 @@
 //  Copyright © 2020 Dimitrios Chatzieleftheriou. All rights reserved.
 //
 
-import UIKit
 import AVFoundation
+import UIKit
 
 final class AppCoordinator {
     enum Route {

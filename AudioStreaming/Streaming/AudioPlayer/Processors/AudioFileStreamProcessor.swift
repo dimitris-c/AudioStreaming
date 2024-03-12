@@ -34,13 +34,13 @@ final class AudioFileStreamProcessor {
     private let rendererContext: AudioRendererContext
     private let outputAudioFormat: AudioStreamBasicDescription
 
-    internal var audioFileStream: AudioFileStreamID?
-    internal var audioConverter: AudioConverterRef?
-    internal var discontinuous: Bool = false
-    internal var inputFormat = AudioStreamBasicDescription()
+    var audioFileStream: AudioFileStreamID?
+    var audioConverter: AudioConverterRef?
+    var discontinuous: Bool = false
+    var inputFormat = AudioStreamBasicDescription()
 
-    internal var currentFileFormat: String = ""
-    internal let fileFormatsForDelayedConverterCreation: Set = ["fa4m", "f4pm"]
+    var currentFileFormat: String = ""
+    let fileFormatsForDelayedConverterCreation: Set = ["fa4m", "f4pm"]
 
     var isFileStreamOpen: Bool {
         audioFileStream != nil
@@ -237,7 +237,7 @@ final class AudioFileStreamProcessor {
             processReadyToProducePackets(fileStream: fileStream)
         case kAudioFileStreamProperty_FormatList:
             processFormatList(fileStream: fileStream)
-        default: 
+        default:
             break
         }
     }

@@ -44,7 +44,7 @@ public enum AudioFileStreamError: CustomDebugStringConvertible {
     case valueUnknown
     case unknownError
     case noError
-    
+
     public init(status: OSStatus) {
         switch status {
         case kAudioFileStreamError_UnsupportedFileType:
@@ -77,7 +77,7 @@ public enum AudioFileStreamError: CustomDebugStringConvertible {
             self = .unknownError
         }
     }
-    
+
     public var debugDescription: String {
         switch self {
         case .badPropertySize:
@@ -115,8 +115,8 @@ public enum AudioFileStreamError: CustomDebugStringConvertible {
     }
 }
 
-extension AudioFileStreamPropertyID {
-    public var description: String {
+public extension AudioFileStreamPropertyID {
+    var description: String {
         switch self {
         case kAudioFileStreamProperty_ReadyToProducePackets:
             return "Ready to produce packets"

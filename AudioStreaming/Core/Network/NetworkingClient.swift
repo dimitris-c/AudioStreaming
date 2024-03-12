@@ -44,7 +44,7 @@ extension URLSessionConfiguration {
     }
 }
 
-internal final class NetworkingClient {
+final class NetworkingClient {
     let session: URLSession
     weak var delegate: NetworkSessionDelegate?
     let networkQueue: DispatchQueue
@@ -52,9 +52,9 @@ internal final class NetworkingClient {
     var tasksLock = UnfairLock()
     var tasks = BiMap<URLSessionTask, NetworkDataStream>()
 
-    internal init(configuration: URLSessionConfiguration = .networkingConfiguration,
-                  delegate: NetworkSessionDelegate = NetworkSessionDelegate(),
-                  networkQueue: DispatchQueue = DispatchQueue(label: "audio.streaming.session.network.queue"))
+    init(configuration: URLSessionConfiguration = .networkingConfiguration,
+         delegate: NetworkSessionDelegate = NetworkSessionDelegate(),
+         networkQueue: DispatchQueue = DispatchQueue(label: "audio.streaming.session.network.queue"))
     {
         let delegateQueue = operationQueue(underlyingQueue: networkQueue)
         let session = URLSession(configuration: configuration, delegate: delegate, delegateQueue: delegateQueue)
@@ -70,22 +70,22 @@ internal final class NetworkingClient {
 
     /// Creates a data stream for the given `URLRequest`
     /// - parameter request: A `URLRequest` to be used for the data stream
-    internal func stream(request: URLRequest) -> NetworkDataStream {
+    func stream(request: URLRequest) -> NetworkDataStream {
         let stream = NetworkDataStream(id: UUID(), underlyingQueue: networkQueue)
         setupRequest(stream, request: request)
         return stream
     }
 
-    internal func remove(task: NetworkDataStream) {
+    func remove(task: NetworkDataStream) {
         tasksLock.withLock {
             if !tasks.isEmpty {
                 tasks[task] = nil
             }
         }
     }
-    
+
     @discardableResult
-    internal func task(request: URLRequest, completion: @escaping (Result<Data, Error>) -> Void) -> URLSessionDataTask {
+    func task(request: URLRequest, completion: @escaping (Result<Data, Error>) -> Void) -> URLSessionDataTask {
         let task = session.dataTask(with: request) { data, _, error in
             if let error {
                 completion(Result<Data, Error>.failure(error))
@@ -115,13 +115,13 @@ internal final class NetworkingClient {
 // MARK: StreamTaskProvider conformance
 
 extension NetworkingClient: StreamTaskProvider {
-    internal func dataStream(for request: URLSessionTask) -> NetworkDataStream? {
+    func dataStream(for request: URLSessionTask) -> NetworkDataStream? {
         tasksLock.withLock {
             tasks[request] ?? nil
         }
     }
 
-    internal func sessionTask(for stream: NetworkDataStream) -> URLSessionTask? {
+    func sessionTask(for stream: NetworkDataStream) -> URLSessionTask? {
         tasksLock.withLock {
             tasks[stream] ?? nil
         }

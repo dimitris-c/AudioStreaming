@@ -3,8 +3,8 @@
 //  Copyright © 2020 Decimal. All rights reserved.
 //
 
-@testable import AudioStreaming
 import XCTest
+@testable import AudioStreaming
 
 class NetworkingClientTests: XCTestCase {
     func testInitialiseCorrectly() throws {

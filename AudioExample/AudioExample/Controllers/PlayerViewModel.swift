@@ -98,7 +98,6 @@ extension PlayerViewModel: AudioPlayerServiceDelegate {
         default:
             playlistItemsService.setStatus(for: item, status: .stopped)
             reloadContent?(.all)
-            break
         }
     }
 

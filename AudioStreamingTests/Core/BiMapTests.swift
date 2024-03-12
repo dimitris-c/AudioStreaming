@@ -1,5 +1,5 @@
 //
-//  BiMap.swift
+//  BiMapTests.swift
 //  AudioStreamingTests
 //
 //  Created by Dimitrios Chatzieleftheriou on 26/05/2020.

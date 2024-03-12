@@ -111,7 +111,8 @@ final class AudioPlayerService {
         // Note that a real app might need to observer other AVAudioSession notifications as well
         audioSystemResetObserver = NotificationCenter.default.addObserver(forName: AVAudioSession.mediaServicesWereResetNotification,
                                                                           object: nil,
-                                                                          queue: nil) { [unowned self] _ in
+                                                                          queue: nil)
+        { [unowned self] _ in
             self.configureAudioSession()
             self.recreatePlayer()
         }

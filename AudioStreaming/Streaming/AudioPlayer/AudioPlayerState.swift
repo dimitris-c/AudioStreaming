@@ -32,8 +32,7 @@ extension AudioPlayer {
 /// - Returns: A tuple of `(AudioPlayerState, AudioPlayerStopReason)`
 func playerStateAndStopReason(
     for internalState: AudioPlayer.InternalState
-) -> (state: AudioPlayerState, stopReason: AudioPlayerStopReason?)
-{
+) -> (state: AudioPlayerState, stopReason: AudioPlayerStopReason?) {
     switch internalState {
     case .initial:
         return (.ready, AudioPlayerStopReason.none)

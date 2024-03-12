@@ -6,7 +6,7 @@
 import AudioToolbox.AudioFile
 import Foundation
 
-struct HeaderField {
+enum HeaderField {
     public static let acceptRanges = "Accept-Ranges"
     public static let contentLength = "Content-Length"
     public static let contentType = "Content-Type"
@@ -23,11 +23,10 @@ struct HTTPHeaderParserOutput {
     // Metadata Support
     let metadataStep: Int
     let seekable: Bool
-    
+
     var isMp4AndSeekable: Bool {
         (typeId == kAudioFileMPEG4Type || typeId == kAudioFileM4AType) && seekable
     }
-    
 }
 
 protocol HTTPHeaderParsing: Parser {
@@ -52,7 +51,7 @@ struct HTTPHeaderParser: HTTPHeaderParsing {
             typeId = audioFileType(mimeType: contentType)
         }
 
-        var fileLength: Int = 0
+        var fileLength = 0
         if input.statusCode == 200 {
             let contentLength = value(forHTTPHeaderField: HeaderField.contentLength, in: input)
             if let contentLength = contentLength, let length = Int(contentLength) {
@@ -75,7 +74,7 @@ struct HTTPHeaderParser: HTTPHeaderParsing {
         {
             metadataStep = intValue
         }
-        
+
         return HTTPHeaderParserOutput(
             fileLength: fileLength,
             typeId: typeId,
@@ -100,10 +99,8 @@ extension Parser where Self: HTTPHeaderParsing {
 
     private func valueForCaseInsensitiveKey(_ key: String, fields: [String: String]) -> String? {
         let keyToBeFound = key.lowercased()
-        for (key, value) in fields {
-            if key.lowercased() == keyToBeFound {
-                return value
-            }
+        for (key, value) in fields where key.lowercased() == keyToBeFound {
+            return value
         }
         return nil
     }
