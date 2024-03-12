@@ -276,7 +276,7 @@ final class Mp4Restructure {
             atomType = Int(try moovAtom.getInteger(atomHead + 4) as UInt32)
 
             if !(atomType == Atoms.stco || atomType == Atoms.co64) {
-                moovAtom.offset = moovAtom.offset + 1
+                moovAtom.offset += 1
                 continue
             }
             
