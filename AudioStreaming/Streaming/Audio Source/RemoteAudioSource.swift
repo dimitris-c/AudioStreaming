@@ -122,42 +122,22 @@ public class RemoteAudioSource: AudioStreamSource {
     }
 
     func seek(at offset: Int) {
-//        if self.parsedHeaderOutput?.typeId == kAudioFileMPEG4Type {
-//            relativePosition = 0
-//            seekOffset = offset
-//            
-//            if !supportsSeek, offset != relativePosition {
-//                return
-//            }
-//            streamOperationQueue.cancelAllOperations()
-//            streamOperationQueue.isSuspended = false
-//            addStreamOperation { [weak self] in
-//                guard let self = self else { return }
-//                do {
-//                    let skata = try mp4Restructure.restructureMp4()[seekOffset...]
-//                    self.delegate?.dataAvailable(source: self, data: skata)
-//                } catch {
-//                    print(error)
-//                }
-//            }
-//        } else {
-            close()
-            
-            relativePosition = 0
-            seekOffset = offset
-            
-            if !supportsSeek, offset != relativePosition {
-                return
-            }
-            
-            mp4Restructure.clear()
-            retrierTimeout.cancel()
-            metadataStreamProcessor.reset()
-            icycastHeadersProcessor.reset()
-            shouldTryParsingIcycastHeaders = false
-            
-            performOpen(seek: offset)
-//        }
+        close()
+        
+        relativePosition = 0
+        seekOffset = offset
+        
+        if !supportsSeek, offset != relativePosition {
+            return
+        }
+        
+        mp4Restructure.clear()
+        retrierTimeout.cancel()
+        metadataStreamProcessor.reset()
+        icycastHeadersProcessor.reset()
+        shouldTryParsingIcycastHeaders = false
+
+        performOpen(seek: offset)
     }
 
     func suspend() {
@@ -192,7 +172,12 @@ public class RemoteAudioSource: AudioStreamSource {
                 }
             }
         } else {
-            doPerfomOpen(seek: seekOffset)
+            if mp4Restructure.dataOptimized {
+                let adjustedOffset = mp4Restructure.seekAdjusted(offset: seekOffset)
+                doPerfomOpen(seek: adjustedOffset)
+            } else {
+                doPerfomOpen(seek: seekOffset)
+            }
         }
     }
     

@@ -237,7 +237,8 @@ final class AudioFileStreamProcessor {
             processReadyToProducePackets(fileStream: fileStream)
         case kAudioFileStreamProperty_FormatList:
             processFormatList(fileStream: fileStream)
-        default: break
+        default: 
+            break
         }
     }
 

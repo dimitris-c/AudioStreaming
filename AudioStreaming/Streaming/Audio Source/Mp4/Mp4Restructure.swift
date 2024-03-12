@@ -54,10 +54,10 @@ enum Mp4RestructureError: Error {
     case invalidAtomSize
     case invalidAtomType
     case invalidOffset
+    case missingMdatAtom
     case compressedAtomNotSupported
     case networkError(Error)
 }
-
 
 final class Mp4Restructure {
     
@@ -68,17 +68,19 @@ final class Mp4Restructure {
     
     private var audioData: Data = Data()
     
-    var offset: Int = 0
+    private var offset: Int = 0
     
-    var atoms: [MP4Atom] = []
-    var ftyp: MP4Atom?
+    private var atoms: [MP4Atom] = []
+    private var ftyp: MP4Atom?
     
-    var foundMoov = false
-    var foundMdat = false
+    private var foundMoov = false
+    private var foundMdat = false
     
-    var task: NetworkDataStream?
+    private var task: NetworkDataStream?
     
     private(set) var dataOptimized: Bool = false
+    
+    private var moovAtomSize: Int = 0
     
     private let url: URL
     private let networking: NetworkingClient
@@ -95,18 +97,27 @@ final class Mp4Restructure {
     
     deinit {
         audioData = Data()
+        task?.cancel()
+        task = nil
     }
 
+    
+    /// Adjust the seekOffset of subtracting the moovAtomSize
+    /// - Parameter offset: A byte offset
+    /// - Returns: An adjusted byte offset
+    func seekAdjusted(offset: Int) -> Int {
+        offset - moovAtomSize
+    }
+    
     ///
     /// Gather audio and parse along the way, if moov atom is found, continue as usual
     /// if mdat is found before moov:
-    ///  - Get mdat size and make a byte request Range: bytes=(mdatAtomSize + offset)-
+    ///  - Get mdat size and make a byte request Range: bytes=mdatAtomSize-
     ///  - once the request is complete search and restructure moov atom
-    ///  - make a byte request Range: bytes=(moovAtomSize + offset)-mdatAtomSize
+    ///  - make a byte request Range: bytes=moovAtomSize-
     /// Atoms needs to be as following for the AudioFileStreamParse to work
     /// [ftyp][moov][mdat]
     ///
-    
     func optimizeIfNeeded(completion: @escaping (Result<RestructuredData?, Error>) -> Void) {
         task = networking.stream(request: urlForPartialContent(with: url, offset: 0))
             .responseStream { [weak self] event in
@@ -130,12 +141,12 @@ final class Mp4Restructure {
                         self.fetchAndRestructureMoovAtom(offset: offset) { result in
                             switch result {
                             case .success(let value):
-                                let data = value.0
-                                let offset = value.1
+                                let data = value.data
+                                let offset = value.offset
                                 self.dataOptimized = true
                                 completion(.success(RestructuredData(initialData: data, mdatOffset: offset)))
-                            case .failure(_):
-                                break
+                            case .failure(let error):
+                                completion(.failure(Mp4RestructureError.networkError(error)))
                             }
                         }
                     } else {
@@ -154,28 +165,17 @@ final class Mp4Restructure {
         task?.resume()
     }
     
-    func fetchAndRestructureMoovAtom(offset: Int, completion: @escaping (Result<(Data, Int), Error>) -> Void) {
+    func fetchAndRestructureMoovAtom(offset: Int, completion: @escaping (Result<(data: Data, offset: Int), Error>) -> Void) {
         networking.task(request: urlForPartialContent(with: url, offset: offset)) { [weak self] result in
             guard let self else { return }
             switch result {
             case .success(let data):
                 do {
-                    let data = try self.restructureMoov(data: data)
-                    let mdatIndex = self.atoms.firstIndex(where: { $0.type == Atoms.mdat })
-                    let atoms = self.atoms.filter { $0.type != Atoms.mdat || $0.type == Atoms.moov }
-                    let dataOfAtomsBefore = self.atoms.filter { $0.data != nil }.compactMap(\.data)
-                    let offset = atoms
-                        .reduce(into: 0) { partialResult, atom in
-                            partialResult += Int(atom.offset)
-                        }
-                    let final = dataOfAtomsBefore.reduce(into: Data(), { partialResult, data in
-                        partialResult.append(data)
-                    }) + data
-                    completion(.success((final, offset)))
+                    let (initialData, mdatOffset) = try self.restructureMoov(data: data)
+                    completion(.success((initialData, mdatOffset)))
                 } catch {
                     completion(.failure(error))
                 }
-                return
             case .failure(let failure):
                 completion(.failure(Mp4RestructureError.networkError(failure)))
             }
@@ -192,6 +192,23 @@ final class Mp4Restructure {
         urlRequest.addValue("identity", forHTTPHeaderField: "Accept-Encoding")
         urlRequest.addValue("bytes=\(offset)-", forHTTPHeaderField: "Range")
         return urlRequest
+    }
+    
+    private func restructureMoov(data: Data) throws -> (initialData: Data, mdatOffset: Int) {
+        let (data, moovSize) = try doRestructureMoov(data: data)
+        moovAtomSize = moovSize
+        guard let mdatIndex = atoms.firstIndex(where: { $0.type == Atoms.mdat }) else {
+            throw Mp4RestructureError.missingMdatAtom
+        }
+        let mdatAtom = atoms[mdatIndex]
+        let atoms = Array(atoms[..<mdatIndex])
+        let dataOfAtomsBefore = atoms.filter { $0.data != nil }.compactMap(\.data)
+        let accumulatedInitialData = dataOfAtomsBefore.reduce(into: Data(), { partialResult, data in
+            partialResult.append(data)
+        })
+        let initialData = accumulatedInitialData + data
+        let mdatOffset = mdatAtom.offset - Atoms.atomPreampleSize
+        return (initialData, mdatOffset)
     }
     
     private func checkIsOptimized(data: Data) -> (optimized: Bool, offset: Int?) {
@@ -221,11 +238,11 @@ final class Mp4Restructure {
             }
             if ftyp != nil {
                 if foundMoov && !foundMdat {
-                    print("file seems to be optimized")
+                    Logger.debug("🕵️ detected an optimized mp4", category: .generic)
                     isOptimized = true
                     possibleMoovOffset = nil
                 } else if !foundMoov && foundMdat {
-                    print("file is not optimized")
+                    Logger.debug("🕵️ detected an non-optimized mp4", category: .generic)
                     isOptimized = false
                     possibleMoovOffset = Int(offset) + atomSize
                 }
@@ -237,21 +254,16 @@ final class Mp4Restructure {
     
     /// logic taken from qt-faststart.c over at ffmpeg
     /// https://github.com/FFmpeg/FFmpeg/blob/b47b2c5b912558b639c8542993e1256f9c69e675/tools/qt-faststart.c
-    private func restructureMoov(data: Data) throws -> Data {
-        let moovAtomSize = readAtomSize(data: data, offset: 0)
-        let moovAtomType = readAtomType(data: data, offset: 4)
-        guard moovAtomType == "moov" else {
+    private func doRestructureMoov(data: Data) throws -> (Data, Int) {
+        let moovAtomSize = Int(readUInt32FromData(data: data, offset: 0))
+        let moovAtomType = Int(readUInt32FromData(data: data, offset: 4))
+        guard moovAtomType == Atoms.moov else {
             throw Mp4RestructureError.invalidMoovAtom
         }
-        var originalBuffer = ByteBuffer(data: data)
-        var moovAtom = ByteBuffer(size: moovAtomSize)
-        
-        if !readAndFill(&originalBuffer, &moovAtom) {
-            return originalBuffer.storage
-        }
+        var moovAtom = ByteBuffer(data: data)
         
         if try Int(moovAtom.getInteger(12) as UInt32) == Atoms.cmov {
-            print("Compressed moov atom not supported")
+            Logger.debug("Compressed moov atom not supported", category: .generic)
             throw Mp4RestructureError.compressedAtomNotSupported
         }
         
@@ -270,73 +282,51 @@ final class Mp4Restructure {
             
             atomSize = Int(try moovAtom.getInteger(atomHead) as UInt32)
             if atomSize > moovAtom.bytesAvailable {
-                print("bad atom size")
+                Logger.debug("aborting due to a bad size on an atom", category: .generic)
                 throw Mp4RestructureError.unableToRestructureData
             }
-            // skip size (4 bytes), type (4 bytes), version (1 byte) and flags (3 bytes)
+            // we need to skip the offset by `12` which come from the bytes of [size/4][type/4][version/1][flags/3]
+            // more info https://developer.apple.com/documentation/quicktime-file-format/chunk_offset_atom
             moovAtom.offset = atomHead + 12
             if moovAtom.bytesAvailable < 4 {
-                print("malformed atom")
+                Logger.debug("aborting due to a malformed atom", category: .generic)
                 throw Mp4RestructureError.unableToRestructureData
             }
             
-            let offsetCount = Int(try moovAtom.getInteger() as UInt32)
+            // the next integer determines the `Number of entries`
+            // https://developer.apple.com/documentation/quicktime-file-format/chunk_offset_atom/number_of_entries
+            let numberOfOffsetEntries = Int(try moovAtom.getInteger() as UInt32)
             if atomType == Atoms.stco {
-                print("patching stco atom")
-                if moovAtom.bytesAvailable < offsetCount * 4 {
-                    print("bad atom size/element count")
+                Logger.debug("🏗️ patching stco atom...", category: .generic)
+                if moovAtom.bytesAvailable < numberOfOffsetEntries * 4 {
+                    Logger.debug("aborting due to bad atom..", category: .generic)
                     throw Mp4RestructureError.unableToRestructureData
                 }
                 
-                for _ in 0..<offsetCount {
+                for _ in 0..<numberOfOffsetEntries {
                     let currentOffset = Int(try moovAtom.getInteger(moovAtom.offset) as UInt32)
+                    // adjust the offset by adding the size of moov atom
+                    let adjustOffset = currentOffset + moovAtomSize
                     
-                    let newOffset = currentOffset + moovAtomSize
-                    
-                    if currentOffset < 0 && newOffset >= 0 {
-                        print("Unsupported file exception")
+                    if currentOffset < 0 && adjustOffset >= 0 {
                         throw Mp4RestructureError.unableToRestructureData
                     }
-                    moovAtom.put(UInt32(newOffset).bigEndian)
+                    moovAtom.put(UInt32(adjustOffset).bigEndian)
                 }
             } else if atomType == Atoms.co64 {
-                print("patching co64 atom")
-                if moovAtom.bytesAvailable < offsetCount * 8 {
-                    print("bad atom size/element count")
+                Logger.debug("🏗️ patching co64 atom...", category: .generic)
+                if moovAtom.bytesAvailable < numberOfOffsetEntries * 8 {
+                    Logger.debug("aborting due to bad atom..", category: .generic)
                     throw Mp4RestructureError.unableToRestructureData
                 }
-                for _ in 0..<offsetCount {
+                for _ in 0..<numberOfOffsetEntries {
                     let currentOffset: Int = try moovAtom.getInteger(moovAtom.offset)
+                    // adjust the offset by adding the size of moov atom
                     moovAtom.put(currentOffset + moovAtomSize)
                 }
              }
         }
-
-        return moovAtom.storage
-    }
-    
-    func readAndFill(_ data: inout ByteBuffer, _ buffer: inout ByteBuffer) -> Bool {
-        buffer.clear()
-        do {
-            let slicedData: Data = try data.readBytes(buffer.length)
-            buffer.writeBytes(slicedData)
-            buffer.rewind()
-            return true
-        } catch {
-            return false
-        }
-    }
-    
-    private func readAtomSize(data: Data, offset: UInt64) -> Int {
-        guard offset + 4 < data.count else { return -1 }
-        let sizeData = data.subdata(in: Int(offset)..<Int(offset + 4))
-        return Int(UInt32(bigEndian: sizeData.withUnsafeBytes { $0.load(as: UInt32.self) }))
-    }
-    
-    private func readAtomType(data: Data, offset: UInt64) -> String {
-        guard offset + 4 < data.count else { return "Unknown" }
-        let typeData = data.subdata(in: Int(offset)..<Int(offset + 4))
-        return String(bytes: typeData, encoding: .ascii) ?? "Unknown"
+        return (moovAtom.storage, moovAtomSize)
     }
     
     private func readUInt32FromData(data: Data, offset: Int) -> UInt32 {
