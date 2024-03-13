@@ -131,27 +131,29 @@ final class Mp4Restructure {
                     }
                     self.audioData.append(data)
                     let value = self.checkIsOptimized(data: self.audioData)
-                    if let offset = value.offset, !value.optimized {
-                        // stop request, fetch moov and restructure
-                        self.audioData = Data()
-                        self.task?.cancel()
-                        self.task = nil
-                        self.fetchAndRestructureMoovAtom(offset: offset) { result in
-                            switch result {
-                            case let .success(value):
-                                let data = value.data
-                                let offset = value.offset
-                                self.dataOptimized = true
-                                completion(.success(RestructuredData(initialData: data, mdatOffset: offset)))
-                            case let .failure(error):
-                                completion(.failure(Mp4RestructureError.networkError(error)))
+                    if let value {
+                        if let offset = value.offset, !value.optimized {
+                            // stop request, fetch moov and restructure
+                            self.audioData = Data()
+                            self.task?.cancel()
+                            self.task = nil
+                            self.fetchAndRestructureMoovAtom(offset: offset) { result in
+                                switch result {
+                                case let .success(value):
+                                    let data = value.data
+                                    let offset = value.offset
+                                    self.dataOptimized = true
+                                    completion(.success(RestructuredData(initialData: data, mdatOffset: offset)))
+                                case let .failure(error):
+                                    completion(.failure(Mp4RestructureError.networkError(error)))
+                                }
                             }
+                        } else {
+                            self.audioData = Data()
+                            self.task?.cancel()
+                            self.task = nil
+                            completion(.success(nil))
                         }
-                    } else {
-                        self.audioData = Data()
-                        self.task?.cancel()
-                        self.task = nil
-                        completion(.success(nil))
                     }
                 case let .stream(.failure(error)):
                     completion(.failure(Mp4RestructureError.networkError(error)))
@@ -208,9 +210,7 @@ final class Mp4Restructure {
         return (initialData, mdatOffset)
     }
 
-    private func checkIsOptimized(data: Data) -> (optimized: Bool, offset: Int?) {
-        var isOptimized = true
-        var possibleMoovOffset: Int?
+    private func checkIsOptimized(data: Data) -> (optimized: Bool, offset: Int?)? {
         while offset < UInt64(data.count) {
             let atomSize = Int(readUInt32FromData(data: data, offset: offset))
             let atomType = Int(readUInt32FromData(data: data, offset: offset + 4))
@@ -235,17 +235,16 @@ final class Mp4Restructure {
             if ftyp != nil {
                 if foundMoov && !foundMdat {
                     Logger.debug("🕵️ detected an optimized mp4", category: .generic)
-                    isOptimized = true
-                    possibleMoovOffset = nil
+                    return (true, nil)
                 } else if !foundMoov && foundMdat {
                     Logger.debug("🕵️ detected an non-optimized mp4", category: .generic)
-                    isOptimized = false
-                    possibleMoovOffset = Int(offset) + atomSize
+                    let possibleMoovOffset = Int(offset) + atomSize
+                    return (false, possibleMoovOffset)
                 }
             }
             offset += atomSize
         }
-        return (isOptimized, possibleMoovOffset)
+        return nil
     }
 
     /// logic taken from qt-faststart.c over at ffmpeg
