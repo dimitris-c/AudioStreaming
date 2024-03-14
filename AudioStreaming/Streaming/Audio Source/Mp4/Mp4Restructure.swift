@@ -57,6 +57,7 @@ enum Mp4RestructureError: Error {
     case missingMdatAtom
     case missingMoovAtom
     case compressedAtomNotSupported
+    case nonOptimizedMp4AndServerCannotSeek
     case networkError(Error)
 }
 
@@ -133,6 +134,11 @@ final class Mp4Restructure {
                     let value = self.checkIsOptimized(data: self.audioData)
                     if let value {
                         if let offset = value.offset, !value.optimized {
+                            guard response.response?.statusCode == 206 else {
+                                Logger.error("⛔️ found mp4 with missing moov, but the stream is not seekable", category: .networking)
+                                completion(.failure(Mp4RestructureError.nonOptimizedMp4AndServerCannotSeek))
+                                return
+                            }
                             // stop request, fetch moov and restructure
                             self.audioData = Data()
                             self.task?.cancel()
