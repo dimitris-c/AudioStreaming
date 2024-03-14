@@ -135,7 +135,7 @@ final class Mp4Restructure {
                     if let value {
                         if let offset = value.offset, !value.optimized {
                             guard response.response?.statusCode == 206 else {
-                                Logger.error("⛔️ found mp4 with missing moov, but the stream is not seekable", category: .networking)
+                                Logger.error("⛔️ mp4 error: no moov before mdat and the stream is not seekable", category: .networking)
                                 completion(.failure(Mp4RestructureError.nonOptimizedMp4AndServerCannotSeek))
                                 return
                             }
