@@ -65,13 +65,11 @@ final class Mp4Restructure {
         var mdatOffset: Int
     }
 
-    private var audioData: Data = .init()
+    private var audioData: Data
 
-    private var offset: Int = 0
-
+    private var atomOffset: Int = 0
     private var atoms: [MP4Atom] = []
     private var ftyp: MP4Atom?
-
     private var foundMoov = false
     private var foundMdat = false
 
@@ -87,10 +85,11 @@ final class Mp4Restructure {
     init(url: URL, networking: NetworkingClient) {
         self.url = url
         self.networking = networking
+        self.audioData = Data()
     }
 
     func clear() {
-        offset = 0
+        atomOffset = 0
         audioData = Data()
     }
 
@@ -194,7 +193,7 @@ final class Mp4Restructure {
     }
 
     private func restructureMoov(data: Data) throws -> (initialData: Data, mdatOffset: Int) {
-        let (data, moovSize) = try doRestructureMoov(data: data)
+        let (atomData, moovSize) = try doRestructureMoov(data: data)
         moovAtomSize = moovSize
         guard let mdatIndex = atoms.firstIndex(where: { $0.type == Atoms.mdat }) else {
             throw Mp4RestructureError.missingMdatAtom
@@ -205,31 +204,31 @@ final class Mp4Restructure {
         let accumulatedInitialData = dataOfAtomsBefore.reduce(into: Data()) { partialResult, data in
             partialResult.append(data)
         }
-        let initialData = accumulatedInitialData + data
+        let initialData = accumulatedInitialData + atomData
         let mdatOffset = mdatAtom.offset - Atoms.atomPreampleSize
         return (initialData, mdatOffset)
     }
 
     private func checkIsOptimized(data: Data) -> (optimized: Bool, offset: Int?)? {
-        while offset < UInt64(data.count) {
-            let atomSize = Int(readUInt32FromData(data: data, offset: offset))
-            let atomType = Int(readUInt32FromData(data: data, offset: offset + 4))
+        while atomOffset < UInt64(data.count) {
+            let atomSize = Int(readUInt32FromData(data: data, offset: atomOffset))
+            let atomType = Int(readUInt32FromData(data: data, offset: atomOffset + 4))
             switch atomType {
             case Atoms.ftyp:
-                let ftypData = data[Int(offset) ..< atomSize]
-                let ftyp = MP4Atom(type: atomType, size: atomSize, offset: offset, data: ftypData)
+                let ftypData = data[Int(atomOffset) ..< atomSize]
+                let ftyp = MP4Atom(type: atomType, size: atomSize, offset: atomOffset, data: ftypData)
                 self.ftyp = ftyp
                 atoms.append(ftyp)
             case Atoms.mdat:
-                let mdat = MP4Atom(type: atomType, size: atomSize, offset: offset)
+                let mdat = MP4Atom(type: atomType, size: atomSize, offset: atomOffset)
                 atoms.append(mdat)
                 foundMdat = true
             case Atoms.moov:
-                let moov = MP4Atom(type: atomType, size: atomSize, offset: offset)
+                let moov = MP4Atom(type: atomType, size: atomSize, offset: atomOffset)
                 atoms.append(moov)
                 foundMoov = true
             default:
-                let atom = MP4Atom(type: atomType, size: atomSize, offset: offset)
+                let atom = MP4Atom(type: atomType, size: atomSize, offset: atomOffset)
                 atoms.append(atom)
             }
             if ftyp != nil {
@@ -238,11 +237,11 @@ final class Mp4Restructure {
                     return (true, nil)
                 } else if !foundMoov && foundMdat {
                     Logger.debug("🕵️ detected an non-optimized mp4", category: .generic)
-                    let possibleMoovOffset = Int(offset) + atomSize
+                    let possibleMoovOffset = Int(atomOffset) + atomSize
                     return (false, possibleMoovOffset)
                 }
             }
-            offset += atomSize
+            atomOffset += atomSize
         }
         return nil
     }
@@ -250,12 +249,31 @@ final class Mp4Restructure {
     /// logic taken from qt-faststart.c over at ffmpeg
     /// https://github.com/FFmpeg/FFmpeg/blob/b47b2c5b912558b639c8542993e1256f9c69e675/tools/qt-faststart.c
     private func doRestructureMoov(data: Data) throws -> (Data, Int) {
-        let moovAtomSize = Int(readUInt32FromData(data: data, offset: 0))
-        let moovAtomType = Int(readUInt32FromData(data: data, offset: 4))
+        var moovAtomSize: Int = 0
+        var moovAtomType: Int = 0
+        var originalData = ByteBuffer(data: data)
+        var offset: Int = 0
+        // do search for moov within the new data
+        while offset < originalData.length {
+            moovAtomSize = Int(try originalData.getInteger() as UInt32)
+            moovAtomType = Int(try originalData.getInteger() as UInt32)
+
+            if moovAtomType == Atoms.moov {
+                break
+            }
+            offset += moovAtomSize
+        }
+
+        // error if we couldn't find an moov type
         guard moovAtomType == Atoms.moov else {
             throw Mp4RestructureError.invalidMoovAtom
         }
-        var moovAtom = ByteBuffer(data: data)
+
+        originalData.offset = offset
+        var moovAtom = ByteBuffer(size: moovAtomSize)
+        let slicedData: Data = try originalData.readBytes(moovAtom.length)
+        moovAtom.writeBytes(slicedData)
+        moovAtom.rewind()
 
         if try Int(moovAtom.getInteger(12) as UInt32) == Atoms.cmov {
             Logger.debug("Compressed moov atom not supported", category: .generic)
