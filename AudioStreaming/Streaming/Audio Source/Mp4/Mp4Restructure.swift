@@ -55,6 +55,7 @@ enum Mp4RestructureError: Error {
     case invalidAtomType
     case invalidOffset
     case missingMdatAtom
+    case missingMoovAtom
     case compressedAtomNotSupported
     case networkError(Error)
 }
@@ -109,9 +110,9 @@ final class Mp4Restructure {
     ///
     /// Gather audio and parse along the way, if moov atom is found, continue as usual
     /// if mdat is found before moov:
-    ///  - Get mdat size and make a byte request Range: bytes=mdatAtomSize-
-    ///  - once the request is complete search and restructure moov atom
-    ///  - make a byte request Range: bytes=moovAtomSize-
+    ///  - Get mdat size and make a byte request Range: bytes=mdatAtomSize- for possible moov atom
+    ///  - once the request is complete search for an moov atom and restructure it
+    ///  - finally, make a byte request Range: bytes=mdatOffset- to get the mdat
     /// Atoms needs to be as following for the AudioFileStreamParse to work
     /// [ftyp][moov][mdat]
     ///
@@ -266,7 +267,7 @@ final class Mp4Restructure {
 
         // error if we couldn't find an moov type
         guard moovAtomType == Atoms.moov else {
-            throw Mp4RestructureError.invalidMoovAtom
+            throw Mp4RestructureError.missingMoovAtom
         }
 
         originalData.offset = offset

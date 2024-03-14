@@ -24,8 +24,8 @@ struct HTTPHeaderParserOutput {
     let metadataStep: Int
     let seekable: Bool
 
-    var isMp4AndSeekable: Bool {
-        (typeId == kAudioFileMPEG4Type || typeId == kAudioFileM4AType) && seekable
+    var isMp4: Bool {
+        (typeId == kAudioFileMPEG4Type || typeId == kAudioFileM4AType)
     }
 }
 

@@ -8,6 +8,10 @@ import AVFoundation
 import Foundation
 import Network
 
+enum RemoteAudioSourceError: Error {
+    case mp4NotSeekable
+}
+
 public class RemoteAudioSource: AudioStreamSource {
     weak var delegate: AudioStreamSourceDelegate?
 
@@ -165,10 +169,17 @@ public class RemoteAudioSource: AudioStreamSource {
         if seekOffset == 0 {
             initialRequest { [weak self] in
                 guard let self else { return }
-                if self.parsedHeaderOutput?.isMp4AndSeekable == true {
-                    self.handleMp4Files()
-                } else {
-                    self.doPerfomOpen(seek: 0)
+                if let header = self.parsedHeaderOutput {
+                    if header.isMp4 {
+                        if header.seekable {
+                            self.handleMp4Files()
+                        } else {
+                            Logger.error("⛔️ found mp4, but the stream is not seekable", category: .networking)
+                            self.delegate?.errorOccurred(source: self, error: RemoteAudioSourceError.mp4NotSeekable)
+                        }
+                    } else {
+                        self.doPerfomOpen(seek: 0)
+                    }
                 }
             }
         } else {
