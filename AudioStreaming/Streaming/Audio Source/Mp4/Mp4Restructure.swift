@@ -92,10 +92,10 @@ final class Mp4Restructure {
 
     func clear() {
         atomOffset = 0
-        audioData = Data()
-    }
-
-    deinit {
+        atoms = []
+        ftyp = nil
+        foundMdat = false
+        foundMoov = false
         audioData = Data()
         task?.cancel()
         task = nil
