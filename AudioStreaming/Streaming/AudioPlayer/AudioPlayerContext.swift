@@ -5,7 +5,7 @@
 
 import Foundation
 
-internal final class AudioPlayerContext {
+final class AudioPlayerContext {
     var stopReason: Atomic<AudioPlayerStopReason>
 
     var state: Atomic<AudioPlayerState>
@@ -38,8 +38,8 @@ internal final class AudioPlayerContext {
     /// - parameter state: The new `PlayerInternalState`
     /// - parameter inState: If the `inState` expression is not nil, the internalState will be set if the evaluated expression is `true`
     /// - NOTE: This sets the underlying `__playerInternalState` variable
-    internal func setInternalState(to state: AudioPlayer.InternalState,
-                                   when inState: ((AudioPlayer.InternalState) -> Bool)? = nil)
+    func setInternalState(to state: AudioPlayer.InternalState,
+                          when inState: ((AudioPlayer.InternalState) -> Bool)? = nil)
     {
         let newValues = playerStateAndStopReason(for: state)
         if let stopReason = newValues.stopReason {

@@ -5,7 +5,7 @@
 
 import Foundation
 
-internal final class NetworkDataStream {
+final class NetworkDataStream {
     typealias StreamResult = Result<Response, Error>
     typealias StreamCompletion = (_ event: NetworkDataStream.ResponseEvent) -> Void
 
@@ -52,7 +52,7 @@ internal final class NetworkDataStream {
         task?.response as? HTTPURLResponse
     }
 
-    internal init(id: UUID, underlyingQueue: DispatchQueue) {
+    init(id: UUID, underlyingQueue: DispatchQueue) {
         self.id = id
         self.underlyingQueue = underlyingQueue
         state = .initialised
@@ -94,7 +94,7 @@ internal final class NetworkDataStream {
 
     // MARK: Internal
 
-    internal func didReceive(response: HTTPURLResponse?) {
+    func didReceive(response: HTTPURLResponse?) {
         underlyingQueue.async { [weak self] in
             guard let self = self else { return }
             guard let streamCallback = self.streamCallback else { return }
@@ -102,7 +102,7 @@ internal final class NetworkDataStream {
         }
     }
 
-    internal func didReceive(data: Data, response: HTTPURLResponse?) {
+    func didReceive(data: Data, response: HTTPURLResponse?) {
         underlyingQueue.async { [weak self] in
             guard let self = self else { return }
             guard let streamCallback = self.streamCallback else { return }
@@ -111,7 +111,7 @@ internal final class NetworkDataStream {
         }
     }
 
-    internal func didComplete(with error: Error?, response: HTTPURLResponse?) {
+    func didComplete(with error: Error?, response: HTTPURLResponse?) {
         underlyingQueue.async { [weak self] in
             guard let self = self else { return }
             guard let stream = self.streamCallback else { return }

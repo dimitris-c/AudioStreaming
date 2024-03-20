@@ -1,5 +1,5 @@
 //
-//  DispatchReadSourceTests.swift
+//  DispatchTimerSourceTests.swift
 //  AudioStreamingTests
 //
 //  Created by Dimitrios Chatzieleftheriou on 25/10/2020.

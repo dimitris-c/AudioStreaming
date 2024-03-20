@@ -6,6 +6,7 @@
 //  Copyright © 2020 Dimitrios Chatzieleftheriou. All rights reserved.
 //
 
+import AVFoundation
 import UIKit
 
 final class AppCoordinator {

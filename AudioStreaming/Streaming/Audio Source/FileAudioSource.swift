@@ -55,7 +55,7 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
     }
 
     // no-op
-    func suspend() { }
+    func suspend() {}
 
     func resume() {
         guard let inputStream = inputStream else {

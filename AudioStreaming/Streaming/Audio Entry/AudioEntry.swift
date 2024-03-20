@@ -7,11 +7,11 @@ import AudioToolbox
 import AVFoundation
 
 public struct AudioEntryId: Equatable {
-    internal var unique = UUID()
+    var unique = UUID()
     public var id: String
 }
 
-internal class AudioEntry {
+class AudioEntry {
     private let estimationMinPackets = 2
     private let estimationMinPacketsPreferred = 64
 

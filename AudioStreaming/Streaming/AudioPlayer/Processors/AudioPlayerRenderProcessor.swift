@@ -90,7 +90,7 @@ final class AudioPlayerRenderProcessor: NSObject {
                     waitForBuffer = true
                 }
             } else if state == .waitingForDataAfterSeek {
-                var requiredFramesToStart: Int = 1024
+                var requiredFramesToStart = 1024
                 if framesState.lastFrameQueued >= 0 {
                     requiredFramesToStart = min(requiredFramesToStart, framesState.lastFrameQueued - framesState.queued)
                 }
@@ -210,7 +210,7 @@ final class AudioPlayerRenderProcessor: NSObject {
         }
         currentPlayingEntry.lock.lock()
 
-        var extraFramesPlayedNotAssigned: Int = 0
+        var extraFramesPlayedNotAssigned = 0
         var framesPlayedForCurrent = Int(totalFramesCopied)
 
         if currentPlayingEntry.framesState.lastFrameQueued >= 0 {

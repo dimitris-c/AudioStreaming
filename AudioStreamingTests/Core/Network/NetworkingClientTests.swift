@@ -4,7 +4,6 @@
 //
 
 import XCTest
-
 @testable import AudioStreaming
 
 class NetworkingClientTests: XCTestCase {

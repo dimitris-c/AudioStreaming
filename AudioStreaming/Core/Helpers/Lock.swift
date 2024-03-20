@@ -21,7 +21,7 @@ protocol Lock {
 final class UnfairLock: Lock {
     @usableFromInline let unfairLock: UnsafeMutablePointer<os_unfair_lock>
 
-    internal init() {
+    init() {
         unfairLock = .allocate(capacity: 1)
         unfairLock.initialize(to: os_unfair_lock())
     }
@@ -48,13 +48,13 @@ final class UnfairLock: Lock {
 
     @inlinable
     @inline(__always)
-    internal func lock() {
+    func lock() {
         os_unfair_lock_lock(unfairLock)
     }
 
     @inlinable
     @inline(__always)
-    internal func unlock() {
+    func unlock() {
         os_unfair_lock_unlock(unfairLock)
     }
 }

@@ -7,7 +7,7 @@ import AudioToolbox
 import Foundation
 
 /// mapping from mime types to `AudioFileTypeID`
-internal let fileTypesFromMimeType: [String: AudioFileTypeID] =
+let fileTypesFromMimeType: [String: AudioFileTypeID] =
     [
         "audio/mp3": kAudioFileMP3Type,
         "audio/mpg": kAudioFileMP3Type,
@@ -44,7 +44,7 @@ func audioFileType(mimeType: String) -> AudioFileTypeID {
 }
 
 /// mapping from file extension to `AudioFileTypeID`
-internal let fileTypesFromFileExtension: [String: AudioFileTypeID] =
+let fileTypesFromFileExtension: [String: AudioFileTypeID] =
     [
         "mp3": kAudioFileMP3Type,
         "wav": kAudioFileWAVEType,
