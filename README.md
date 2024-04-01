@@ -17,7 +17,7 @@ Known limitations:
 
 
 # Requirements
- - iOS 12.0+
+ - iOS 13.0+
  - Swift 5.x
 
 # Using AudioStreaming
