@@ -7,7 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		98C82AE62B8CA8BC00AED485 /* Mp4Restructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98C82AE52B8CA8BC00AED485 /* Mp4Restructure.swift */; };
+		98ABF69E2BAB07A20059C441 /* Mp4Restructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98ABF69D2BAB07A20059C441 /* Mp4Restructure.swift */; };
+		98C82AE62B8CA8BC00AED485 /* RemoteMp4Restructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98C82AE52B8CA8BC00AED485 /* RemoteMp4Restructure.swift */; };
 		98CC396E28BD651E006C9FF9 /* Atomic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98CC396D28BD651E006C9FF9 /* Atomic.swift */; };
 		98DC00CC2B961F5E0068900A /* ByteBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98DC00CB2B961F5E0068900A /* ByteBuffer.swift */; };
 		98DC00CE2B9726380068900A /* ByteBufferTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98DC00CD2B9726380068900A /* ByteBufferTests.swift */; };
@@ -97,7 +98,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		98C82AE52B8CA8BC00AED485 /* Mp4Restructure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mp4Restructure.swift; sourceTree = "<group>"; };
+		98ABF69D2BAB07A20059C441 /* Mp4Restructure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mp4Restructure.swift; sourceTree = "<group>"; };
+		98C82AE52B8CA8BC00AED485 /* RemoteMp4Restructure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteMp4Restructure.swift; sourceTree = "<group>"; };
 		98CC396D28BD651E006C9FF9 /* Atomic.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Atomic.swift; sourceTree = "<group>"; };
 		98DC00CB2B961F5E0068900A /* ByteBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ByteBuffer.swift; sourceTree = "<group>"; };
 		98DC00CD2B9726380068900A /* ByteBufferTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ByteBufferTests.swift; sourceTree = "<group>"; };
@@ -193,7 +195,8 @@
 		98C82AE42B8CA8AA00AED485 /* Mp4 */ = {
 			isa = PBXGroup;
 			children = (
-				98C82AE52B8CA8BC00AED485 /* Mp4Restructure.swift */,
+				98C82AE52B8CA8BC00AED485 /* RemoteMp4Restructure.swift */,
+				98ABF69D2BAB07A20059C441 /* Mp4Restructure.swift */,
 			);
 			path = Mp4;
 			sourceTree = "<group>";
@@ -652,12 +655,13 @@
 				B55CE96E248058B60001C498 /* MetadataParser.swift in Sources */,
 				B5838644254584BE0087A712 /* AudioStreamState.swift in Sources */,
 				B500732024D00BAC00BB4475 /* Logger.swift in Sources */,
-				98C82AE62B8CA8BC00AED485 /* Mp4Restructure.swift in Sources */,
+				98C82AE62B8CA8BC00AED485 /* RemoteMp4Restructure.swift in Sources */,
 				B5276B74247D4D9F00D2F56A /* NetworkSessionDelegate.swift in Sources */,
 				B55F77D624DACE140057F431 /* BufferContext.swift in Sources */,
 				B5838648254584D90087A712 /* SeekRequest.swift in Sources */,
 				B5D82E65255DD562009EDAA4 /* NetStatusService.swift in Sources */,
 				B55CE97824813BCA0001C498 /* UnsafeMutablePointer+Helpers.swift in Sources */,
+				98ABF69E2BAB07A20059C441 /* Mp4Restructure.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

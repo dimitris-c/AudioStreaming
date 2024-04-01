@@ -47,7 +47,7 @@ public class RemoteAudioSource: AudioStreamSource {
         return output.typeId
     }
 
-    private let mp4Restructure: Mp4Restructure
+    private let mp4Restructure: RemoteMp4Restructure
 
     let underlyingQueue: DispatchQueue
     let streamOperationQueue: OperationQueue
@@ -80,7 +80,7 @@ public class RemoteAudioSource: AudioStreamSource {
         streamOperationQueue.isSuspended = true
         streamOperationQueue.name = "remote.audio.source.data.stream.queue"
         retrierTimeout = retrier
-        mp4Restructure = Mp4Restructure(url: url, networking: networkingClient)
+        mp4Restructure = RemoteMp4Restructure(url: url, networking: networkingClient)
         startNetworkService()
     }
 
