@@ -11,10 +11,10 @@ import Foundation
 final class DispatchTimerSource {
     private var handler: (() -> Void)?
     private let timer: DispatchSourceTimer
-    internal var state: SourceState = .suspended
+    var state: SourceState = .suspended
 
     /// The state of the timer
-    internal enum SourceState {
+    enum SourceState {
         case activated
         case suspended
     }

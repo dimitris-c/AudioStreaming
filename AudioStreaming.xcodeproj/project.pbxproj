@@ -7,7 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		98ABF69E2BAB07A20059C441 /* Mp4Restructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98ABF69D2BAB07A20059C441 /* Mp4Restructure.swift */; };
+		98C82AE62B8CA8BC00AED485 /* RemoteMp4Restructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98C82AE52B8CA8BC00AED485 /* RemoteMp4Restructure.swift */; };
 		98CC396E28BD651E006C9FF9 /* Atomic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98CC396D28BD651E006C9FF9 /* Atomic.swift */; };
+		98DC00CC2B961F5E0068900A /* ByteBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98DC00CB2B961F5E0068900A /* ByteBuffer.swift */; };
+		98DC00CE2B9726380068900A /* ByteBufferTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98DC00CD2B9726380068900A /* ByteBufferTests.swift */; };
 		B500732024D00BAC00BB4475 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B500731F24D00BAC00BB4475 /* Logger.swift */; };
 		B514657F248E3884005C03F7 /* DispatchTimerSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = B514657E248E3884005C03F7 /* DispatchTimerSource.swift */; };
 		B51B9F9A24DBE5BF00BDEAA2 /* AVAudioFormat+Convenience.swift in Sources */ = {isa = PBXBuildFile; fileRef = B51B9F9924DBE5BF00BDEAA2 /* AVAudioFormat+Convenience.swift */; };
@@ -34,7 +38,6 @@
 		B5667A902499018D00D93F85 /* AudioFileStreamProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5667A8F2499018D00D93F85 /* AudioFileStreamProcessor.swift */; };
 		B5667A922499063D00D93F85 /* AudioPlayerContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5667A912499063D00D93F85 /* AudioPlayerContext.swift */; };
 		B5667B3E249BC43100D93F85 /* AudioPlayerRenderProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5667B3D249BC43000D93F85 /* AudioPlayerRenderProcessor.swift */; };
-		B5737340254DE43E003DFBEC /* measure.swift in Sources */ = {isa = PBXBuildFile; fileRef = B573733F254DE43E003DFBEC /* measure.swift */; };
 		B57829CF2548B32B00C78D36 /* Lock.swift in Sources */ = {isa = PBXBuildFile; fileRef = B57829CE2548B32B00C78D36 /* Lock.swift */; };
 		B58386382544A2C10087A712 /* EntryFrames.swift in Sources */ = {isa = PBXBuildFile; fileRef = B58386372544A2C10087A712 /* EntryFrames.swift */; };
 		B5838640254584A50087A712 /* ProcessedPackets.swift in Sources */ = {isa = PBXBuildFile; fileRef = B583863F254584A50087A712 /* ProcessedPackets.swift */; };
@@ -94,7 +97,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		98ABF69D2BAB07A20059C441 /* Mp4Restructure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mp4Restructure.swift; sourceTree = "<group>"; };
+		98C82AE52B8CA8BC00AED485 /* RemoteMp4Restructure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteMp4Restructure.swift; sourceTree = "<group>"; };
 		98CC396D28BD651E006C9FF9 /* Atomic.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Atomic.swift; sourceTree = "<group>"; };
+		98DC00CB2B961F5E0068900A /* ByteBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ByteBuffer.swift; sourceTree = "<group>"; };
+		98DC00CD2B9726380068900A /* ByteBufferTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ByteBufferTests.swift; sourceTree = "<group>"; };
 		B500731F24D00BAC00BB4475 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		B514657E248E3884005C03F7 /* DispatchTimerSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DispatchTimerSource.swift; sourceTree = "<group>"; };
 		B51B9F9924DBE5BF00BDEAA2 /* AVAudioFormat+Convenience.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AVAudioFormat+Convenience.swift"; sourceTree = "<group>"; };
@@ -122,7 +129,6 @@
 		B5667A8F2499018D00D93F85 /* AudioFileStreamProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioFileStreamProcessor.swift; sourceTree = "<group>"; };
 		B5667A912499063D00D93F85 /* AudioPlayerContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerContext.swift; sourceTree = "<group>"; };
 		B5667B3D249BC43000D93F85 /* AudioPlayerRenderProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerRenderProcessor.swift; sourceTree = "<group>"; };
-		B573733F254DE43E003DFBEC /* measure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = measure.swift; sourceTree = "<group>"; };
 		B57829CE2548B32B00C78D36 /* Lock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lock.swift; sourceTree = "<group>"; };
 		B580CB1D25628CF4006D7DD8 /* AudioStreaming.podspec */ = {isa = PBXFileReference; lastKnownFileType = text; path = AudioStreaming.podspec; sourceTree = "<group>"; };
 		B580CB1E25628CF4006D7DD8 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
@@ -184,6 +190,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		98C82AE42B8CA8AA00AED485 /* Mp4 */ = {
+			isa = PBXGroup;
+			children = (
+				98C82AE52B8CA8BC00AED485 /* RemoteMp4Restructure.swift */,
+				98ABF69D2BAB07A20059C441 /* Mp4Restructure.swift */,
+			);
+			path = Mp4;
+			sourceTree = "<group>";
+		};
 		B5276B70247D4D3D00D2F56A /* Network */ = {
 			isa = PBXGroup;
 			children = (
@@ -302,6 +317,7 @@
 		B58BD7FC255DB653005B756D /* Audio Source */ = {
 			isa = PBXGroup;
 			children = (
+				98C82AE42B8CA8AA00AED485 /* Mp4 */,
 				B5EF9556247E9439003E8FF8 /* AudioStreamSource.swift */,
 				B5EF955C247ECBB1003E8FF8 /* RemoteAudioSource.swift */,
 				B59D0B6E255C904900D6CCE5 /* FileAudioSource.swift */,
@@ -321,8 +337,8 @@
 		B592E13025460883008866FB /* Helpers */ = {
 			isa = PBXGroup;
 			children = (
+				98DC00CB2B961F5E0068900A /* ByteBuffer.swift */,
 				98CC396D28BD651E006C9FF9 /* Atomic.swift */,
-				B573733F254DE43E003DFBEC /* measure.swift */,
 				B514657E248E3884005C03F7 /* DispatchTimerSource.swift */,
 				B57829CE2548B32B00C78D36 /* Lock.swift */,
 				B500731F24D00BAC00BB4475 /* Logger.swift */,
@@ -431,8 +447,8 @@
 		B5F883B42476DABE00D277C1 /* Core */ = {
 			isa = PBXGroup;
 			children = (
-				B592E11E2545FF33008866FB /* Structures */,
 				B55CE97624813BA10001C498 /* Extensions */,
+				B592E11E2545FF33008866FB /* Structures */,
 				B5276B70247D4D3D00D2F56A /* Network */,
 				B592E13025460883008866FB /* Helpers */,
 			);
@@ -447,6 +463,7 @@
 				B51FE0C12488F96A00F2A4D2 /* QueueTests.swift */,
 				B592E12825460146008866FB /* BiMapTests.swift */,
 				B592E133254608B4008866FB /* DispatchTimerSourceTests.swift */,
+				98DC00CD2B9726380068900A /* ByteBufferTests.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -584,7 +601,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if which swiftlint >/dev/null; then\n  swiftlint\nelse\n  echo \"warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint\"\nfi\n";
+			shellScript = "if [[ \"$(uname -m)\" == arm64 ]]; then\n    export PATH=\"/opt/homebrew/bin:$PATH\"\nfi\n\nif which swiftlint > /dev/null; then\n  swiftlint\nelse\n  echo \"warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint\"\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -608,7 +625,6 @@
 				B59DF1A32493E90C0043C498 /* AudioFileStream+Helpers.swift in Sources */,
 				B54D876D2490E4A000C361A0 /* UnitDescriptions.swift in Sources */,
 				B514657F248E3884005C03F7 /* DispatchTimerSource.swift in Sources */,
-				B5737340254DE43E003DFBEC /* measure.swift in Sources */,
 				B55CEABC24853CD20001C498 /* AudioPlayer.swift in Sources */,
 				B5667B3E249BC43100D93F85 /* AudioPlayerRenderProcessor.swift in Sources */,
 				B5276B6F247D21A000D2F56A /* NetworkingClient.swift in Sources */,
@@ -618,6 +634,7 @@
 				B5D4A41025D948EF00E1450C /* IcycastHeadersProcessor.swift in Sources */,
 				B5667A902499018D00D93F85 /* AudioFileStreamProcessor.swift in Sources */,
 				B59D0B6F255C904900D6CCE5 /* FileAudioSource.swift in Sources */,
+				98DC00CC2B961F5E0068900A /* ByteBuffer.swift in Sources */,
 				B5EF9555247E9393003E8FF8 /* AudioEntry.swift in Sources */,
 				B5B36E432655A32200DC96F5 /* FrameFilterProcessor.swift in Sources */,
 				B51FE0C02488F67C00F2A4D2 /* Queue.swift in Sources */,
@@ -634,11 +651,13 @@
 				B55CE96E248058B60001C498 /* MetadataParser.swift in Sources */,
 				B5838644254584BE0087A712 /* AudioStreamState.swift in Sources */,
 				B500732024D00BAC00BB4475 /* Logger.swift in Sources */,
+				98C82AE62B8CA8BC00AED485 /* RemoteMp4Restructure.swift in Sources */,
 				B5276B74247D4D9F00D2F56A /* NetworkSessionDelegate.swift in Sources */,
 				B55F77D624DACE140057F431 /* BufferContext.swift in Sources */,
 				B5838648254584D90087A712 /* SeekRequest.swift in Sources */,
 				B5D82E65255DD562009EDAA4 /* NetStatusService.swift in Sources */,
 				B55CE97824813BCA0001C498 /* UnsafeMutablePointer+Helpers.swift in Sources */,
+				98ABF69E2BAB07A20059C441 /* Mp4Restructure.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -655,6 +674,7 @@
 				B592E134254608B4008866FB /* DispatchTimerSourceTests.swift in Sources */,
 				B55CEAB82485172D0001C498 /* HTTPHeaderParserTests.swift in Sources */,
 				B592E12925460146008866FB /* BiMapTests.swift in Sources */,
+				98DC00CE2B9726380068900A /* ByteBufferTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -721,7 +741,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.1.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -780,7 +800,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.1.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -805,7 +825,7 @@
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				INFOPLIST_FILE = AudioStreaming/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -836,7 +856,7 @@
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				INFOPLIST_FILE = AudioStreaming/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -861,6 +881,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				INFOPLIST_FILE = AudioStreamingTests/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -881,6 +902,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				INFOPLIST_FILE = AudioStreamingTests/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

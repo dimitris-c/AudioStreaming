@@ -12,12 +12,12 @@ class AtomicTests: XCTestCase {
         measure {
             let atomic = Atomic<Int>(0)
 
-            DispatchQueue.concurrentPerform(iterations: 100000) { _ in
+            DispatchQueue.concurrentPerform(iterations: 100_000) { _ in
                 _ = atomic.value
                 atomic.write { $0 += 1 }
             }
 
-            XCTAssertEqual(atomic.value, 100000)
+            XCTAssertEqual(atomic.value, 100_000)
         }
     }
 

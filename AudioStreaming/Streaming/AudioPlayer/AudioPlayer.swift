@@ -100,9 +100,7 @@ open class AudioPlayer {
     }
 
     /// An `AVAudioFormat` object for the canonical audio stream
-    private var outputAudioFormat: AVAudioFormat = {
-        AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 44100.0, channels: 2, interleaved: true)!
-    }()
+    private var outputAudioFormat: AVAudioFormat = .init(commonFormat: .pcmFormatFloat32, sampleRate: 44100.0, channels: 2, interleaved: true)!
 
     /// Keeps track of the player's state before being paused.
     private var stateBeforePaused: InternalState = .initial
@@ -135,30 +133,32 @@ open class AudioPlayer {
     public init(configuration: AudioPlayerConfiguration = .default) {
         self.configuration = configuration.normalizeValues()
         let engine = AVAudioEngine()
-        self.audioEngine = engine
+        audioEngine = engine
         rendererContext = AudioRendererContext(configuration: configuration, outputAudioFormat: outputAudioFormat)
         playerContext = AudioPlayerContext()
         entriesQueue = PlayerQueueEntries()
 
         serializationQueue = DispatchQueue(label: "streaming.core.queue", qos: .userInitiated)
         sourceQueue = DispatchQueue(label: "source.queue", qos: .default)
-        
+
         entryProvider = AudioEntryProvider(
             networkingClient: NetworkingClient(),
             underlyingQueue: sourceQueue,
             outputAudioFormat: outputAudioFormat
         )
-        
+
         fileStreamProcessor = AudioFileStreamProcessor(
             playerContext: playerContext,
             rendererContext: rendererContext,
-            outputAudioFormat: outputAudioFormat.basicStreamDescription)
-        
+            outputAudioFormat: outputAudioFormat.basicStreamDescription
+        )
+
         playerRenderProcessor = AudioPlayerRenderProcessor(
             playerContext: playerContext,
             rendererContext: rendererContext,
-            outputAudioFormat: outputAudioFormat.basicStreamDescription)
-        
+            outputAudioFormat: outputAudioFormat.basicStreamDescription
+        )
+
         frameFilterProcessor = FrameFilterProcessor(
             mixerNodeProvider: {
                 engine.mainMixerNode
@@ -354,7 +354,7 @@ open class AudioPlayer {
     /// - Note: The nodes will be added after the default rate node
     /// - Parameter node: An array of `AVAudioNode` instances
     public func attach(nodes: [AVAudioNode]) {
-        nodes.forEach { node in
+        for node in nodes {
             customAttachedNodes.append(node)
         }
         nodes.forEach(audioEngine.attach)
@@ -376,7 +376,7 @@ open class AudioPlayer {
     /// Detaches the given `AVAudioNode`s from the engine
     /// - Parameter node: An array of `AVAudioNode` instances
     public func detachCustomAttachedNodes() {
-        customAttachedNodes.forEach { node in
+        for node in customAttachedNodes {
             audioEngine.detach(node)
         }
         attachAndConnectDefaultNodes()
@@ -561,8 +561,8 @@ open class AudioPlayer {
             setCurrentReading(entry: entry, startPlaying: true, shouldClearQueue: true)
             rendererContext.resetBuffers()
         } else if let playingEntry = playerContext.audioPlayingEntry,
-            playingEntry.seekRequest.requested,
-            playingEntry != playerContext.audioReadingEntry
+                  playingEntry.seekRequest.requested,
+                  playingEntry != playerContext.audioReadingEntry
         {
             playingEntry.audioStreamState.processedDataFormat = false
             playingEntry.reset()
@@ -676,7 +676,7 @@ open class AudioPlayer {
             if let entry = entry, !isPlayingSameItemProbablySeek {
                 let entryId = entry.id
                 let progressInFrames = entry.progressInFrames()
-                let progress = Double(progressInFrames) / self.outputAudioFormat.basicStreamDescription.mSampleRate
+                let progress = Double(progressInFrames) / outputAudioFormat.basicStreamDescription.mSampleRate
                 let duration = entry.duration()
                 asyncOnMain { [weak self] in
                     guard let self else { return }
@@ -704,7 +704,7 @@ open class AudioPlayer {
             if let entry = entry, !isPlayingSameItemProbablySeek {
                 let entryId = entry.id
                 let progressInFrames = entry.progressInFrames()
-                let progress = Double(progressInFrames) / self.outputAudioFormat.basicStreamDescription.mSampleRate
+                let progress = Double(progressInFrames) / outputAudioFormat.basicStreamDescription.mSampleRate
                 let duration = entry.duration()
 
                 sourceQueue.async { [weak self] in
