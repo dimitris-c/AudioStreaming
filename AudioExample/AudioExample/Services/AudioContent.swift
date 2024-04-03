@@ -16,6 +16,8 @@ enum AudioContent: Int, CaseIterable {
     case radiox
     case khruangbin
     case piano
+    case optimized
+    case nonOptimized
     case remoteWave
     case local
     case localWave
@@ -42,6 +44,10 @@ enum AudioContent: Int, CaseIterable {
             return "Jazzy Frenchy (local mp3)"
         case .localWave:
             return "Local file (local wave)"
+        case .optimized:
+            return "Jazze French (m4a - optimized)"
+        case .nonOptimized:
+            return "Jazze French (m4a - non-optimized)"
         }
     }
 
@@ -67,6 +73,10 @@ enum AudioContent: Int, CaseIterable {
             return "Music by: bensound.com"
         case .localWave:
             return "Music by: bensound.com"
+        case .optimized:
+            return "Music by: bensound.com"
+        case .nonOptimized:
+            return "Music by: bensound.com"
         }
     }
 
@@ -86,6 +96,10 @@ enum AudioContent: Int, CaseIterable {
             return URL(string: "https://p.scdn.co/mp3-preview/cab4b09c23ffc11774d879977131df9d150fcef4?cid=d8a5ed958d274c2e8ee717e6a4b0971d")!
         case .piano:
             return URL(string: "https://www.kozco.com/tech/piano2-CoolEdit.mp3")!
+        case .optimized:
+            return URL(string: "https://github.com/dimitris-c/sample-audio/raw/main/bensound-jazzyfrenchy-optimized.m4a")!
+        case .nonOptimized:
+            return URL(string: "https://github.com/dimitris-c/sample-audio/raw/main/bensound-jazzyfrenchy.m4a")!
         case .local:
             let path = Bundle.main.path(forResource: "bensound-jazzyfrenchy", ofType: "mp3")!
             return URL(fileURLWithPath: path)
@@ -93,7 +107,7 @@ enum AudioContent: Int, CaseIterable {
             let path = Bundle.main.path(forResource: "hipjazz", ofType: "wav")!
             return URL(fileURLWithPath: path)
         case .remoteWave:
-            return URL(string: "https://file-examples.com/storage/fe183d9197630fb5c969255/2017/11/file_example_WAV_5MG.wav")!
+            return URL(string: "https://file-examples.com/wp-content/storage/2017/11/file_example_WAV_5MG.wav")!
         }
     }
 }

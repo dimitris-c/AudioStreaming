@@ -8,7 +8,7 @@ import os
 
 private let loggingSubsystem = "audio.streaming.log"
 
-internal enum Logger {
+enum Logger {
     private static let audioRendering = OSLog(subsystem: loggingSubsystem, category: "audio.rendering")
     private static let networking = OSLog(subsystem: loggingSubsystem, category: "audio.networking")
     private static let generic = OSLog(subsystem: loggingSubsystem, category: "audio.streaming.generic")

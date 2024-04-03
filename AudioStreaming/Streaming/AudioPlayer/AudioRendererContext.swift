@@ -6,7 +6,7 @@
 import AVFoundation
 import CoreAudio
 
-internal var maxFramesPerSlice: AVAudioFrameCount = 8192
+var maxFramesPerSlice: AVAudioFrameCount = 8192
 
 final class AudioRendererContext {
     var waiting = Atomic<Bool>(false)

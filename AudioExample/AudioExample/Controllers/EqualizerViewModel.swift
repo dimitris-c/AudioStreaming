@@ -1,5 +1,5 @@
 //
-//  EqualzerViewModel.swift
+//  EqualizerViewModel.swift
 //  AudioExample
 //
 //  Created by Dimitrios Chatzieleftheriou on 15/11/2020.

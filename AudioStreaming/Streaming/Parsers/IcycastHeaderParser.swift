@@ -25,8 +25,11 @@ struct IcycastHeaderParser: Parser {
         let contentType = result[HeaderField.contentType.lowercased()] ?? "audio/mpeg"
         let typeId = audioFileType(mimeType: contentType)
 
-        return HTTPHeaderParserOutput(fileLength: 0,
-                                      typeId: typeId,
-                                      metadataStep: metadataStep)
+        return HTTPHeaderParserOutput(
+            fileLength: 0,
+            typeId: typeId,
+            metadataStep: metadataStep,
+            seekable: false
+        )
     }
 }

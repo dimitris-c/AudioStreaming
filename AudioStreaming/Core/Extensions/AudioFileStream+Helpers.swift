@@ -8,11 +8,13 @@ import AVFoundation
 @discardableResult
 func fileStreamGetProperty<Value>(value: inout Value, fileStream streamId: AudioFileStreamID, propertyId: AudioFileStreamPropertyID) -> OSStatus {
     var (size, _) = fileStreamGetPropertyInfo(fileStream: streamId, propertyId: propertyId)
-    let status = AudioFileStreamGetProperty(streamId, propertyId, &size, &value)
-    guard status == noErr else {
+    return withUnsafeMutablePointer(to: &value) { pointer in
+        let status = AudioFileStreamGetProperty(streamId, propertyId, &size, pointer)
+        guard status == noErr else {
+            return status
+        }
         return status
     }
-    return status
 }
 
 func fileStreamGetPropertyInfo(fileStream streamId: AudioFileStreamID, propertyId: AudioFileStreamPropertyID) -> (size: UInt32, status: OSStatus) {
@@ -109,6 +111,53 @@ public enum AudioFileStreamError: CustomDebugStringConvertible {
             return "An unknown error occurred"
         case .noError:
             return "No error"
+        }
+    }
+}
+
+public extension AudioFileStreamPropertyID {
+    var description: String {
+        switch self {
+        case kAudioFileStreamProperty_ReadyToProducePackets:
+            return "Ready to produce packets"
+        case kAudioFileStreamProperty_FileFormat:
+            return "File format"
+        case kAudioFileStreamProperty_DataFormat:
+            return "Data format"
+        case kAudioFileStreamProperty_AudioDataByteCount:
+            return "Byte count"
+        case kAudioFileStreamProperty_AudioDataPacketCount:
+            return "Packet count"
+        case kAudioFileStreamProperty_DataOffset:
+            return "Data offset"
+        case kAudioFileStreamProperty_BitRate:
+            return "Bit rate"
+        case kAudioFileStreamProperty_FormatList:
+            return "Format list"
+        case kAudioFileStreamProperty_MagicCookieData:
+            return "Magic cookie"
+        case kAudioFileStreamProperty_MaximumPacketSize:
+            return "Max packet size"
+        case kAudioFileStreamProperty_ChannelLayout:
+            return "Channel layout"
+        case kAudioFileStreamProperty_PacketToFrame:
+            return "Packet to frame"
+        case kAudioFileStreamProperty_FrameToPacket:
+            return "Frame to packet"
+        case kAudioFileStreamProperty_PacketToByte:
+            return "Packet to byte"
+        case kAudioFileStreamProperty_ByteToPacket:
+            return "Byte to packet"
+        case kAudioFileStreamProperty_PacketTableInfo:
+            return "Packet table"
+        case kAudioFileStreamProperty_PacketSizeUpperBound:
+            return "Packet size upper bound"
+        case kAudioFileStreamProperty_AverageBytesPerPacket:
+            return "Average bytes per packet"
+        case kAudioFileStreamProperty_InfoDictionary:
+            return "Info dictionary"
+        default:
+            return "Unknown"
         }
     }
 }
