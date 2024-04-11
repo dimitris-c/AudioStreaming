@@ -22,7 +22,7 @@ public struct AudioPlayerConfiguration: Equatable {
     /// Enables the internal logs
     let enableLogs: Bool
 
-    public static let `default` = AudioPlayerConfiguration(flushQueueOnSeek: true,
+    public static let `default` = AudioPlayerConfiguration(flushQueueOnSeek: false,
                                                            bufferSizeInSeconds: 10,
                                                            secondsRequiredToStartPlaying: 1,
                                                            gracePeriodAfterSeekInSeconds: 0.5,

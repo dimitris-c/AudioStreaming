@@ -34,6 +34,17 @@ final class PlayerQueueEntries {
         upcoming = Queue<AudioEntry>()
     }
 
+    /// Returns an array containing all items in the queue for the specified `type`.
+    ///
+    /// - Note: This method returns the items in the queue without removing them.
+    ///
+    /// - Parameter type: A `PlayerQueueType` specifying the type of the queue.
+    /// - Returns: An array of `AudioEntry` objects representing the items in the queue.
+    func items(type: PlayerQueueType) -> [AudioEntry] {
+        lock.lock(); defer { lock.unlock() }
+        return queue(for: type).items
+    }
+
     /// Adds the `item` to the underlying queue for the specified `type`
     /// - parameter item: An `AudioEntry` object to be added
     /// - parameter type: The type fo the underlying queue as expressed by `PlayerQueueType`
@@ -49,6 +60,32 @@ final class PlayerQueueEntries {
     func dequeue(type: PlayerQueueType) -> AudioEntry? {
         lock.lock(); defer { lock.unlock() }
         return queue(for: type).dequeue()
+    }
+
+    func insert(item: AudioEntry, type: PlayerQueueType, after afterItem: AudioEntry) {
+        lock.lock(); defer { lock.unlock() }
+        if let indexForAfterItem = queue(for: type).items.firstIndex(of: afterItem) {
+            queue(for: .upcoming).insert(item: item, at: indexForAfterItem)
+        }
+    }
+
+    /// Inserts the `item` at the specified index in the underlying queue for the specified `type`.
+    /// - Parameters:
+    ///   - item: An `AudioEntry` object to be added.
+    ///   - type: The type of the underlying queue as expressed by `PlayerQueueType`.
+    ///   - index: The index at which to insert the item.
+    func insert(item: AudioEntry, type: PlayerQueueType, at index: Int) {
+        lock.lock(); defer { lock.unlock() }
+        queue(for: type).insert(item: item, at: index)
+    }
+
+    /// Removes the item at the specified index from the underlying queue for the specified `type`.
+    /// - Parameters:
+    ///   - type: The type of the underlying queue as expressed by `PlayerQueueType`.
+    ///   - index: The index of the item to remove.
+    func remove(item: AudioEntry, type: PlayerQueueType) {
+        lock.lock(); defer { lock.unlock() }
+        queue(for: type).remove(item: item)
     }
 
     /// Appends (skips) the `items` to the underlying queue for the specified `type`
