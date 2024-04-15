@@ -90,7 +90,7 @@ final class PlayerControlsViewModel {
         displayLink?.invalidate()
         displayLink = nil
         displayLink = UIScreen.main.displayLink(withTarget: self, selector: #selector(tick))
-        displayLink?.preferredFramesPerSecond = 6
+        displayLink?.preferredFramesPerSecond = 60
         displayLink?.add(to: .current, forMode: .common)
     }
 

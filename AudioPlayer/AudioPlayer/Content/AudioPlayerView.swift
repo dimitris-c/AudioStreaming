@@ -36,7 +36,7 @@ struct AudioPlayerControls: View {
     @Bindable var viewModel: AudioPlayerModel
 
     var body: some View {
-        VStack {
+        VStack(alignment: .leading) {
             HStack {
                 Button(action: { viewModel.playPause() }) {
                     Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
@@ -61,14 +61,30 @@ struct AudioPlayerControls: View {
             }
             .tint(.white)
             .padding(16)
+            if let audioMetadata = viewModel.liveAudioMetadata, viewModel.isLiveAudioStreaming {
+                Text("Now Playing: \(audioMetadata)")
+                    .font(.caption)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+            }
             Divider()
             VStack {
-                Slider(value: $viewModel.currentTime, in: 0...(viewModel.totalTime ?? 1))
-                    .disabled(viewModel.totalTime == nil)
+                Slider(
+                    value: $viewModel.currentTime,
+                    in: 0...(viewModel.totalTime ?? 1.0),
+                    onEditingChanged: { scrubStarted in
+                        if scrubStarted {
+                            viewModel.scrubState = .started
+                        } else {
+                            viewModel.scrubState = .ended(viewModel.currentTime)
+                        }
+                    }
+                )
+                .disabled(viewModel.totalTime == nil)
                 HStack {
-                    Text("00:00")//viewModel.currentTime")
+                    Text(viewModel.formattedCurrentTime ?? "--:--")
                     Spacer()
-                    Text("10:00")//formatTimeInterval(viewModel.totalTime))")
+                    Text(viewModel.formattedTotalTime ?? "")
                 }
                 .foregroundStyle(.white)
                 .font(.caption)
@@ -82,21 +98,14 @@ struct AudioPlayerControls: View {
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .foregroundStyle(.white)
-                Slider(value: $viewModel.playbackRate, in: 1.0...3.5, step: 0.5)
-                //                    .onChange(of: viewModel.playbackRate) { value in
-                ////                        viewModel.player?.rate = Float(value)
-                //                    }
+                Slider(value: $viewModel.playbackRate, in: 1.0...4.0, step: 0.2)
+                    .onChange(of: viewModel.playbackRate) { _, new in
+                        viewModel.update(rate: Float(new))
+                    }
             }
             .padding(.bottom, 8)
             .padding(.horizontal, 16)
         }
-    }
-
-    func formatTimeInterval(_ interval: TimeInterval) -> String {
-        let formatter = DateComponentsFormatter()
-        formatter.allowedUnits = [.minute, .second]
-        formatter.unitsStyle = .positional
-        return formatter.string(from: interval) ?? "0:00"
     }
 }
 

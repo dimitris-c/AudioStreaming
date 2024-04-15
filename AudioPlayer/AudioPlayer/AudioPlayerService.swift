@@ -94,8 +94,8 @@ final class AudioPlayerService {
         }
     }
 
-    func seek(at time: Float) {
-        player.seek(to: Double(time))
+    func seek(at time: Double) {
+        player.seek(to: time)
     }
 
     private func recreatePlayer() {

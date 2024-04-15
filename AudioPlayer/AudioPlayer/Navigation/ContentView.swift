@@ -7,14 +7,23 @@ import SwiftUI
 
 struct ContentView: View {
     
-    @State private var selection: MainContent?
-    @State private var path = NavigationPath()
+    @State private var selection: NavigationContent?
 
     var body: some View {
-        NavigationSplitView {
-            ContentSidebar(selection: $selection)
-        } detail: {
-            DetailView(selection: $selection)
+        NavigationStack {
+            List {
+                NavigationLink(value: NavigationContent.audioPlayer) {
+                    Label("Audio Player", systemImage: "play")
+                }
+
+                NavigationLink(value: NavigationContent.audioQueue) {
+                    Label("Audio Queue", systemImage: "play.square.stack")
+                }
+            }
+            .navigationTitle("Home")
+            .navigationDestination(for: NavigationContent.self) { content in
+                DetailView(selection: content)
+            }
         }
     }
 }

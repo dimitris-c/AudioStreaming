@@ -8,16 +8,14 @@
 import SwiftUI
 
 struct DetailView: View {
-    @Binding var selection: MainContent?
+    var selection: NavigationContent
 
     var body: some View {
-        if let selection {
-            switch selection {
-            case .audioPlayer:
-                AudioPlayerView()
-            case .audioQueue:
-                Text("Audio Queue")
-            }
+        switch selection {
+        case .audioPlayer:
+            AudioPlayerView()
+        case .audioQueue:
+            Text("Audio Queue")
         }
     }
 }

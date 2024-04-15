@@ -44,9 +44,9 @@ enum AudioContent: Int, CaseIterable {
         case .localWave:
             return "Local file"
         case .optimized:
-            return "Jazze French"
+            return "Jazzy Frenchy"
         case .nonOptimized:
-            return "Jazze French"
+            return "Jazzy Frenchy"
         }
     }
 

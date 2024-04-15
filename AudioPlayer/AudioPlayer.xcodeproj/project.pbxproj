@@ -22,6 +22,7 @@
 		9816A8B22BC8330C00AD1299 /* bensound-jazzyfrenchy.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 9816A8AE2BC832DB00AD1299 /* bensound-jazzyfrenchy.m4a */; };
 		9816A8B32BC8330C00AD1299 /* hipjazz.wav in Resources */ = {isa = PBXBuildFile; fileRef = 9816A8AF2BC832DC00AD1299 /* hipjazz.wav */; };
 		9816A8BB2BC87BC200AD1299 /* AudioPlayerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9816A8BA2BC87BC200AD1299 /* AudioPlayerService.swift */; };
+		98BFB41A2BC97AF800E812C0 /* DisplayLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BFB4192BC97AF800E812C0 /* DisplayLink.swift */; };
 		98E6119C2BC72C0E0036BC47 /* DetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98E6119B2BC72C0E0036BC47 /* DetailView.swift */; };
 /* End PBXBuildFile section */
 
@@ -55,6 +56,8 @@
 		9816A8AE2BC832DB00AD1299 /* bensound-jazzyfrenchy.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = "bensound-jazzyfrenchy.m4a"; sourceTree = "<group>"; };
 		9816A8AF2BC832DC00AD1299 /* hipjazz.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = hipjazz.wav; sourceTree = "<group>"; };
 		9816A8BA2BC87BC200AD1299 /* AudioPlayerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerService.swift; sourceTree = "<group>"; };
+		98BFB4192BC97AF800E812C0 /* DisplayLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayLink.swift; sourceTree = "<group>"; };
+		98BFB41B2BCAAD8A00E812C0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		98E6119B2BC72C0E0036BC47 /* DetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -90,7 +93,9 @@
 		9806E8162BC5D12500757370 /* AudioPlayer */ = {
 			isa = PBXGroup;
 			children = (
+				98BFB41B2BCAAD8A00E812C0 /* Info.plist */,
 				9816A8BA2BC87BC200AD1299 /* AudioPlayerService.swift */,
+				98BFB4192BC97AF800E812C0 /* DisplayLink.swift */,
 				9816A8A82BC7F4DE00AD1299 /* Common */,
 				9806E8282BC68F7300757370 /* Content */,
 				9806E8272BC68F6600757370 /* Navigation */,
@@ -230,6 +235,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				98BFB41A2BC97AF800E812C0 /* DisplayLink.swift in Sources */,
 				9806E81A2BC5D12500757370 /* ContentView.swift in Sources */,
 				98E6119C2BC72C0E0036BC47 /* DetailView.swift in Sources */,
 				9816A8AC2BC820DF00AD1299 /* AudioContent.swift in Sources */,
@@ -375,6 +381,7 @@
 				DEVELOPMENT_TEAM = TJ7GUC6B8Y;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AudioPlayer/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -405,6 +412,7 @@
 				DEVELOPMENT_TEAM = TJ7GUC6B8Y;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AudioPlayer/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
