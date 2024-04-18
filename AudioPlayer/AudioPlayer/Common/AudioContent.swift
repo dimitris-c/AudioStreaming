@@ -7,11 +7,12 @@
 
 import Foundation
 
-enum AudioContent: Int, CaseIterable {
+enum AudioContent {
     case offradio
     case enlefko
     case pepper966
     case kosmos
+    case kosmosJazz
     case radiox
     case khruangbin
     case piano
@@ -20,6 +21,7 @@ enum AudioContent: Int, CaseIterable {
     case remoteWave
     case local
     case localWave
+    case custom(String)
 
     var title: String {
         switch self {
@@ -31,6 +33,8 @@ enum AudioContent: Int, CaseIterable {
             return "Pepper 96.6"
         case .kosmos:
             return "Kosmos 93.6"
+        case .kosmosJazz:
+            return "Kosmos Jazz"
         case .radiox:
             return "Radio X"
         case .khruangbin:
@@ -47,21 +51,25 @@ enum AudioContent: Int, CaseIterable {
             return "Jazzy Frenchy"
         case .nonOptimized:
             return "Jazzy Frenchy"
+        case .custom(let url):
+            return url
         }
     }
 
     var subtitle: String? {
         switch self {
         case .offradio:
-            return "Stream"
+            return "Stream • offradio.gr"
         case .enlefko:
-            return "Stream"
+            return "Stream • enlefko.fm"
         case .pepper966:
-            return "Stream"
+            return "Stream • pepper966.gr"
         case .kosmos:
-            return "Stream"
+            return "Stream • ertecho.gr"
+        case .kosmosJazz:
+            return "Stream • ertecho.gr"
         case .radiox:
-            return "Stream"
+            return "Stream • globalplayer.com"
         case .khruangbin:
             return "Remote mp3"
         case .piano:
@@ -76,6 +84,8 @@ enum AudioContent: Int, CaseIterable {
             return "Music by: bensound.com - m4a optimized"
         case .nonOptimized:
             return "Music by: bensound.com - m4a non-optimized"
+        case .custom:
+            return ""
         }
     }
 
@@ -89,6 +99,8 @@ enum AudioContent: Int, CaseIterable {
             return URL(string: "https://n04.radiojar.com/pepper.m4a?1662039818=&rj-tok=AAABgvlUaioALhdOXDt0mgajoA&rj-ttl=5")!
         case .kosmos:
             return URL(string: "https://radiostreaming.ert.gr/ert-kosmos")!
+        case .kosmosJazz:
+            return URL(string: "https://radiostreaming.ert.gr/ert-webjazz")!
         case .radiox:
             return URL(string: "https://media-ssl.musicradio.com/RadioXLondon")!
         case .khruangbin:
@@ -107,6 +119,8 @@ enum AudioContent: Int, CaseIterable {
             return URL(fileURLWithPath: path)
         case .remoteWave:
             return URL(string: "https://file-examples.com/wp-content/storage/2017/11/file_example_WAV_5MG.wav")!
+        case .custom(let url):
+            return URL(string: url)!
         }
     }
 }

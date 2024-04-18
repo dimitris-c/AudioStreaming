@@ -8,12 +8,14 @@
 import SwiftUI
 
 struct DetailView: View {
+    @Environment(AppModel.self) var appModel
+
     var selection: NavigationContent
 
     var body: some View {
         switch selection {
         case .audioPlayer:
-            AudioPlayerView()
+            AudioPlayerView(appModel: appModel)
         case .audioQueue:
             Text("Audio Queue")
         }

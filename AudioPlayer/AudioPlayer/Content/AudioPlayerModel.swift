@@ -7,10 +7,10 @@ import UIKit
 import Foundation
 import AudioStreaming
 
-struct AudioPlaylist: Identifiable {
+struct AudioPlaylist: Equatable, Identifiable {
     var id: String { title }
     let title: String
-    let tracks: [AudioTrack]
+    var tracks: [AudioTrack]
 }
 
 enum ScrubState: Equatable {
@@ -22,7 +22,7 @@ enum ScrubState: Equatable {
 @Observable
 public class AudioPlayerModel {
     @ObservationIgnored
-    var audioPlayerService: AudioPlayerService
+    private(set) var audioPlayerService: AudioPlayerService
     @ObservationIgnored
     private var displayLink: DisplayLink?
 
@@ -49,8 +49,8 @@ public class AudioPlayerModel {
 
     var currentTrack: AudioTrack?
 
-    init(audioTracksProvider: () -> [AudioPlaylist] = audioTracksProvider, audioPlayerService: () -> AudioPlayerService = provideAudioPlayerService) {
-        self.audioPlayerService = audioPlayerService()
+    init(audioTracksProvider: () -> [AudioPlaylist] = audioTracksProvider, audioPlayerService: AudioPlayerService) {
+        self.audioPlayerService = audioPlayerService
         self.audioTracks = audioTracksProvider()
 
         self.audioPlayerService.delegate = self
@@ -60,6 +60,20 @@ public class AudioPlayerModel {
         audioPlayerService.stop()
         displayLink?.deactivate()
         displayLink = nil
+    }
+
+    func addNewAudioTrack(url: URL) {
+        let customIndex = audioTracks.firstIndex(where: { $0.id == "Custom" })
+        let audioTrack = AudioTrack(from: .custom(url.absoluteString), status: .idle)
+        let playlist = AudioPlaylist(title: "Custom", tracks: [audioTrack])
+        if let customIndex {
+            let tracks = audioTracks[customIndex].tracks
+            if !tracks.contains(audioTrack) {
+                audioTracks[customIndex].tracks.append(audioTrack)
+            }
+        } else {
+            audioTracks.append(playlist)
+        }
     }
 
     func mute() {
@@ -187,7 +201,7 @@ extension AudioPlayerModel: AudioPlayerServiceDelegate {
     func metadataReceived(metadata: [String : String]) {
         guard !metadata.isEmpty else { return }
         if let title = metadata["StreamTitle"] {
-            liveAudioMetadata = title
+            liveAudioMetadata = title.isEmpty ? "-" : title
         } else {
             liveAudioMetadata = nil
         }
@@ -195,7 +209,7 @@ extension AudioPlayerModel: AudioPlayerServiceDelegate {
 }
 
 func audioTracksProvider() -> [AudioPlaylist] {
-    let radioTracks: [AudioContent] = [.offradio, .enlefko, .pepper966, .kosmos, .radiox]
+    let radioTracks: [AudioContent] = [.offradio, .enlefko, .pepper966, .kosmos, .kosmosJazz, .radiox]
     let audioTracks: [AudioContent] = [.khruangbin, .piano, .optimized, .nonOptimized, .remoteWave, .local, .localWave]
 
     return [

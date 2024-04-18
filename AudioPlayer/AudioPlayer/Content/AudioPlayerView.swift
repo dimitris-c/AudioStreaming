@@ -6,29 +6,78 @@
 import SwiftUI
 
 struct AudioPlayerView: View {
+    @Environment(AppModel.self) var appModel
 
-    @State var model = AudioPlayerModel()
+    @State var model: AudioPlayerModel
+
+    @State var eqSheetIsShown: Bool = false
+    @State var addNewAudioIsShown: Bool = false
+
+    init(appModel: AppModel) {
+        self._model = State(wrappedValue: AudioPlayerModel(audioPlayerService: appModel.audioPlayerService))
+    }
 
     var body: some View {
-        List {
-            ForEach(model.audioTracks) { section in
-                Section {
-                    ForEach(section.tracks) { track in
-                        AudioTrackView(track: track) {
-                            model.play(track)
+        ScrollViewReader { proxy in
+            List {
+                ForEach(model.audioTracks) { section in
+                    Section {
+                        ForEach(section.tracks) { track in
+                            AudioTrackView(track: track) {
+                                model.play(track)
+                            }
+                            .id(track.id)
                         }
+                    } header: {
+                        Text(section.title)
                     }
-                } header: {
-                    Text(section.title)
+                }
+            }
+            .onChange(of: model.audioTracks) { _, newValue in
+                if let lastId = newValue.last?.tracks.last?.id {
+                    withAnimation {
+                        proxy.scrollTo(lastId, anchor: .bottom)
+                    }
                 }
             }
         }
         .safeAreaInset(edge: .bottom) {
             AudioPlayerControls(viewModel: model)
-                .background(Color.mint)
+                .background(
+                    .ultraThinMaterial.shadow(
+                        ShadowStyle.drop(color: .black.opacity(0.1), radius: 8, x: 0, y: -10)
+                    )
+                )
         }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .navigationTitle("Audio Player")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button {
+                    eqSheetIsShown.toggle()
+                } label: {
+                    Image(systemName: "slider.horizontal.3")
+                }
+                Button {
+                    addNewAudioIsShown.toggle()
+                } label: {
+                    Image(systemName: "plus")
+                }
+            }
+        }
+        .sheet(isPresented: $eqSheetIsShown) {
+            EqualizerView(appModel: appModel)
+                .presentationDetents([.medium])
+        }
+        .sheet(isPresented: $addNewAudioIsShown) {
+            AddNewAudioURLView(
+                onAddNewUrl: { url in
+                    model.addNewAudioTrack(url: url)
+                }
+            )
+            .presentationDetents([.height(150)])
+        }
     }
 }
 
@@ -59,12 +108,12 @@ struct AudioPlayerControls: View {
                 .frame(width: 20, height: 20)
                 .contentTransition(.symbolEffect(.replace))
             }
-            .tint(.white)
+            .tint(.mint)
             .padding(16)
             if let audioMetadata = viewModel.liveAudioMetadata, viewModel.isLiveAudioStreaming {
                 Text("Now Playing: \(audioMetadata)")
                     .font(.caption)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.black)
                     .padding(.horizontal, 16)
             }
             Divider()
@@ -86,7 +135,7 @@ struct AudioPlayerControls: View {
                     Spacer()
                     Text(viewModel.formattedTotalTime ?? "")
                 }
-                .foregroundStyle(.white)
+                .foregroundStyle(.black)
                 .font(.caption)
                 .fontWeight(.medium)
             }
@@ -97,7 +146,7 @@ struct AudioPlayerControls: View {
                 Text("Playback Rate: \(String(format: "%0.1f", viewModel.playbackRate))")
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.black)
                 Slider(value: $viewModel.playbackRate, in: 1.0...4.0, step: 0.2)
                     .onChange(of: viewModel.playbackRate) { _, new in
                         viewModel.update(rate: Float(new))
@@ -110,5 +159,5 @@ struct AudioPlayerControls: View {
 }
 
 #Preview {
-    AudioPlayerView(model: AudioPlayerModel())
+    AudioPlayerView(appModel: AppModel())
 }

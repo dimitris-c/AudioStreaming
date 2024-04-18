@@ -64,6 +64,7 @@ struct AudioTrackView: View {
                     Text(track.title)
                         .font(.headline)
                         .fontWeight(.medium)
+                        .foregroundStyle(.black)
                         .padding(.top, 8)
                         .padding(.bottom, track.subtitle == nil ? 8 : 0)
                     if let subtitle = track.subtitle {

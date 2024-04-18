@@ -23,6 +23,9 @@
 		9816A8B32BC8330C00AD1299 /* hipjazz.wav in Resources */ = {isa = PBXBuildFile; fileRef = 9816A8AF2BC832DC00AD1299 /* hipjazz.wav */; };
 		9816A8BB2BC87BC200AD1299 /* AudioPlayerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9816A8BA2BC87BC200AD1299 /* AudioPlayerService.swift */; };
 		98BFB41A2BC97AF800E812C0 /* DisplayLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BFB4192BC97AF800E812C0 /* DisplayLink.swift */; };
+		98BFB41D2BCD7BB800E812C0 /* EqualizerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BFB41C2BCD7BB800E812C0 /* EqualizerView.swift */; };
+		98BFB41F2BCD814000E812C0 /* EqualizerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BFB41E2BCD814000E812C0 /* EqualizerService.swift */; };
+		98BFB4232BCE78AB00E812C0 /* AddNewAudioURLView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BFB4222BCE78AB00E812C0 /* AddNewAudioURLView.swift */; };
 		98E6119C2BC72C0E0036BC47 /* DetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98E6119B2BC72C0E0036BC47 /* DetailView.swift */; };
 /* End PBXBuildFile section */
 
@@ -58,6 +61,9 @@
 		9816A8BA2BC87BC200AD1299 /* AudioPlayerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerService.swift; sourceTree = "<group>"; };
 		98BFB4192BC97AF800E812C0 /* DisplayLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayLink.swift; sourceTree = "<group>"; };
 		98BFB41B2BCAAD8A00E812C0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		98BFB41C2BCD7BB800E812C0 /* EqualizerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EqualizerView.swift; sourceTree = "<group>"; };
+		98BFB41E2BCD814000E812C0 /* EqualizerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EqualizerService.swift; sourceTree = "<group>"; };
+		98BFB4222BCE78AB00E812C0 /* AddNewAudioURLView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddNewAudioURLView.swift; sourceTree = "<group>"; };
 		98E6119B2BC72C0E0036BC47 /* DetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -94,6 +100,7 @@
 			isa = PBXGroup;
 			children = (
 				98BFB41B2BCAAD8A00E812C0 /* Info.plist */,
+				98BFB41E2BCD814000E812C0 /* EqualizerService.swift */,
 				9816A8BA2BC87BC200AD1299 /* AudioPlayerService.swift */,
 				98BFB4192BC97AF800E812C0 /* DisplayLink.swift */,
 				9816A8A82BC7F4DE00AD1299 /* Common */,
@@ -130,6 +137,8 @@
 			children = (
 				9806E8302BC6927D00757370 /* AudioPlayerModel.swift */,
 				9806E8292BC68F8700757370 /* AudioPlayerView.swift */,
+				98BFB41C2BCD7BB800E812C0 /* EqualizerView.swift */,
+				98BFB4222BCE78AB00E812C0 /* AddNewAudioURLView.swift */,
 			);
 			path = Content;
 			sourceTree = "<group>";
@@ -235,6 +244,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				98BFB4232BCE78AB00E812C0 /* AddNewAudioURLView.swift in Sources */,
+				98BFB41D2BCD7BB800E812C0 /* EqualizerView.swift in Sources */,
 				98BFB41A2BC97AF800E812C0 /* DisplayLink.swift in Sources */,
 				9806E81A2BC5D12500757370 /* ContentView.swift in Sources */,
 				98E6119C2BC72C0E0036BC47 /* DetailView.swift in Sources */,
@@ -242,6 +253,7 @@
 				9806E8262BC5D2A900757370 /* Sidebar.swift in Sources */,
 				9806E82A2BC68F8700757370 /* AudioPlayerView.swift in Sources */,
 				9806E8312BC6927D00757370 /* AudioPlayerModel.swift in Sources */,
+				98BFB41F2BCD814000E812C0 /* EqualizerService.swift in Sources */,
 				9816A8AA2BC7F4F000AD1299 /* AudioTrack.swift in Sources */,
 				9816A8BB2BC87BC200AD1299 /* AudioPlayerService.swift in Sources */,
 				9806E8182BC5D12500757370 /* App.swift in Sources */,

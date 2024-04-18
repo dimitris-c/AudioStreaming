@@ -6,7 +6,9 @@
 import SwiftUI
 
 struct ContentView: View {
-    
+
+    @Environment(AppModel.self) var appModel
+
     @State private var selection: NavigationContent?
 
     var body: some View {
