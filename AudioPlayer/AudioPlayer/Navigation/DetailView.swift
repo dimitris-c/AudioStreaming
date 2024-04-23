@@ -1,9 +1,8 @@
 //
-//  DetailView.swift
-//  AudioPlayer
+//  Created by Dimitris C.
+//  Copyright © 2024 Decimal. All rights reserved.
 //
-//  Created by Dimitris Chatzieleftheriou on 10/04/2024.
-//
+
 
 import SwiftUI
 

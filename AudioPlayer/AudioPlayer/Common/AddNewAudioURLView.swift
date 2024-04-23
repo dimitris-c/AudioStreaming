@@ -1,8 +1,6 @@
 //
-//  AddNewAudioURLView.swift
-//  AudioPlayer
-//
-//  Created by Dimitris Chatzieleftheriou on 16/04/2024.
+//  Created by Dimitris C.
+//  Copyright © 2024 Decimal. All rights reserved.
 //
 
 import SwiftUI

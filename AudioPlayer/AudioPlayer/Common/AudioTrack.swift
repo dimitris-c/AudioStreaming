@@ -1,6 +1,8 @@
 //
-//  Created by Dimitris Chatzieleftheriou on 11/04/2024.
+//  Created by Dimitris C.
+//  Copyright © 2024 Decimal. All rights reserved.
 //
+
 
 import SwiftUI
 
