@@ -44,7 +44,7 @@ struct EqualizerView: View {
                     model.enable()
                 }
                 .padding(.horizontal, 16)
-                VStack {
+                VStack(spacing: 16) {
                     EQSliderView()
                         .frame(height: 180)
                         .padding(.horizontal, 16)
@@ -60,9 +60,10 @@ struct EqualizerView: View {
                         .foregroundStyle(Color.white)
                     }
                     .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 16)
                     .background(.mint)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .padding(.top, 24)
                 }
             }
             .task {
@@ -113,18 +114,17 @@ struct EQSliderView: View {
                 GeometryReader { innerGeo in
                     ZStack {
                         Path { path in
-                            path.move(to: CGPoint(x: innerGeo.size.width / 12, y: eqModel.dragPoints.first ?? 0))
-                            for index in 1..<eqModel.dragPoints.count {
+                            path.move(to: CGPoint(x: innerGeo.size.width / 12, y: dragPointYLocations.first ?? 0))
+                            for index in 1..<dragPointYLocations.count {
                                 let x = positionForDragPoint(at: index, size: innerGeo.size)
-                                let y =  eqModel.dragPoints[index]
+                                let y =  dragPointYLocations[index]
                                 path.addLine(to: CGPoint(x: x, y: y))
                             }
                         }
                         .stroke(Color.mint, lineWidth: 2)
-                        .animation(.default, value: eqModel.dragPoints)
 
                         Path { path in
-                            for index in 0..<eqModel.dragPoints.count {
+                            for index in 0..<dragPointYLocations.count {
                                 let x = positionForDragPoint(at: index, size: innerGeo.size)
                                 path.move(to: CGPoint(x: x, y: 0))
                                 path.addLine(to: CGPoint(x: x, y: innerGeo.size.height))
@@ -132,30 +132,35 @@ struct EQSliderView: View {
                             path.move(to: CGPoint(x: 0, y: innerGeo.size.height / 2))
                             path.addLine(to: CGPoint(x: innerGeo.size.width, y: innerGeo.size.height / 2))
                         }
-                        .stroke(Color.gray, lineWidth: 1)
+                        .stroke(Color.gray.opacity(0.5), lineWidth: 1)
 
                         ForEach(eqModel.bands) { band in
                             Circle()
                                 .fill(Color.mint)
                                 .frame(width: 20, height: 20)
-                                .position(x: positionForDragPoint(at: band.index, size: innerGeo.size), y: eqModel.dragPoints[band.index])
+                                .position(x: positionForDragPoint(at: band.index, size: innerGeo.size), y: dragPointYLocations[band.index])
                                 .gesture(
                                     DragGesture()
                                         .onChanged { value in
                                             let newY = min(max(value.location.y, 0), innerGeo.size.height)
-                                            eqModel.dragPoints[band.index] = newY
+                                            dragPointYLocations[band.index] = newY
                                             updateGainValue(at: band.index, in: innerGeo.size)
                                         }
                                 )
                                 .onAppear {
-                                    eqModel.dragPoints[band.index] = gainToYPosition(at: band.value, in: innerGeo.size)
+                                    dragPointYLocations[band.index] = gainToYPosition(at: band.value, in: innerGeo.size)
+                                }
+                                .onChange(of: eqModel.shouldReset) { _, reset in
+                                    if reset {
+                                        resetPositions(in: innerGeo.size)
+                                    }
                                 }
                         }
                     }
 
                     ForEach(eqModel.bands) { band in
                         Text(band.frequency)
-                            .position(x: positionForDragPoint(at: band.index, size: innerGeo.size), y: innerGeo.size.height)
+                            .position(x: positionForDragPoint(at: band.index, size: innerGeo.size), y: innerGeo.size.height + 8)
                             .font(.caption)
                             .foregroundColor(.black)
 
@@ -179,6 +184,13 @@ struct EQSliderView: View {
         let percentage = 1 - (gain - eqModel.minGain) / (eqModel.maxGain - eqModel.minGain)
         return CGFloat(percentage) * size.height
     }
+
+    func resetPositions(in size: CGSize) {
+        let count = dragPointYLocations.count
+        for i in 0..<count {
+            dragPointYLocations[i] = gainToYPosition(at: 0, in: size)
+        }
+    }
 }
 
 extension EqualizerView {
@@ -187,18 +199,20 @@ extension EqualizerView {
         @ObservationIgnored
         private let equalizerService: EqualizerService
 
+        var dragPointYLocations: [CGFloat] = Array(repeating: .zero, count: 6)
+
         var isEnabled: Bool = false
 
         var bands: [EQBand] = []
 
-        var dragPoints: [CGFloat] = []
-
         let minGain: Float = -12
         let maxGain: Float = 12
 
+        var shouldReset: Bool = false
+
         init(equalizerService: EqualizerService) {
             self.equalizerService = equalizerService
-            dragPoints = [CGFloat].init(repeating: 0, count: equalizerService.bands.count)
+            isEnabled = equalizerService.isActivated
         }
 
         func generateBands() {
@@ -211,8 +225,6 @@ extension EqualizerView {
                 }
                 return EQBand(index: index, frequency: frequency, min: minGain, max: maxGain, value: item.gain)
             }
-
-            dragPoints = [CGFloat].init(repeating: 0, count: bands.count)
         }
 
         func enable() {
@@ -224,12 +236,20 @@ extension EqualizerView {
         }
 
         func update(gain: Float, index: Int) {
+            shouldReset = false
+            bands[index].value = gain
             equalizerService.update(gain: gain, for: index)
         }
 
         func reset() {
+            guard !shouldReset else {
+                return
+            }
+            shouldReset = true
             equalizerService.reset()
-            dragPoints = [CGFloat].init(repeating: 0, count: bands.count)
+            for band in bands {
+                band.value = 0.0
+            }
         }
     }
 }
