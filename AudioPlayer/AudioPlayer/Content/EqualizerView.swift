@@ -36,19 +36,32 @@ struct EqualizerView: View {
 
     var body: some View {
         NavigationStack {
-            VStack {
-                Toggle(isOn: $model.isEnabled) {
-                    Text("Enable")
-                }
-                .onChange(of: model.isEnabled) { _, _ in
-                    model.enable()
-                }
-                .padding(.horizontal, 16)
-                VStack(spacing: 16) {
-                    EQSliderView()
-                        .frame(height: 180)
-                        .padding(.horizontal, 16)
-                        .environment(model)
+            VStack(spacing: 16) {
+                EQSliderView()
+                    .frame(height: 180)
+                    .padding(.horizontal, 16)
+                    .environment(model)
+
+                HStack(alignment: .center, spacing: 16) {
+                    Button {
+                        withAnimation {
+                            model.isEnabled.toggle()
+                            model.enable()
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: model.isEnabled ? "waveform.slash" : "waveform")
+                                .contentTransition(.symbolEffect(.replace))
+                            Text(model.isEnabled ? "Disable": "Enable")
+                                .font(.body)
+                        }
+                        .foregroundStyle(Color.white)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 16)
+                    .background(model.isEnabled ? .red : .mint)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+
                     Button {
                         withAnimation {
                             model.reset()
@@ -56,6 +69,7 @@ struct EqualizerView: View {
                     } label: {
                         HStack {
                             Text("Reset")
+                                .font(.body)
                         }
                         .foregroundStyle(Color.white)
                     }
@@ -63,8 +77,8 @@ struct EqualizerView: View {
                     .padding(.vertical, 16)
                     .background(.mint)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .padding(.top, 24)
                 }
+                .padding(.top, 24)
             }
             .task {
                 Task {
