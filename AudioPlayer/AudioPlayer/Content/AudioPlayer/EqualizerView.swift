@@ -64,9 +64,7 @@ struct EqualizerView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16))
 
                     Button {
-                        withAnimation {
-                            model.reset()
-                        }
+                        model.reset()
                     } label: {
                         HStack {
                             Text("Reset")
@@ -128,15 +126,18 @@ struct EQSliderView: View {
                 }
                 GeometryReader { innerGeo in
                     ZStack {
-                        Path { path in
-                            path.move(to: CGPoint(x: innerGeo.size.width / 12, y: dragPointYLocations.first ?? 0))
-                            for index in 1..<dragPointYLocations.count {
-                                let x = positionForDragPoint(at: index, size: innerGeo.size)
-                                let y =  dragPointYLocations[index]
-                                path.addLine(to: CGPoint(x: x, y: y))
-                            }
-                        }
-                        .stroke(Color.mint, lineWidth: 2)
+
+                        LineShape(values: eqModel.shouldReset ? Array(repeating: 90, count: 6) : dragPointYLocations.map { Double($0) })
+                            .stroke(Color.mint, lineWidth: 2)
+                            .animation(.easeInOut(duration: 0.2), value: eqModel.shouldReset)
+//                        Path { path in
+//                            path.move(to: CGPoint(x: innerGeo.size.width / 12, y: dragPointYLocations.first ?? 0))
+//                            for index in 1..<dragPointYLocations.count {
+//                                let x = positionForDragPoint(at: index, size: innerGeo.size)
+//                                let y =  dragPointYLocations[index]
+//                                path.addLine(to: CGPoint(x: x, y: y))
+//                            }
+//                        }
 
                         Path { path in
                             for index in 0..<dragPointYLocations.count {
@@ -201,10 +202,11 @@ struct EQSliderView: View {
     }
 
     func resetPositions(in size: CGSize) {
-        let count = dragPointYLocations.count
-        for i in 0..<count {
-            dragPointYLocations[i] = gainToYPosition(at: 0, in: size)
+        let reset = dragPointYLocations.map { _ in gainToYPosition(at: 0, in: size) }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            dragPointYLocations = reset
         }
+
     }
 }
 
@@ -266,6 +268,62 @@ extension EqualizerView {
                 band.value = 0.0
             }
         }
+    }
+}
+
+struct LineShape: Shape {
+    var values: [Double]
+
+    var animatableData: AnimatableLine {
+        get { AnimatableLine(values: values) }
+        set { values = newValue.values }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.size.width / 12, y: values.first ?? 0))
+        for index in 1..<values.count {
+            let x = positionForDragPoint(at: index, size: rect.size)
+            let y =  values[index]
+            path.addLine(to: CGPoint(x: x, y: y))
+        }
+        return path
+    }
+
+    func positionForDragPoint(at index: Int, size: CGSize) -> CGFloat {
+        size.width / 12 * CGFloat(index * 2 + 1)
+    }
+}
+
+struct AnimatableLine : VectorArithmetic {
+    var values: [Double]
+
+    var magnitudeSquared: Double {
+        return values.map { $0 * $0 }.reduce(0, +)
+    }
+
+    mutating func scale(by rhs: Double) {
+        values = values.map { $0 * rhs }
+    }
+
+    static var zero: AnimatableLine {
+        return AnimatableLine(values: [0.0])
+    }
+
+    static func - (lhs: AnimatableLine, rhs: AnimatableLine) -> AnimatableLine {
+        return AnimatableLine(values: zip(lhs.values, rhs.values).map(-))
+    }
+
+    static func -= (lhs: inout AnimatableLine, rhs: AnimatableLine) {
+        lhs = lhs - rhs
+    }
+
+    static func + (lhs: AnimatableLine, rhs: AnimatableLine) -> AnimatableLine {
+        return AnimatableLine(values: zip(lhs.values, rhs.values).map(+))
+    }
+
+    static func += (lhs: inout AnimatableLine, rhs: AnimatableLine) {
+        lhs = lhs + rhs
     }
 }
 
