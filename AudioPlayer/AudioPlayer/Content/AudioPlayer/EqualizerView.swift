@@ -104,6 +104,7 @@ struct EQSliderView: View {
     @Environment(EqualizerView.Model.self) var eqModel
 
     @State private var dragPointYLocations: [CGFloat] = Array(repeating: .zero, count: 6)
+    @State private var resetPoints: [Double] = Array(repeating: .zero, count: 6)
 
     @State private var eqViewFrame: CGRect = .zero
 
@@ -127,17 +128,12 @@ struct EQSliderView: View {
                 GeometryReader { innerGeo in
                     ZStack {
 
-                        LineShape(values: eqModel.shouldReset ? Array(repeating: 90, count: 6) : dragPointYLocations.map { Double($0) })
+                        LineShape(values: eqModel.shouldReset ? resetPoints : dragPointYLocations.map { Double($0) })
                             .stroke(Color.mint, lineWidth: 2)
                             .animation(.easeInOut(duration: 0.2), value: eqModel.shouldReset)
-//                        Path { path in
-//                            path.move(to: CGPoint(x: innerGeo.size.width / 12, y: dragPointYLocations.first ?? 0))
-//                            for index in 1..<dragPointYLocations.count {
-//                                let x = positionForDragPoint(at: index, size: innerGeo.size)
-//                                let y =  dragPointYLocations[index]
-//                                path.addLine(to: CGPoint(x: x, y: y))
-//                            }
-//                        }
+                            .onAppear {
+                                resetPoints = resetPoints.map { _ in Double(gainToYPosition(at: 0, in: innerGeo.size)) }
+                            }
 
                         Path { path in
                             for index in 0..<dragPointYLocations.count {
