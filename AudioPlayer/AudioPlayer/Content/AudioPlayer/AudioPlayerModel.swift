@@ -13,12 +13,6 @@ struct AudioPlaylist: Equatable, Identifiable {
     var tracks: [AudioTrack]
 }
 
-enum ScrubState: Equatable {
-    case idle
-    case started
-    case ended(Double)
-}
-
 @Observable
 public class AudioPlayerModel {
     @ObservationIgnored
@@ -58,12 +52,18 @@ public class AudioPlayerModel {
     }
 }
 
-func audioTracksProvider() -> [AudioPlaylist] {
-    let radioTracks: [AudioContent] = [.offradio, .enlefko, .pepper966, .kosmos, .kosmosJazz, .radiox]
-    let audioTracks: [AudioContent] = [.khruangbin, .piano, .optimized, .nonOptimized, .remoteWave, .local, .localWave]
+private let radioTracks: [AudioContent] = [.offradio, .enlefko, .pepper966, .kosmos, .kosmosJazz, .radiox]
+private let audioTracks: [AudioContent] = [.khruangbin, .piano, .optimized, .nonOptimized, .remoteWave, .local, .localWave]
 
-    return [
+func audioTracksProvider() -> [AudioPlaylist] {
+    [
         AudioPlaylist(title: "Radio", tracks: radioTracks.map { AudioTrack.init(from: $0) }),
+        AudioPlaylist(title: "Tracks", tracks: audioTracks.map { AudioTrack.init(from:$0) })
+    ]
+}
+
+func audioQueueTrackProvider() -> [AudioPlaylist] {
+    [
         AudioPlaylist(title: "Tracks", tracks: audioTracks.map { AudioTrack.init(from:$0) })
     ]
 }

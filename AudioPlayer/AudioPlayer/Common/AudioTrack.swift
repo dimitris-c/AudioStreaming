@@ -28,8 +28,8 @@ public class AudioTrack: Identifiable, Equatable {
         lhs.id == rhs.id
     }
 
-    public var id: URL {
-        content.streamUrl
+    public var id: String {
+        url.absoluteString
     }
     let title: String
     let subtitle: String?

@@ -23,6 +23,7 @@
 		9816A8B32BC8330C00AD1299 /* hipjazz.wav in Resources */ = {isa = PBXBuildFile; fileRef = 9816A8AF2BC832DC00AD1299 /* hipjazz.wav */; };
 		9816A8BB2BC87BC200AD1299 /* AudioPlayerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9816A8BA2BC87BC200AD1299 /* AudioPlayerService.swift */; };
 		984DE9552BDAE59C004B427A /* Notifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 984DE9542BDAE59C004B427A /* Notifier.swift */; };
+		984DE9572BDAFC7E004B427A /* AudioPlayerControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 984DE9562BDAFC7E004B427A /* AudioPlayerControlsView.swift */; };
 		98BFB41A2BC97AF800E812C0 /* DisplayLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BFB4192BC97AF800E812C0 /* DisplayLink.swift */; };
 		98BFB41D2BCD7BB800E812C0 /* EqualizerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BFB41C2BCD7BB800E812C0 /* EqualizerView.swift */; };
 		98BFB41F2BCD814000E812C0 /* EqualizerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BFB41E2BCD814000E812C0 /* EqualizerService.swift */; };
@@ -63,6 +64,7 @@
 		9816A8AF2BC832DC00AD1299 /* hipjazz.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = hipjazz.wav; sourceTree = "<group>"; };
 		9816A8BA2BC87BC200AD1299 /* AudioPlayerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerService.swift; sourceTree = "<group>"; };
 		984DE9542BDAE59C004B427A /* Notifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notifier.swift; sourceTree = "<group>"; };
+		984DE9562BDAFC7E004B427A /* AudioPlayerControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerControlsView.swift; sourceTree = "<group>"; };
 		98BFB4192BC97AF800E812C0 /* DisplayLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayLink.swift; sourceTree = "<group>"; };
 		98BFB41B2BCAAD8A00E812C0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		98BFB41C2BCD7BB800E812C0 /* EqualizerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EqualizerView.swift; sourceTree = "<group>"; };
@@ -207,6 +209,7 @@
 				9806E8302BC6927D00757370 /* AudioPlayerModel.swift */,
 				9806E8292BC68F8700757370 /* AudioPlayerView.swift */,
 				98BFB41C2BCD7BB800E812C0 /* EqualizerView.swift */,
+				984DE9562BDAFC7E004B427A /* AudioPlayerControlsView.swift */,
 			);
 			path = AudioPlayer;
 			sourceTree = "<group>";
@@ -300,6 +303,7 @@
 				98BFB41F2BCD814000E812C0 /* EqualizerService.swift in Sources */,
 				9816A8AA2BC7F4F000AD1299 /* AudioTrack.swift in Sources */,
 				9816A8BB2BC87BC200AD1299 /* AudioPlayerService.swift in Sources */,
+				984DE9572BDAFC7E004B427A /* AudioPlayerControlsView.swift in Sources */,
 				9806E8182BC5D12500757370 /* App.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
