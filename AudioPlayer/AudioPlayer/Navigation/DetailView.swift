@@ -16,7 +16,7 @@ struct DetailView: View {
         case .audioPlayer:
             AudioPlayerView(appModel: appModel)
         case .audioQueue:
-            Text("Audio Queue")
+            AudioQueueView(appModel: appModel)
         }
     }
 }

@@ -127,7 +127,6 @@ struct EQSliderView: View {
                 }
                 GeometryReader { innerGeo in
                     ZStack {
-
                         LineShape(values: eqModel.shouldReset ? resetPoints : dragPointYLocations.map { Double($0) })
                             .stroke(Color.mint, lineWidth: 2)
                             .animation(.easeInOut(duration: 0.2), value: eqModel.shouldReset)

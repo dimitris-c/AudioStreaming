@@ -4,3 +4,16 @@
 //
 
 import Foundation
+
+@Observable
+class AudioQueueModel {
+    @ObservationIgnored
+    private(set) var audioPlayerService: AudioPlayerService
+    @ObservationIgnored
+    private var displayLink: DisplayLink?
+
+
+    init(audioPlayerService: AudioPlayerService) {
+        self.audioPlayerService = audioPlayerService
+    }
+}

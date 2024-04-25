@@ -40,6 +40,10 @@ final class AudioPlayerService {
         player.state
     }
 
+    var statusChangedNotifier = Notifier<AudioPlayerState>()
+    var metadataReceivedNotifier = Notifier<[String: String]>()
+    var playingStartedStopped = Notifier<(started: Bool, AudioEntryId, AudioPlayerStopReason?)>()
+
     init(audioPlayer: AudioPlayer) {
         player = audioPlayer
         player.delegate = self
@@ -150,12 +154,14 @@ extension AudioPlayerService: AudioPlayerDelegate {
     func audioPlayerDidStartPlaying(player _: AudioPlayer, with id: AudioEntryId) {
         print("audioPlayerDidStartPlaying entryId: \(id)")
         delegate?.didStartPlaying(id: id)
+        Task { await playingStartedStopped.send((true, id, nil)) }
     }
 
     func audioPlayerDidFinishBuffering(player _: AudioPlayer, with _: AudioEntryId) {}
 
     func audioPlayerStateChanged(player _: AudioPlayer, with newState: AudioPlayerState, previous _: AudioPlayerState) {
         print("audioPlayerDidStartPlaying newState: \(newState)")
+        Task { await statusChangedNotifier.send(newState) }
         delegate?.statusChanged(status: newState)
     }
 
@@ -166,6 +172,7 @@ extension AudioPlayerService: AudioPlayerDelegate {
                                      duration _: Double)
     {
         print("audioPlayerDidFinishPlaying entryId: \(id), reason: \(reason)")
+        Task { await playingStartedStopped.send((false, id, reason)) }
         delegate?.didStopPlaying(id: id, reason: reason)
     }
 
@@ -176,6 +183,7 @@ extension AudioPlayerService: AudioPlayerDelegate {
     func audioPlayerDidCancel(player _: AudioPlayer, queuedItems _: [AudioEntryId]) {}
 
     func audioPlayerDidReadMetadata(player _: AudioPlayer, metadata: [String: String]) {
+        Task { await metadataReceivedNotifier.send(metadata) }
         delegate?.metadataReceived(metadata: metadata)
     }
 }
