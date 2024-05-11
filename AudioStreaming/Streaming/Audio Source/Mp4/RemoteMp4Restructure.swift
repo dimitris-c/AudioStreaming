@@ -77,33 +77,31 @@ final class RemoteMp4Restructure {
                     do {
                         let value = try self.mp4Restructure.checkIsOptimized(data: self.audioData)
                         if let value {
-                            if let offset = value.offset, !value.optimized {
-                                guard response.response?.statusCode == 206 else {
-                                    Logger.error("⛔️ mp4 error: no moov before mdat and the stream is not seekable", category: .networking)
-                                    completion(.failure(Mp4RestructureError.nonOptimizedMp4AndServerCannotSeek))
-                                    return
-                                }
-                                // stop request, fetch moov and restructure
-                                self.audioData = Data()
-                                self.task?.cancel()
-                                self.task = nil
-                                self.fetchAndRestructureMoovAtom(offset: offset) { result in
-                                    switch result {
-                                    case let .success(value):
-                                        let data = value.data
-                                        let offset = value.offset
-                                        self.dataOptimized = true
-                                        completion(.success(RestructuredData(initialData: data, mdatOffset: offset)))
-                                    case let .failure(error):
-                                        completion(.failure(Mp4RestructureError.networkError(error)))
-                                    }
-                                }
-                            } else {
-                                self.audioData = Data()
-                                self.task?.cancel()
-                                self.task = nil
-                                completion(.success(nil))
+                            guard response.response?.statusCode == 206 else {
+                                Logger.error("⛔️ mp4 error: no moov before mdat and the stream is not seekable", category: .networking)
+                                completion(.failure(Mp4RestructureError.nonOptimizedMp4AndServerCannotSeek))
+                                return
                             }
+                            // stop request, fetch moov and restructure
+                            self.audioData = Data()
+                            self.task?.cancel()
+                            self.task = nil
+                            self.fetchAndRestructureMoovAtom(offset: value.moovOffset) { result in
+                                switch result {
+                                case let .success(value):
+                                    let data = value.data
+                                    let offset = value.offset
+                                    self.dataOptimized = true
+                                    completion(.success(RestructuredData(initialData: data, mdatOffset: offset)))
+                                case let .failure(error):
+                                    completion(.failure(Mp4RestructureError.networkError(error)))
+                                }
+                            }
+                        } else {
+                            self.audioData = Data()
+                            self.task?.cancel()
+                            self.task = nil
+                            completion(.success(nil))
                         }
                     } catch {
                         completion(.failure(Mp4RestructureError.invalidAtomSize))

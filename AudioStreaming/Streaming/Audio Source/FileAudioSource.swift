@@ -3,6 +3,7 @@
 //  Copyright © 2020 Decimal. All rights reserved.
 //
 
+import Foundation
 import AVFoundation
 
 final class FileAudioSource: NSObject, CoreAudioStreamSource {
@@ -17,6 +18,12 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
         audioFileType(fileExtension: url.pathExtension)
     }
 
+    private var isMp4: Bool {
+        audioFileHint == kAudioFileM4AType || audioFileHint == kAudioFileMPEG4Type
+    }
+
+    private var mp4IsAlreadyOptimized: Bool = false
+
     private var seekOffset: Int
 
     private let url: URL
@@ -25,6 +32,8 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
     private var readSize: Int
     private var buffer: UnsafeMutablePointer<UInt8>
     private var inputStream: InputStream?
+
+    private var mp4Restructure: Mp4Restructure
 
     init(url: URL,
          fileManager: FileManager = .default,
@@ -35,6 +44,7 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
         self.underlyingQueue = underlyingQueue
         self.fileManager = fileManager
         self.readSize = readSize
+        self.mp4Restructure = Mp4Restructure()
         buffer = UnsafeMutablePointer.uint8pointer(of: readSize)
         seekOffset = 0
         position = 0
@@ -43,6 +53,7 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
 
     deinit {
         buffer.deallocate()
+        mp4Restructure.clear()
     }
 
     func close() {
@@ -79,9 +90,12 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
         guard let inputStream = inputStream else {
             return
         }
-
-        if inputStream.setProperty(seekOffset, forKey: .fileCurrentOffsetKey) {
-            position = seekOffset
+        var offset = seekOffset
+        if isMp4, mp4Restructure.dataOptimized {
+            offset = mp4Restructure.seekAdjusted(offset: seekOffset)
+        }
+        if inputStream.setProperty(offset, forKey: .fileCurrentOffsetKey) {
+            position = offset
         } else {
             position = 0
         }
@@ -92,10 +106,48 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
         let read = inputStream.read(buffer, maxLength: readSize)
         if read > 0 {
             let data = Data(bytes: buffer, count: read)
-            delegate?.dataAvailable(source: self, data: data)
+            if isMp4, !mp4IsAlreadyOptimized {
+                if !mp4Restructure.dataOptimized {
+                    do {
+                        if let mp4OptimizeInfo = try mp4Restructure.checkIsOptimized(data: data) {
+                            try performMp4Restructure(inputStream: inputStream, mp4OptimizeInfo: mp4OptimizeInfo)
+                        } else {
+                            mp4IsAlreadyOptimized = true
+                            delegate?.dataAvailable(source: self, data: data)
+                        }
+                    } catch {
+                        delegate?.errorOccurred(source: self, error: error)
+                    }
+                } else {
+                    delegate?.dataAvailable(source: self, data: data)
+                }
+            } else {
+                delegate?.dataAvailable(source: self, data: data)
+            }
             position += read
         } else {
             position += getCurrentOffsetFromStream()
+        }
+    }
+
+    func performMp4Restructure(inputStream: InputStream, mp4OptimizeInfo: Mp4OptimizeInfo) throws {
+        let offsetAccepted = inputStream.setProperty(mp4OptimizeInfo.moovOffset, forKey: .fileCurrentOffsetKey)
+        if offsetAccepted {
+            let moovDataBuffer = UnsafeMutablePointer.uint8pointer(of: mp4OptimizeInfo.moovSize)
+            defer { moovDataBuffer.deallocate() }
+            let moovRead = inputStream.read(moovDataBuffer, maxLength: mp4OptimizeInfo.moovSize)
+            if moovRead > 0 {
+                let data = Data(bytes: moovDataBuffer, count: moovRead)
+                let moovData = try mp4Restructure.restructureMoov(data: data)
+                delegate?.dataAvailable(source: self, data: moovData.initialData)
+                if !inputStream.setProperty(moovData.mdatOffset, forKey: .fileCurrentOffsetKey) {
+                    delegate?.errorOccurred(source: self, error: AudioSystemError.playerStartError)
+                }
+            } else {
+                delegate?.errorOccurred(source: self, error: AudioSystemError.playerStartError)
+            }
+        } else {
+            delegate?.errorOccurred(source: self, error: inputStream.streamError ?? AudioSystemError.playerStartError)
         }
     }
 
