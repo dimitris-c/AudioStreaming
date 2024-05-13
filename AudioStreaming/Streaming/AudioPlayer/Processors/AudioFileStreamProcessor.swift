@@ -123,13 +123,15 @@ final class AudioFileStreamProcessor {
 
             let seekStatus = AudioFileStreamSeek(stream, seekPacket, &packetsAlignedByteOffset, &ioFlags)
             let dataOffset = Int64(readingEntry.audioStreamState.dataOffset)
-            if seekStatus == noErr, !ioFlags.contains(.offsetIsEstimated) {
+            if seekStatus == noErr {
                 seekByteOffset = packetsAlignedByteOffset + dataOffset
-                let delta = Double((seekByteOffset - dataOffset) - packetsAlignedByteOffset) * 8 / bitrate
+                if !ioFlags.contains(.offsetIsEstimated) {
+                    let delta = Double((seekByteOffset - dataOffset) - packetsAlignedByteOffset) / (bitrate * 8)
 
-                readingEntry.lock.lock()
-                readingEntry.seekTime -= delta
-                readingEntry.lock.unlock()
+                    readingEntry.lock.lock()
+                    readingEntry.seekTime -= delta
+                    readingEntry.lock.unlock()
+                }
             }
         }
 
@@ -215,7 +217,6 @@ final class AudioFileStreamProcessor {
                               propertyId: AudioFileStreamPropertyID,
                               flags _: UnsafeMutablePointer<AudioFileStreamPropertyFlags>)
     {
-        print(propertyId.description)
         switch propertyId {
         case kAudioFileStreamProperty_DataOffset:
             processDataOffset(fileStream: fileStream)
@@ -230,10 +231,9 @@ final class AudioFileStreamProcessor {
         case kAudioFileStreamProperty_ReadyToProducePackets:
             // check converter for discontinuous stream
             processReadyToProducePackets(fileStream: fileStream)
+            processPacketUpperBoundAndMaxPacketSize(fileStream: fileStream)
         case kAudioFileStreamProperty_FormatList:
             processFormatList(fileStream: fileStream)
-        case kAudioFileStreamProperty_MaximumPacketSize:
-            packetBufferSize(fileStream: fileStream)
         default:
             break
         }
@@ -302,14 +302,19 @@ final class AudioFileStreamProcessor {
         }
     }
 
-    private func packetBufferSize(fileStream: AudioFileStreamID) {
+    private func processPacketUpperBoundAndMaxPacketSize(fileStream: AudioFileStreamID) {
         guard let entry = playerContext.audioReadingEntry else { return }
         var packetBufferSize: UInt32 = 0
         var status = fileStreamGetProperty(value: &packetBufferSize,
                                            fileStream: fileStream,
-                                           propertyId: kAudioFileStreamProperty_MaximumPacketSize)
+                                           propertyId: kAudioFileStreamProperty_PacketSizeUpperBound)
         if status != 0 || packetBufferSize == 0 {
-            packetBufferSize = 2048 // default value
+            status = fileStreamGetProperty(value: &packetBufferSize,
+                                           fileStream: fileStream,
+                                           propertyId: kAudioFileStreamProperty_MaximumPacketSize)
+            if status != 0 || packetBufferSize == 0 {
+                packetBufferSize = 2048 // default value
+            }
         }
         entry.lock.withLock {
             entry.processedPacketsState.bufferSize = packetBufferSize
