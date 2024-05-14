@@ -84,20 +84,31 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
     }
 
     private func performOpen(seek seekOffset: Int) throws {
-        close()
-        try open()
-
-        guard let inputStream = inputStream else {
-            return
+        var reopened = false
+        let status = inputStream?.streamStatus ?? .closed
+        if status == .atEnd || status == .closed || status == .error {
+            reopened = true
+            close()
+            try open()
         }
+
         var offset = seekOffset
         if isMp4, mp4Restructure.dataOptimized {
             offset = mp4Restructure.seekAdjusted(offset: seekOffset)
         }
-        if inputStream.setProperty(offset, forKey: .fileCurrentOffsetKey) {
+
+        if inputStream?.setProperty(offset, forKey: .fileCurrentOffsetKey) == true {
             position = offset
         } else {
             position = 0
+        }
+
+        if !reopened {
+            underlyingQueue.async { [weak self] in
+                if self?.inputStream?.hasBytesAvailable == true {
+                    self?.dataAvailable()
+                }
+            }
         }
     }
 
