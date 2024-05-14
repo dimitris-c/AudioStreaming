@@ -101,7 +101,7 @@ enum AudioContent: Int, CaseIterable {
         case .nonOptimized:
             return URL(string: "https://github.com/dimitris-c/sample-audio/raw/main/bensound-jazzyfrenchy.m4a")!
         case .local:
-            let path = Bundle.main.path(forResource: "bensound-jazzyfrenchy", ofType: "mp3")!
+            let path = Bundle.main.path(forResource: "bensound-jazzyfrenchy", ofType: "m4a")!
             return URL(fileURLWithPath: path)
         case .localWave:
             let path = Bundle.main.path(forResource: "hipjazz", ofType: "wav")!

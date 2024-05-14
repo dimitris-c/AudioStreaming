@@ -179,9 +179,9 @@ final class AudioPlayerRenderProcessor: NSObject {
 
         if totalFramesCopied < inNumberFrames {
             let delta = inNumberFrames - totalFramesCopied
-            writeSilence(outputBuffer: &bufferList.mBuffers,
-                         outputBufferSize: Int(delta * frameSizeInBytes),
-                         offset: Int(totalFramesCopied * frameSizeInBytes))
+            if let mData = bufferList.mBuffers.mData {
+                memset(mData + Int(totalFramesCopied * frameSizeInBytes), 0, Int(delta * frameSizeInBytes))
+            }
 
             if playingEntry != nil || AudioPlayer.InternalState.waiting.contains(state) {
                 if playerContext.internalState != .rebuffering {
@@ -327,7 +327,5 @@ final class AudioPlayerRenderProcessor: NSObject {
     {
         guard let mData = outputBuffer.mData else { return }
         memset(mData + offset, 0, outputBufferSize)
-        outputBuffer.mDataByteSize = UInt32(outputBufferSize)
-        outputBuffer.mNumberChannels = outputAudioFormat.mChannelsPerFrame
     }
 }

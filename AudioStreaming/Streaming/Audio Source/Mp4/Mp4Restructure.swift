@@ -11,9 +11,18 @@ struct MP4Atom: Equatable, CustomDebugStringConvertible {
     let offset: Int
     var data: Data?
 
+    var isFreeSpaceAtom: Bool {
+        type == Atoms.free || type == Atoms.skip || type == Atoms.wide
+    }
+
     var debugDescription: String {
         "[Atom][size: \(size))][type: \(Atoms.integerToFourCC(type) ?? "")][offset: \(offset)]"
     }
+}
+
+struct Mp4OptimizeInfo: Equatable {
+    let moovOffset: Int
+    let moovSize: Int
 }
 
 /// These are some atoms, helpful for audio mp4
@@ -22,6 +31,8 @@ enum Atoms {
     static var moov: Int { fourCcToInt("moov") }
     static var mdat: Int { fourCcToInt("mdat") }
     static var free: Int { fourCcToInt("free") }
+    static var skip: Int { fourCcToInt("skip") }
+    static var wide: Int { fourCcToInt("wide") }
 
     static var cmov: Int { fourCcToInt("cmov") }
     static var stco: Int { fourCcToInt("stco") }
@@ -104,11 +115,22 @@ final class Mp4Restructure {
             partialResult.append(data)
         }
         let initialData = accumulatedInitialData + atomData
-        let mdatOffset = mdatAtom.offset - Atoms.atomPreampleSize
+        let mdatOffset: Int
+        if let ftyp = ftyp {
+            mdatOffset = ftyp.offset + ftyp.size
+        } else {
+            let freeSpaceAtoms = atoms.filter(\.isFreeSpaceAtom)
+            let freeSpaceSize = freeSpaceAtoms.reduce(into: 0) { partialResult, atom in
+                partialResult += atom.size
+            }
+            mdatOffset = mdatAtom.offset - freeSpaceSize
+        }
+        dataOptimized = true
         return (initialData, mdatOffset)
     }
 
-    func checkIsOptimized(data: Data) throws -> (optimized: Bool, offset: Int?)? {
+    /// Returns `nil` if the data is optimized otherwise `Mp4OptimizeInfo`
+    func checkIsOptimized(data: Data) throws -> Mp4OptimizeInfo? {
         while atomOffset < UInt64(data.count) {
             var atomSize = try Int(getInteger(data: data, offset: atomOffset) as UInt32)
             let atomType = try Int(getInteger(data: data, offset: atomOffset + 4) as UInt32)
@@ -123,7 +145,7 @@ final class Mp4Restructure {
                 // This atom can be quite large, and may exceed 2^32 bytes, in which case the size field will be set to 1, 
                 // and the header will contain a 64-bit extended size field.
                 if atomSize == 1 {
-                    atomSize =  Int(try getInteger(data: data, offset: atomOffset + 8) as UInt64)
+                    atomSize = Int(try getInteger(data: data, offset: atomOffset + 8) as UInt64)
                 }
                 let mdat = MP4Atom(type: atomType, size: atomSize, offset: atomOffset)
                 atoms.append(mdat)
@@ -139,11 +161,11 @@ final class Mp4Restructure {
             if ftyp != nil {
                 if foundMoov && !foundMdat {
                     Logger.debug("🕵️ detected an optimized mp4", category: .generic)
-                    return (true, nil)
+                    return nil
                 } else if !foundMoov && foundMdat {
                     Logger.debug("🕵️ detected an non-optimized mp4", category: .generic)
                     let possibleMoovOffset = Int(atomOffset) + atomSize
-                    return (false, possibleMoovOffset)
+                    return Mp4OptimizeInfo(moovOffset: possibleMoovOffset, moovSize: atomSize)
                 }
             }
             atomOffset += atomSize

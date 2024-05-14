@@ -749,7 +749,6 @@ open class AudioPlayer {
 
     private func raiseUnexpected(error: AudioPlayerError) {
         playerContext.setInternalState(to: .error)
-        // todo raise on main thread from playback thread
         asyncOnMain { [weak self] in
             guard let self = self else { return }
             self.delegate?.audioPlayerUnexpectedError(player: self, error: error)
