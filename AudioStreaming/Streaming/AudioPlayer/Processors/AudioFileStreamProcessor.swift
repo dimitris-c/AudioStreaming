@@ -123,15 +123,12 @@ final class AudioFileStreamProcessor {
 
             let seekStatus = AudioFileStreamSeek(stream, seekPacket, &packetsAlignedByteOffset, &ioFlags)
             let dataOffset = Int64(readingEntry.audioStreamState.dataOffset)
-            if seekStatus == noErr {
+            if seekStatus == noErr, !ioFlags.contains(.offsetIsEstimated) {
+                let delta = Double((seekByteOffset - dataOffset) - packetsAlignedByteOffset) / (bitrate * 8)
+                readingEntry.lock.lock()
+                readingEntry.seekTime -= delta
+                readingEntry.lock.unlock()
                 seekByteOffset = packetsAlignedByteOffset + dataOffset
-                if !ioFlags.contains(.offsetIsEstimated) {
-                    let delta = Double((seekByteOffset - dataOffset) - packetsAlignedByteOffset) / (bitrate * 8)
-
-                    readingEntry.lock.lock()
-                    readingEntry.seekTime -= delta
-                    readingEntry.lock.unlock()
-                }
             }
         }
 
