@@ -145,7 +145,7 @@ final class Mp4Restructure {
                 // This atom can be quite large, and may exceed 2^32 bytes, in which case the size field will be set to 1, 
                 // and the header will contain a 64-bit extended size field.
                 if atomSize == 1 {
-                    atomSize =  Int(try getInteger(data: data, offset: atomOffset + 8) as UInt64)
+                    atomSize = Int(try getInteger(data: data, offset: atomOffset + 8) as UInt64)
                 }
                 let mdat = MP4Atom(type: atomType, size: atomSize, offset: atomOffset)
                 atoms.append(mdat)
