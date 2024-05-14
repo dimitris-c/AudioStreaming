@@ -92,7 +92,9 @@ class AudioEntry {
 
     func reset() {
         lock.lock(); defer { lock.unlock() }
-        framesState = EntryFramesState()
+        framesState.played = 0
+        framesState.queued = 0
+        framesState.lastFrameQueued = -1
     }
 
     func has(same source: CoreAudioStreamSource) -> Bool {
