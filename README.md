@@ -10,7 +10,7 @@ Under the hood `AudioStreaming` uses `AVAudioEngine` and `CoreAudio` for playbac
 - AIFF, AIFC, WAVE, CAF, NeXT, ADTS, MPEG Audio Layer 3, AAC audio formats
 - M4A (_Optimized files only_)
 
-As of 1.2.0 version, there's support for non-optimized remote M4A, please report any issues
+As of 1.2.0 version, there's support for non-optimized M4A, please report any issues
 
 Known limitations: 
 ~~- As described above non-optimised M4A files are not supported this is a limitation of [AudioFileStream Services](https://developer.apple.com/documentation/audiotoolbox/audio_file_stream_services?language=swift)~~
