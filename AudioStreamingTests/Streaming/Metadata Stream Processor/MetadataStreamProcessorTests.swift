@@ -34,7 +34,7 @@ class MetadataStreamProcessorTests: XCTestCase {
     }
 
     func test_Processor_Outputs_Correct_Metadata_ForStep_WithEmptyMetadata() throws {
-        let bundle = Bundle(for: MetadataStreamProcessorTests.self)
+        let bundle = Bundle.module
         let url = bundle.url(forResource: "raw-stream-audio-empty-metadata", withExtension: nil)!
 
         let data = try Data(contentsOf: url)
@@ -53,7 +53,7 @@ class MetadataStreamProcessorTests: XCTestCase {
     }
 
     func test_Processor_Outputs_Correct_Metadata_ForStep_WithMetadata() throws {
-        let bundle = Bundle(for: MetadataStreamProcessorTests.self)
+        let bundle = Bundle.module
         let url = bundle.url(forResource: "raw-stream-audio-normal-metadata", withExtension: nil)!
 
         let data = try Data(contentsOf: url)
@@ -72,7 +72,7 @@ class MetadataStreamProcessorTests: XCTestCase {
     }
 
     func test_Processor_Outputs_Correct_Metadata_ForStep_WithMetadata_Alt() throws {
-        let bundle = Bundle(for: MetadataStreamProcessorTests.self)
+        let bundle = Bundle.module
         let url = bundle.url(forResource: "raw-stream-audio-normal-metadata-alt", withExtension: nil)!
 
         let data = try Data(contentsOf: url)
@@ -95,7 +95,7 @@ class MetadataStreamProcessorTests: XCTestCase {
     }
 
     func test_Processor_Outputs_Correct_Metadata_ForStep_NoMetadata() throws {
-        let bundle = Bundle(for: MetadataStreamProcessorTests.self)
+        let bundle = Bundle.module
         let url = bundle.url(forResource: "raw-stream-audio-no-metadata", withExtension: nil)!
 
         let data = try Data(contentsOf: url)

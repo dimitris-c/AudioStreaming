@@ -116,7 +116,7 @@ enum AudioContent {
             let path = Bundle.main.path(forResource: "hipjazz", ofType: "wav")!
             return URL(fileURLWithPath: path)
         case .remoteWave:
-            return URL(string: "https://file-examples.com/wp-content/storage/2017/11/file_example_WAV_5MG.wav")!
+            return URL(string: "https://github.com/dimitris-c/sample-audio/raw/main/5-MB-WAV.wav")!
         case .custom(let url):
             return URL(string: url)!
         }

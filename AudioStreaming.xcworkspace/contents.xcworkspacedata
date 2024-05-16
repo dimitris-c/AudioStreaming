@@ -5,9 +5,6 @@
       location = "group:AudioPlayer/AudioPlayer.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:AudioExample/AudioExample.xcodeproj">
-   </FileRef>
-   <FileRef
       location = "container:AudioStreaming.xcodeproj">
    </FileRef>
 </Workspace>

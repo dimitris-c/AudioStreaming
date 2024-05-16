@@ -1,4 +1,4 @@
-// swift-tools-version:5.3
+// swift-tools-version:5.9
 
 import PackageDescription
 
@@ -18,6 +18,18 @@ let package = Package(
             name: "AudioStreaming",
             path: "AudioStreaming"
         ),
-    ],
-    swiftLanguageVersions: [.v5]
+        .testTarget(
+            name: "AudioStreamingTests",
+            dependencies: [
+                "AudioStreaming"
+            ],
+            path: "AudioStreamingTests",
+            resources: [
+                .copy("Streaming/Metadata Stream Processor/raw-audio-streams/raw-stream-audio-empty-metadata"),
+                .copy("Streaming/Metadata Stream Processor/raw-audio-streams/raw-stream-audio-no-metadata"),
+                .copy("Streaming/Metadata Stream Processor/raw-audio-streams/raw-stream-audio-normal-metadata"),
+                .copy("Streaming/Metadata Stream Processor/raw-audio-streams/raw-stream-audio-normal-metadata-alt")
+          ]
+        )
+    ]
 )

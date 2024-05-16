@@ -28,8 +28,6 @@
 		98BFB41D2BCD7BB800E812C0 /* EqualizerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BFB41C2BCD7BB800E812C0 /* EqualizerView.swift */; };
 		98BFB41F2BCD814000E812C0 /* EqualizerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BFB41E2BCD814000E812C0 /* EqualizerService.swift */; };
 		98BFB4232BCE78AB00E812C0 /* AddNewAudioURLView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BFB4222BCE78AB00E812C0 /* AddNewAudioURLView.swift */; };
-		98E3921E2BD845F200B586E9 /* AudioQueueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98E3921D2BD845F200B586E9 /* AudioQueueView.swift */; };
-		98E392202BD8461D00B586E9 /* AudioQueueModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98E3921F2BD8461D00B586E9 /* AudioQueueModel.swift */; };
 		98E6119C2BC72C0E0036BC47 /* DetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98E6119B2BC72C0E0036BC47 /* DetailView.swift */; };
 /* End PBXBuildFile section */
 
@@ -70,8 +68,6 @@
 		98BFB41C2BCD7BB800E812C0 /* EqualizerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EqualizerView.swift; sourceTree = "<group>"; };
 		98BFB41E2BCD814000E812C0 /* EqualizerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EqualizerService.swift; sourceTree = "<group>"; };
 		98BFB4222BCE78AB00E812C0 /* AddNewAudioURLView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddNewAudioURLView.swift; sourceTree = "<group>"; };
-		98E3921D2BD845F200B586E9 /* AudioQueueView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioQueueView.swift; sourceTree = "<group>"; };
-		98E3921F2BD8461D00B586E9 /* AudioQueueModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioQueueModel.swift; sourceTree = "<group>"; };
 		98E6119B2BC72C0E0036BC47 /* DetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -107,8 +103,8 @@
 		9806E8162BC5D12500757370 /* AudioPlayer */ = {
 			isa = PBXGroup;
 			children = (
-				984DE9532BDAE57F004B427A /* Dependencies */,
 				98BFB41B2BCAAD8A00E812C0 /* Info.plist */,
+				984DE9532BDAE57F004B427A /* Dependencies */,
 				984DE9522BDAE571004B427A /* Helpers */,
 				9816A8A82BC7F4DE00AD1299 /* Common */,
 				9806E8282BC68F7300757370 /* Content */,
@@ -142,7 +138,6 @@
 		9806E8282BC68F7300757370 /* Content */ = {
 			isa = PBXGroup;
 			children = (
-				98E3921B2BD845D200B586E9 /* AudioQueue */,
 				98E3921C2BD845E100B586E9 /* AudioPlayer */,
 			);
 			path = Content;
@@ -192,15 +187,6 @@
 				9816A8BA2BC87BC200AD1299 /* AudioPlayerService.swift */,
 			);
 			path = Dependencies;
-			sourceTree = "<group>";
-		};
-		98E3921B2BD845D200B586E9 /* AudioQueue */ = {
-			isa = PBXGroup;
-			children = (
-				98E3921D2BD845F200B586E9 /* AudioQueueView.swift */,
-				98E3921F2BD8461D00B586E9 /* AudioQueueModel.swift */,
-			);
-			path = AudioQueue;
 			sourceTree = "<group>";
 		};
 		98E3921C2BD845E100B586E9 /* AudioPlayer */ = {
@@ -293,8 +279,6 @@
 				98BFB41A2BC97AF800E812C0 /* DisplayLink.swift in Sources */,
 				9806E81A2BC5D12500757370 /* ContentView.swift in Sources */,
 				98E6119C2BC72C0E0036BC47 /* DetailView.swift in Sources */,
-				98E3921E2BD845F200B586E9 /* AudioQueueView.swift in Sources */,
-				98E392202BD8461D00B586E9 /* AudioQueueModel.swift in Sources */,
 				9816A8AC2BC820DF00AD1299 /* AudioContent.swift in Sources */,
 				9806E8262BC5D2A900757370 /* Sidebar.swift in Sources */,
 				984DE9552BDAE59C004B427A /* Notifier.swift in Sources */,

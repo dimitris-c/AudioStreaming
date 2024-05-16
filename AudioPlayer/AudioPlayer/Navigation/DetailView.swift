@@ -15,8 +15,8 @@ struct DetailView: View {
         switch selection {
         case .audioPlayer:
             AudioPlayerView(appModel: appModel)
-        case .audioQueue:
-            AudioQueueView(appModel: appModel)
+        case .audioQueue: // TODO
+            EmptyView()
         }
     }
 }
