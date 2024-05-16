@@ -9,34 +9,16 @@ on:
     branches: 
       - '*'
 
-# jobs:
-#   iOS:
-#     name: Test iOS 
-#     runs-on: macOS-latest
-#     env: 
-#        DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
-#     strategy:
-#       matrix:
-#         destination: ["OS=latest,name=iPhone 13 Pro"]
-#     steps:
-#       - uses: actions/checkout@v2
-#       - name: iOS - ${{ matrix.destination }}
-#         run: set -o pipefail && env NSUnbufferedIO=YES xcodebuild -project "AudioStreaming.xcodeproj" -scheme "AudioStreaming" -destination "${{ matrix.destination }}" clean test | xcpretty
-
 jobs:
-  build:
-    name: Swift ${{ matrix.swift }} on ${{ matrix.os }}
+  iOS:
+    name: Test iOS 
+    runs-on: macOS-latest
+    env: 
+       DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
     strategy:
       matrix:
-        os: [macos-latest]
-        swift: ["5.9"]
-    runs-on: ${{ matrix.os }}
+        destination: ["OS=latest,name=iPhone 15 Pro"]
     steps:
-      - uses: swift-actions/setup-swift@65540b95f51493d65f5e59e97dcef9629ddf11bf
-        with:
-          swift-version: ${{ matrix.swift }}
-      - uses: actions/checkout@v4
-      - name: Build
-        run: swift build
-      - name: Run tests
-        run: swift test
+      - uses: actions/checkout@v2
+      - name: iOS - ${{ matrix.destination }}
+        run: set -o pipefail && env NSUnbufferedIO=YES xcodebuild -project "AudioStreaming.xcodeproj" -scheme "AudioStreaming" -destination "${{ matrix.destination }}" clean test | xcpretty

@@ -2,7 +2,7 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "group:AudioExample/AudioExample.xcodeproj">
+      location = "group:AudioPlayer/AudioPlayer.xcodeproj">
    </FileRef>
    <FileRef
       location = "container:AudioStreaming.xcodeproj">

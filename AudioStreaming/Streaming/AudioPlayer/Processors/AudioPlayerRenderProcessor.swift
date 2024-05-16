@@ -109,9 +109,9 @@ final class AudioPlayerRenderProcessor: NSObject {
                 bufferList.mBuffers.mDataByteSize = frameSizeInBytes * framesToCopy
 
                 if isMuted {
-                    writeSilence(outputBuffer: &bufferList.mBuffers,
-                                 outputBufferSize: 0,
-                                 offset: Int(bufferList.mBuffers.mDataByteSize))
+                    if let mData = bufferList.mBuffers.mData {
+                        memset(mData, 0, Int(bufferList.mBuffers.mDataByteSize))
+                    }
                 } else {
                     if let mDataBuffer = audioBuffer.mData {
                         memcpy(bufferList.mBuffers.mData,
@@ -132,9 +132,9 @@ final class AudioPlayerRenderProcessor: NSObject {
                 bufferList.mBuffers.mDataByteSize = frameSizeInBytes * frameToCopy
 
                 if isMuted {
-                    writeSilence(outputBuffer: &bufferList.mBuffers,
-                                 outputBufferSize: 0,
-                                 offset: Int(bufferList.mBuffers.mDataByteSize))
+                    if let mData = bufferList.mBuffers.mData {
+                        memset(mData, 0, Int(bufferList.mBuffers.mDataByteSize))
+                    }
                 } else {
                     if let mDataBuffer = audioBuffer.mData {
                         memcpy(bufferList.mBuffers.mData,
@@ -151,9 +151,7 @@ final class AudioPlayerRenderProcessor: NSObject {
                     bufferList.mBuffers.mDataByteSize += frameSizeInBytes * moreFramesToCopy
                     if let ioBufferData = bufferList.mBuffers.mData {
                         if isMuted {
-                            writeSilence(outputBuffer: &bufferList.mBuffers,
-                                         outputBufferSize: Int(frameSizeInBytes * moreFramesToCopy),
-                                         offset: Int(frameToCopy * frameSizeInBytes))
+                            memset(ioBufferData + Int(frameToCopy * frameSizeInBytes), 0, Int(frameSizeInBytes * moreFramesToCopy))
                         } else {
                             if let mDataBuffer = audioBuffer.mData {
                                 memcpy(ioBufferData + Int(frameToCopy * frameSizeInBytes),
@@ -318,14 +316,5 @@ final class AudioPlayerRenderProcessor: NSObject {
     {
         guard inputBusNumber == 0 else { return noErr }
         return render(inNumberFrames: inNumberFrames, ioData: inputData, flags: flags)
-    }
-
-    @inline(__always)
-    private func writeSilence(outputBuffer: inout AudioBuffer,
-                              outputBufferSize: Int,
-                              offset: Int)
-    {
-        guard let mData = outputBuffer.mData else { return }
-        memset(mData + offset, 0, outputBufferSize)
     }
 }

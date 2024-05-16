@@ -1,4 +1,4 @@
-![AudioStreaming CI](https://github.com/dimitris-c/AudioStreaming/workflows/AudioStreaming%20CI/badge.svg)
+[![AudioStreaming CI](https://github.com/dimitris-c/AudioStreaming/actions/workflows/swift.yml/badge.svg)](https://github.com/dimitris-c/AudioStreaming/actions/workflows/swift.yml)
 
 # AudioStreaming
 An AudioPlayer/Streaming library for iOS written in Swift, allows playback of online audio streaming, local file as well as gapless queueing.

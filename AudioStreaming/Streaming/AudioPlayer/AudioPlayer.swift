@@ -210,6 +210,25 @@ open class AudioPlayer {
         }
     }
 
+    public func playNextInQueue() {
+        checkRenderWaitingAndNotifyIfNeeded()
+        serializationQueue.sync {
+            if entriesQueue.count(for: .upcoming) > 0 {
+                playerContext.setInternalState(to: .pendingNext)
+            }
+            do {
+                try self.startEngineIfNeeded()
+            } catch {
+                self.raiseUnexpected(error: .audioSystemError(.engineFailure))
+            }
+        }
+
+        sourceQueue.async { [weak self] in
+            guard let self = self else { return }
+            self.processSource()
+        }
+    }
+
     /// Queues the specified URL
     ///
     /// - Parameter url: A `URL` specifying the audio content to be played.
@@ -224,15 +243,41 @@ open class AudioPlayer {
         queue(urls: urls, headers: [:])
     }
 
+    public func queue(url: URL, after afterUrl: URL) {
+        queue(url: url, headers: [:], after: afterUrl)
+    }
+
+    public func removeFromQueue(url: URL) {
+        serializationQueue.sync {
+            if let item = entriesQueue.items(type: .upcoming).first(where: { $0.id.id == url.absoluteString }) {
+                entriesQueue.remove(item: item, type: .upcoming)
+
+                if playerContext.audioPlayingEntry?.id.id == item.id.id {
+                    stop(clearQueue: false)
+                }
+            }
+        }
+        checkRenderWaitingAndNotifyIfNeeded()
+        sourceQueue.async { [weak self] in
+            self?.processSource()
+        }
+    }
+
     /// Queues the specified URL
     ///
     /// - Parameter url: A `URL` specifying the audio content to be played.
     /// - parameter headers: A `Dictionary` specifying any additional headers to be pass to the network request.
-    public func queue(url: URL, headers: [String: String]) {
+    public func queue(url: URL, headers: [String: String], after afterUrl: URL? = nil) {
         serializationQueue.sync {
             let audioEntry = entryProvider.provideAudioEntry(url: url, headers: headers)
             audioEntry.delegate = self
-            entriesQueue.enqueue(item: audioEntry, type: .upcoming)
+            if let afterUrl = afterUrl {
+                if let afterUrlEntry = entriesQueue.items(type: .upcoming).first(where: { $0.id.id == afterUrl.absoluteString }) {
+                    entriesQueue.insert(item: audioEntry, type: .upcoming, after: afterUrlEntry)
+                }
+            } else {
+                entriesQueue.enqueue(item: audioEntry, type: .upcoming)
+            }
         }
         checkRenderWaitingAndNotifyIfNeeded()
         sourceQueue.async { [weak self] in
@@ -259,7 +304,7 @@ open class AudioPlayer {
     }
 
     /// Stops the audio playback
-    public func stop() {
+    public func stop(clearQueue: Bool = true) {
         guard playerContext.internalState != .stopped else { return }
 
         serializationQueue.sync {
@@ -274,7 +319,9 @@ open class AudioPlayer {
                 self.processFinishPlaying(entry: playingEntry, with: nil)
             }
 
-            self.clearQueue()
+            if clearQueue {
+                self.clearQueue()
+            }
             self.playerContext.entriesLock.lock()
             self.playerContext.audioReadingEntry = nil
             self.playerContext.audioPlayingEntry = nil

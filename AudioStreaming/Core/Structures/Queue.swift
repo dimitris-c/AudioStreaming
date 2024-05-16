@@ -25,12 +25,14 @@
     +---+ +---+
  ```
  */
-final class Queue<Element>: Sequence, CustomDebugStringConvertible {
+final class Queue<Element: Equatable>: Sequence, CustomDebugStringConvertible {
     private var _storage: [Element] = []
 
     var isEmpty: Bool { _storage.isEmpty }
 
     var count: Int { _storage.count }
+
+    var items: [Element] { _storage }
 
     /// Inserts an item at the end of the queue
     func enqueue(item: Element) {
@@ -53,6 +55,30 @@ final class Queue<Element>: Sequence, CustomDebugStringConvertible {
         for item in items {
             _storage.append(item)
         }
+    }
+
+    /// Inserts an item at a specific index in the queue
+    func insert(item: Element, at index: Int) {
+        guard index >= 0 && index <= count else {
+            fatalError("Index out of range")
+        }
+        _storage.insert(item, at: index)
+    }
+
+    func remove(item: Element) {
+        guard let index = _storage.firstIndex(of: item) else {
+            return
+        }
+        _storage.remove(at: index)
+    }
+
+    /// Removes the item at the specified index in the queue
+    @discardableResult
+    func remove(at index: Int) -> Element? {
+        guard index >= 0 && index < count else {
+            return nil
+        }
+        return _storage.remove(at: index)
     }
 
     /// Retrieves the last item
