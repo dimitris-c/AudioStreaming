@@ -25,7 +25,9 @@ struct AddNewAudioURLView: View {
                     TextField(value: $audioUrl, format: urlStyle, prompt: nil, label: {
                         Text("Insert URL")
                     })
+                    #if os(iOS)
                     .keyboardType(.URL)
+                    #endif
                     .autocorrectionDisabled()
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .onSubmit {
@@ -48,6 +50,7 @@ struct AddNewAudioURLView: View {
                     }
                     .foregroundStyle(Color.white)
                 }
+                .buttonStyle(.plain)
                 .disabled(audioUrl == nil)
                 .opacity(audioUrl == nil ? 0.5 : 1.0)
                 .padding(.horizontal, 16)
@@ -56,8 +59,11 @@ struct AddNewAudioURLView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16))
             }
             .navigationTitle("Add Audio URL")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
+#if os(iOS)
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         dismiss()
@@ -65,7 +71,13 @@ struct AddNewAudioURLView: View {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(Color.gray)
                     }
+                    .buttonStyle(.plain)
                 }
+#else
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done", action: dismiss.callAsFunction)
+                }
+#endif
             }
         }
     }

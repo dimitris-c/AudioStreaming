@@ -95,6 +95,8 @@ struct AudioTrackView: View {
             } else if track.status == .buffering {
                 ProgressView()
                     .progressViewStyle(.circular)
+                    .frame(alignment: .center)
+                    .scaleEffect(0.7)
             }
         }
     }

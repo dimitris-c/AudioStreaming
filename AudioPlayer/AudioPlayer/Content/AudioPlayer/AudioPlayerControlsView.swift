@@ -2,6 +2,7 @@
 //  Created by Dimitris Chatzieleftheriou on 26/04/2024.
 //
 
+import AVFoundation
 import SwiftUI
 
 struct AudioPlayerControls: View {
@@ -17,28 +18,41 @@ struct AudioPlayerControls: View {
         VStack(alignment: .leading) {
             HStack {
                 Button(action: { model.playPause() }) {
-                    Image(systemName: model.isPlaying ? "pause.fill" : "play.fill")
+                    Image(systemName: model.isPlaying ? "pause" : "play")
+                        .symbolVariant(.fill)
                         .font(.title)
                         .imageScale(.small)
                 }
+                .buttonStyle(.plain)
                 .contentTransition(.symbolEffect(.replace))
                 Button(action: {
                     model.stop()
                     currentTrack = nil
                 }) {
-                    Image(systemName: "stop.fill")
+                    Image(systemName: "stop")
+                        .symbolVariant(.fill)
                         .font(.title)
                         .imageScale(.small)
                 }
+                .buttonStyle(.plain)
                 .padding(.leading, 8)
                 Spacer()
-                Button(action: { model.mute() }) {
-                    Image(systemName: model.isMuted ? "speaker.slash.fill" : "speaker.fill")
-                        .font(.title)
-                        .imageScale(.small)
+                HStack {
+                    Slider(value: $model.volume)
+                        .frame(width: 80)
+                        .onChange(of: model.volume) { _, newValue in
+                            model.update(volume: newValue)
+                        }
+                    Button(action: { model.mute() }) {
+                        Image(systemName: model.iconForVolume)
+                            .symbolVariant(model.isMuted || model.volume == 0 ? .slash.fill : .fill)
+                            .foregroundStyle(.teal, .gray)
+                            .font(.title.monospaced())
+                            .imageScale(.small)
+                    }
+                    .buttonStyle(.plain)
+                    .frame(width: 20, height: 20)
                 }
-                .frame(width: 20, height: 20)
-                .contentTransition(.symbolEffect(.replace))
             }
             .tint(.mint)
             .padding(16)
@@ -118,6 +132,8 @@ extension AudioPlayerControls {
         var isPlaying: Bool = false
         var isMuted: Bool = false
 
+        var volume: Float = 0.5
+
         var playbackRate: Double = 0.0
 
         var currentTime: Double = 0
@@ -129,6 +145,19 @@ extension AudioPlayerControls {
         var formattedTotalTime: String?
 
         var currentTrack: AudioTrack?
+
+        var iconForVolume: String {
+            if isMuted || volume == 0 {
+                return "speaker"
+            }
+            if volume < 0.4 {
+                return "speaker.wave.1"
+            } else if volume < 0.8 {
+                return "speaker.wave.2"
+            } else {
+                return "speaker.wave.3"
+            }
+        }
 
         init(audioPlayerService: AudioPlayerService) {
             self.audioPlayerService = audioPlayerService
@@ -202,6 +231,10 @@ extension AudioPlayerControls {
         func update(rate: Float) {
             let rate = round(rate / 0.2) * 0.2
             audioPlayerService.update(rate: rate)
+        }
+
+        func update(volume: Float) {
+            audioPlayerService.update(volume: volume)
         }
 
         func stop() {

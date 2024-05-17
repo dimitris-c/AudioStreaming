@@ -114,9 +114,7 @@ final class AudioPlayerRenderProcessor: NSObject {
                     }
                 } else {
                     if let mDataBuffer = audioBuffer.mData {
-                        memcpy(bufferList.mBuffers.mData,
-                               mDataBuffer + Int(start * frameSizeInBytes),
-                               Int(bufferList.mBuffers.mDataByteSize))
+                        memcpy(bufferList.mBuffers.mData, mDataBuffer + Int(start * frameSizeInBytes), Int(bufferList.mBuffers.mDataByteSize))
                     }
                 }
                 totalFramesCopied = framesToCopy
@@ -137,9 +135,7 @@ final class AudioPlayerRenderProcessor: NSObject {
                     }
                 } else {
                     if let mDataBuffer = audioBuffer.mData {
-                        memcpy(bufferList.mBuffers.mData,
-                               mDataBuffer + Int(start * frameSizeInBytes),
-                               Int(bufferList.mBuffers.mDataByteSize))
+                        memcpy(bufferList.mBuffers.mData, mDataBuffer + Int(start * frameSizeInBytes), Int(bufferList.mBuffers.mDataByteSize))
                     }
                 }
 
@@ -154,9 +150,7 @@ final class AudioPlayerRenderProcessor: NSObject {
                             memset(ioBufferData + Int(frameToCopy * frameSizeInBytes), 0, Int(frameSizeInBytes * moreFramesToCopy))
                         } else {
                             if let mDataBuffer = audioBuffer.mData {
-                                memcpy(ioBufferData + Int(frameToCopy * frameSizeInBytes),
-                                       mDataBuffer,
-                                       Int(frameSizeInBytes * moreFramesToCopy))
+                                memcpy(ioBufferData + Int(frameToCopy * frameSizeInBytes), mDataBuffer, Int(frameSizeInBytes * moreFramesToCopy))
                             }
                         }
                     }
@@ -270,10 +264,11 @@ final class AudioPlayerRenderProcessor: NSObject {
         return UnsafePointer(rendererContext.inOutAudioBufferList)
     }
 
-    func render(inNumberFrames: UInt32,
-                ioData: UnsafeMutablePointer<AudioBufferList>,
-                flags _: UnsafeMutablePointer<AudioUnitRenderActionFlags>) -> OSStatus
-    {
+    func render(
+        inNumberFrames: UInt32,
+        ioData: UnsafeMutablePointer<AudioBufferList>,
+        flags _: UnsafeMutablePointer<AudioUnitRenderActionFlags>
+    ) -> OSStatus {
         var status = noErr
 
         rendererContext.inOutAudioBufferList[0].mBuffers.mData = ioData.pointee.mBuffers.mData
@@ -308,13 +303,18 @@ final class AudioPlayerRenderProcessor: NSObject {
         return status
     }
 
-    func renderProvider(flags: UnsafeMutablePointer<AudioUnitRenderActionFlags>,
-                        timeStamp _: UnsafePointer<AudioTimeStamp>,
-                        inNumberFrames: AUAudioFrameCount,
-                        inputBusNumber: Int,
-                        inputData: UnsafeMutablePointer<AudioBufferList>) -> AUAudioUnitStatus
-    {
+    func renderProvider(
+        flags: UnsafeMutablePointer<AudioUnitRenderActionFlags>,
+        timeStamp _: UnsafePointer<AudioTimeStamp>,
+        inNumberFrames: AUAudioFrameCount,
+        inputBusNumber: Int,
+        inputData: UnsafeMutablePointer<AudioBufferList>
+    ) -> AUAudioUnitStatus {
         guard inputBusNumber == 0 else { return noErr }
-        return render(inNumberFrames: inNumberFrames, ioData: inputData, flags: flags)
+        return render(
+            inNumberFrames: inNumberFrames,
+            ioData: inputData,
+            flags: flags
+        )
     }
 }

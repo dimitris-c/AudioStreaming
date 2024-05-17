@@ -41,7 +41,7 @@ func provideEqualizerService(playerService: AudioPlayerService) -> EqualizerServ
 
 func provideAudioPlayerService() -> AudioPlayerService {
     AudioPlayerService(
-        audioPlayer: provideDefaultAudioPlayer()
+        audioPlayerProvider: provideDefaultAudioPlayer
     )
 }
 

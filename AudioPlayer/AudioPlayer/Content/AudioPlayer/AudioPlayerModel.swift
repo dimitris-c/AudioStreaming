@@ -3,7 +3,12 @@
 //  Copyright © 2024 Decimal. All rights reserved.
 //
 
+#if os(iOS)
 import UIKit
+#else
+import AppKit
+#endif
+
 import Foundation
 import AudioStreaming
 
