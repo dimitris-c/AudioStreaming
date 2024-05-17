@@ -51,24 +51,37 @@ struct AudioPlayerView: View {
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .navigationTitle("Audio Player")
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar {
-            ToolbarItemGroup(placement: .topBarTrailing) {
+            #if os(iOS)
+            let placement: ToolbarItemPlacement = .topBarTrailing
+            #else
+            let placement: ToolbarItemPlacement = .automatic
+            #endif
+            ToolbarItemGroup(placement: placement) {
                 Button {
                     eqSheetIsShown.toggle()
                 } label: {
                     Image(systemName: "slider.horizontal.3")
                 }
+                .buttonStyle(.plain)
                 Button {
                     addNewAudioIsShown.toggle()
                 } label: {
                     Image(systemName: "plus")
                 }
+                .buttonStyle(.plain)
             }
         }
         .sheet(isPresented: $eqSheetIsShown) {
             EqualizerView(appModel: appModel)
+            #if os(iOS)
                 .presentationDetents([.medium])
+            #elseif os(macOS)
+                .frame(minWidth: 520, maxWidth: .infinity, minHeight: 400, maxHeight: .infinity)
+            #endif
         }
         .sheet(isPresented: $addNewAudioIsShown) {
             AddNewAudioURLView(
@@ -76,7 +89,11 @@ struct AudioPlayerView: View {
                     model.addNewAudioTrack(url: url)
                 }
             )
+            #if os(iOS)
             .presentationDetents([.height(150)])
+            #elseif os(macOS)
+                .frame(minWidth: 320, maxWidth: .infinity, minHeight: 140, maxHeight: .infinity)
+            #endif
         }
     }
 }

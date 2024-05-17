@@ -121,15 +121,21 @@ class AudioEntry {
     }
 
     func duration() -> Double {
-        guard sampleRate > 0 else { return 0 }
+        lock.lock()
+        guard sampleRate > 0 else {
+            lock.unlock()
+            return 0
+        }
 
         if let audioDataPacketOffset = audioStreamState.dataPacketOffset {
             let framesPerPacket = UInt64(audioStreamFormat.mFramesPerPacket)
             if audioDataPacketOffset > 0, framesPerPacket > 0 {
-                return Double(audioDataPacketOffset * framesPerPacket) / audioStreamFormat.mSampleRate
+                let duration = Double(audioDataPacketOffset * framesPerPacket) / audioStreamFormat.mSampleRate
+                lock.unlock()
+                return duration
             }
         }
-
+        lock.unlock()
         let calculatedBitrate = self.calculatedBitrate()
         if calculatedBitrate < 1.0 || source.length == 0 {
             return 0

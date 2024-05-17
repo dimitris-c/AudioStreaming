@@ -44,8 +44,11 @@ final class AudioPlayerService {
     var metadataReceivedNotifier = Notifier<[String: String]>()
     var playingStartedStopped = Notifier<(started: Bool, AudioEntryId, AudioPlayerStopReason?)>()
 
-    init(audioPlayer: AudioPlayer) {
-        player = audioPlayer
+    private let audioPlayerProvider: () -> AudioPlayer
+
+    init(audioPlayerProvider: @escaping () -> AudioPlayer) {
+        self.audioPlayerProvider = audioPlayerProvider
+        player = audioPlayerProvider()
         player.delegate = self
 
         configureAudioSession()
@@ -83,6 +86,10 @@ final class AudioPlayerService {
         player.rate = rate
     }
 
+    func update(volume: Float) {
+        player.volume = volume
+    }
+
     func add(_ node: AVAudioNode) {
         player.attach(node: node)
     }
@@ -104,12 +111,13 @@ final class AudioPlayerService {
     }
 
     private func recreatePlayer() {
-        player = AudioPlayer(configuration: .init(enableLogs: true))
+        player = audioPlayerProvider()
         player.delegate = self
     }
 
     private func registerSessionEvents() {
         // Note that a real app might need to observer other AVAudioSession notifications as well
+#if os(iOS)
         audioSystemResetObserver = NotificationCenter.default.addObserver(
             forName: AVAudioSession.mediaServicesWereResetNotification,
             object: nil,
@@ -118,9 +126,11 @@ final class AudioPlayerService {
             self.configureAudioSession()
             self.recreatePlayer()
         }
+#endif
     }
 
     private func configureAudioSession() {
+#if os(iOS)
         do {
             print("AudioSession category is AVAudioSessionCategoryPlayback")
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, policy: .longFormAudio, options: [])
@@ -128,9 +138,11 @@ final class AudioPlayerService {
         } catch let error as NSError {
             print("Couldn't setup audio session category to Playback \(error.localizedDescription)")
         }
+#endif
     }
 
     private func activateAudioSession() {
+#if os(iOS)
         do {
             print("AudioSession is active")
             try AVAudioSession.sharedInstance().setActive(true, options: [])
@@ -138,15 +150,18 @@ final class AudioPlayerService {
         } catch let error as NSError {
             print("Couldn't set audio session to active: \(error.localizedDescription)")
         }
+#endif
     }
 
     private func deactivateAudioSession() {
+#if os(iOS)
         do {
             print("AudioSession is deactivated")
             try AVAudioSession.sharedInstance().setActive(false)
         } catch let error as NSError {
             print("Couldn't deactivate audio session: \(error.localizedDescription)")
         }
+#endif
     }
 }
 
@@ -187,4 +202,3 @@ extension AudioPlayerService: AudioPlayerDelegate {
         delegate?.metadataReceived(metadata: metadata)
     }
 }
-

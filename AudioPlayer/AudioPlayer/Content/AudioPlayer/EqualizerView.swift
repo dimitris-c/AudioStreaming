@@ -85,8 +85,11 @@ struct EqualizerView: View {
                 }
             }
             .navigationTitle("Equalizer")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
+                #if os(iOS)
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         dismiss()
@@ -95,6 +98,11 @@ struct EqualizerView: View {
                             .foregroundStyle(Color.gray)
                     }
                 }
+                #else
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done", action: dismiss.callAsFunction)
+                }
+                #endif
             }
         }
     }

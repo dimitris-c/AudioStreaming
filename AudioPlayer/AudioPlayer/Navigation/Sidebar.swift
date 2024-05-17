@@ -24,6 +24,9 @@ struct ContentSidebar: View {
             }
         }
         .navigationTitle("Home")
+        .navigationDestination(item: $selection, destination: { selection in
+            DetailView(selection: selection)
+        })
     }
 }
 
