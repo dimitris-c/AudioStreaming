@@ -8,7 +8,7 @@ Under the hood `AudioStreaming` uses `AVAudioEngine` and `CoreAudio` for playbac
 #### Supported audio
 - Online streaming (Shoutcast/ICY streams) with metadata parsing
 - AIFF, AIFC, WAVE, CAF, NeXT, ADTS, MPEG Audio Layer 3, AAC audio formats
-- M4A (_Optimized files only_)
+- M4A
 
 As of 1.2.0 version, there's support for non-optimized M4A, please report any issues
 
