@@ -153,6 +153,8 @@ class AudioEntry {
 
     deinit {
         print("AudioEntry: \(id) deinit")
+        try? FileManager.default.removeItem(at:  URL(string: id))
+
     }
 }
 
