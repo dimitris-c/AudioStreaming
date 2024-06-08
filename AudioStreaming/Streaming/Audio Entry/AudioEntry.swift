@@ -150,6 +150,10 @@ class AudioEntry {
         guard source.length > 0 else { return 0 }
         return UInt(source.length) - UInt(audioStreamState.dataOffset)
     }
+
+    deinit {
+        print("AudioEntry: \(id) deinit")
+    }
 }
 
 extension AudioEntry: AudioStreamSourceDelegate {
