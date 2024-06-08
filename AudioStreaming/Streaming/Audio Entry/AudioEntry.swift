@@ -154,7 +154,7 @@ class AudioEntry {
     deinit {
         print("AudioEntry: \(id) deinit")
         guard let url = URL(string: id.id), url.pathExtension == "tmp" else {
-            try? FileManager.default.removeItem(at:  URL(string: id))
+            try? FileManager.default.removeItem(at: url)
         }
     }
 }
