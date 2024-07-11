@@ -26,7 +26,7 @@ final class UnfairLock: Lock {
     var unfairLock: Lock
 
     init() {
-        if #available(iOS 16.0, *) {
+        if #available(iOS 16.0, *), #available(macOS 13.0, *) {
             unfairLock = OSStorageLock()
         } else {
             unfairLock = UnfairStorageLock()
@@ -67,6 +67,7 @@ final class UnfairLock: Lock {
 }
 
 @available(iOS 16.0, *)
+@available(macOS 13, *)
 private class OSStorageLock: Lock {
     @usableFromInline
     let osLock = OSAllocatedUnfairLock()
