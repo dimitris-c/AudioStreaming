@@ -228,10 +228,12 @@ final class AudioFileStreamProcessor {
             processAudioDataPacketCount(entry: entry, fileStream: fileStream)
         case kAudioFileStreamProperty_ReadyToProducePackets:
             // check converter for discontinuous stream
-            processReadyToProducePackets(entry: entry, fileStream: fileStream)
             processPacketUpperBoundAndMaxPacketSize(entry: entry, fileStream: fileStream)
+            processReadyToProducePackets(entry: entry, fileStream: fileStream)
         case kAudioFileStreamProperty_FormatList:
             processFormatList(entry: entry, fileStream: fileStream)
+        case kAudioFileStreamProperty_MagicCookieData:
+            assignMagicCookieToConverterIfNeeded()
         default:
             break
         }
@@ -242,7 +244,7 @@ final class AudioFileStreamProcessor {
     private func processDataOffset(entry: AudioEntry, fileStream: AudioFileStreamID) {
         var offset: UInt64 = 0
         fileStreamGetProperty(value: &offset, fileStream: fileStream, propertyId: kAudioFileStreamProperty_DataOffset)
-        entry.lock.lock(); defer { playerContext.audioReadingEntry?.lock.unlock() }
+        entry.lock.lock(); defer { entry.lock.unlock() }
         entry.audioStreamState.processedDataFormat = true
         entry.audioStreamState.dataOffset = offset
     }
@@ -253,7 +255,9 @@ final class AudioFileStreamProcessor {
         AudioFileStreamGetProperty(fileStream, kAudioFileStreamProperty_AudioDataPacketCount, &packetCountSize, &packetCount)
         entry.lock.lock(); defer { entry.lock.unlock() }
         entry.audioStreamState.dataPacketCount = Double(packetCount)
-        if entry.audioStreamFormat.mFormatID != kAudioFormatLinearPCM {
+        let entryFormatID = entry.audioStreamFormat.mFormatID
+        let isFLAC = entryFormatID == kAudioFormatFLAC
+        if entryFormatID != kAudioFormatLinearPCM && !isFLAC {
             discontinuous = true
         }
     }
@@ -370,6 +374,11 @@ final class AudioFileStreamProcessor {
         guard let entry = playerContext.audioReadingEntry else { return }
         guard entry.audioStreamState.processedDataFormat else { return }
 
+        guard let converter = audioConverter else {
+            Logger.error("Couldn't find audio converter", category: .audioRendering)
+            return
+        }
+
         if let playingEntry = playerContext.audioPlayingEntry,
            playingEntry.seekRequest.requested, playingEntry.calculatedBitrate() > 0
         {
@@ -380,25 +389,24 @@ final class AudioFileStreamProcessor {
             return
         }
 
-        guard let converter = audioConverter else {
-            Logger.error("Couldn't find audio converter", category: .audioRendering)
-            return
-        }
-
         // reset discontinuity
         discontinuous = false
 
-        var convertInfo = AudioConvertInfo(done: false,
-                                           numberOfPackets: inNumberPackets,
-                                           packDescription: inPacketDescriptions)
+        var convertInfo = AudioConvertInfo(
+            done: false,
+            numberOfPackets: inNumberPackets,
+            packDescription: inPacketDescriptions
+        )
         convertInfo.audioBuffer.mData = UnsafeMutableRawPointer(mutating: inInputData)
         convertInfo.audioBuffer.mDataByteSize = inNumberBytes
         if let playingAudioStreamFormat = playerContext.audioPlayingEntry?.audioStreamFormat {
             convertInfo.audioBuffer.mNumberChannels = playingAudioStreamFormat.mChannelsPerFrame
         }
 
-        updateProcessedPackets(inPacketDescriptions: inPacketDescriptions,
-                               inNumberPackets: inNumberPackets)
+        updateProcessedPackets(
+            inPacketDescriptions: inPacketDescriptions,
+            inNumberPackets: inNumberPackets
+        )
 
         var status: OSStatus = noErr
         packetProcess: while status == noErr {
@@ -406,7 +414,7 @@ final class AudioFileStreamProcessor {
             let bufferContext = rendererContext.bufferContext
             var used = bufferContext.frameUsedCount
             var start = bufferContext.frameStartIndex
-            var end = bufferContext.end
+            var end = (bufferContext.frameStartIndex + bufferContext.frameUsedCount) % bufferContext.totalFrameCount
 
             var framesLeftInBuffer = bufferContext.totalFrameCount - used
             rendererContext.lock.unlock()

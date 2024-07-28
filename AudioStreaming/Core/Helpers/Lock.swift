@@ -42,25 +42,21 @@ final class UnfairLock: Lock {
     }
 
     @inlinable
-    @inline(__always)
     func withLock<Result>(body: () throws -> Result) rethrows -> Result {
         try unfairLock.withLock(body: body)
     }
 
     @inlinable
-    @inline(__always)
     func withLock(body: () -> Void) {
         unfairLock.withLock(body: body)
     }
 
     @inlinable
-    @inline(__always)
     func lock() {
         unfairLock.lock()
     }
 
     @inlinable
-    @inline(__always)
     func unlock() {
         unfairLock.unlock()
     }
@@ -73,13 +69,11 @@ private class OSStorageLock: Lock {
     let osLock = OSAllocatedUnfairLock()
 
     @inlinable
-    @inline(__always)
     func lock() {
         osLock.lock()
     }
 
     @inlinable
-    @inline(__always)
     func unlock() {
         osLock.unlock()
     }
@@ -105,16 +99,12 @@ private class UnfairStorageLock: Lock {
         unfairLock.initialize(to: os_unfair_lock())
     }
 
-    deinit {
-        deallocate()
-    }
-
     func deallocate() {
+        unfairLock.deinitialize(count: 1)
         unfairLock.deallocate()
     }
 
     @inlinable
-    @inline(__always)
     func withLock<Result>(body: () throws -> Result) rethrows -> Result {
         os_unfair_lock_lock(unfairLock)
         defer { os_unfair_lock_unlock(unfairLock) }
@@ -122,7 +112,6 @@ private class UnfairStorageLock: Lock {
     }
 
     @inlinable
-    @inline(__always)
     func withLock(body: () -> Void) {
         os_unfair_lock_lock(unfairLock)
         defer { os_unfair_lock_unlock(unfairLock) }
@@ -130,13 +119,11 @@ private class UnfairStorageLock: Lock {
     }
 
     @inlinable
-    @inline(__always)
     func lock() {
         os_unfair_lock_lock(unfairLock)
     }
 
     @inlinable
-    @inline(__always)
     func unlock() {
         os_unfair_lock_unlock(unfairLock)
     }

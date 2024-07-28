@@ -20,9 +20,9 @@ final class AudioRendererContext {
 
     let packetsSemaphore = DispatchSemaphore(value: 0)
 
-    let framesRequiredToStartPlaying: UInt32
-    let framesRequiredAfterRebuffering: UInt32
-    let framesRequiredForDataAfterSeekPlaying: UInt32
+    let framesRequiredToStartPlaying: Double
+    let framesRequiredAfterRebuffering: Double
+    let framesRequiredForDataAfterSeekPlaying: Double
 
     let waitingForDataAfterSeekFrameCount = Atomic<Int32>(0)
 
@@ -33,9 +33,9 @@ final class AudioRendererContext {
 
         let canonicalStream = outputAudioFormat.basicStreamDescription
 
-        framesRequiredToStartPlaying = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.secondsRequiredToStartPlaying)
-        framesRequiredAfterRebuffering = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.secondsRequiredToStartPlayingAfterBufferUnderrun)
-        framesRequiredForDataAfterSeekPlaying = UInt32(canonicalStream.mSampleRate) * UInt32(configuration.gracePeriodAfterSeekInSeconds)
+        framesRequiredToStartPlaying = Double(canonicalStream.mSampleRate) * Double(configuration.secondsRequiredToStartPlaying)
+        framesRequiredAfterRebuffering = Double(canonicalStream.mSampleRate) * Double(configuration.secondsRequiredToStartPlayingAfterBufferUnderrun)
+        framesRequiredForDataAfterSeekPlaying = Double(canonicalStream.mSampleRate) * Double(configuration.gracePeriodAfterSeekInSeconds)
 
         let dataByteSize = Int(canonicalStream.mSampleRate * configuration.bufferSizeInSeconds) * Int(canonicalStream.mBytesPerFrame)
         inOutAudioBufferList = allocateBufferList(dataByteSize: dataByteSize)

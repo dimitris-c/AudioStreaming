@@ -19,6 +19,7 @@ enum AudioContent {
     case remoteWave
     case local
     case localWave
+    case loopBeatFlac
     case custom(String)
 
     var title: String {
@@ -49,6 +50,8 @@ enum AudioContent {
             return "Jazzy Frenchy"
         case .nonOptimized:
             return "Jazzy Frenchy"
+        case .loopBeatFlac:
+            return "Beat loop"
         case .custom(let url):
             return url
         }
@@ -82,6 +85,8 @@ enum AudioContent {
             return "Music by: bensound.com - m4a optimized"
         case .nonOptimized:
             return "Music by: bensound.com - m4a non-optimized"
+        case .loopBeatFlac:
+            return "Remote flac"
         case .custom:
             return ""
         }
@@ -117,6 +122,8 @@ enum AudioContent {
             return URL(fileURLWithPath: path)
         case .remoteWave:
             return URL(string: "https://github.com/dimitris-c/sample-audio/raw/main/5-MB-WAV.wav")!
+        case .loopBeatFlac:
+            return URL(string: "https://github.com/dimitris-c/sample-audio/raw/main/drumbeat-loop.flac")!
         case .custom(let url):
             return URL(string: url)!
         }
