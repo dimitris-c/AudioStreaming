@@ -64,29 +64,30 @@ final class AudioPlayerRenderProcessor: NSObject {
         let frameSizeInBytes = bufferContext.sizeInBytes
         let used = bufferContext.frameUsedCount
         let start = bufferContext.frameStartIndex
-        let end = bufferContext.end
+        let end = (bufferContext.frameStartIndex + bufferContext.frameUsedCount) % bufferContext.totalFrameCount
         let signal = rendererContext.waiting.value && used < bufferContext.totalFrameCount / 2
 
         if let playingEntry = playingEntry {
             playingEntry.lock.lock()
             let framesState = playingEntry.framesState
             playingEntry.lock.unlock()
+
             if state == .waitingForData {
                 var requiredFramesToStart = rendererContext.framesRequiredToStartPlaying
                 if framesState.lastFrameQueued >= 0 {
-                    requiredFramesToStart = min(requiredFramesToStart, UInt32(playingEntry.framesState.lastFrameQueued))
+                    requiredFramesToStart = min(requiredFramesToStart, Double(playingEntry.framesState.lastFrameQueued))
                 }
-                if let readingEntry = readingEntry, readingEntry === playingEntry,
-                   framesState.queued < requiredFramesToStart
+
+                if readingEntry === playingEntry, framesState.queued < Int(requiredFramesToStart)
                 {
                     waitForBuffer = true
                 }
             } else if state == .rebuffering {
                 var requiredFramesToStart = rendererContext.framesRequiredAfterRebuffering
                 if framesState.lastFrameQueued >= 0 {
-                    requiredFramesToStart = min(requiredFramesToStart, UInt32(framesState.lastFrameQueued - framesState.queued))
+                    requiredFramesToStart = min(requiredFramesToStart, Double(framesState.lastFrameQueued - framesState.queued))
                 }
-                if used < requiredFramesToStart {
+                if used < Int(requiredFramesToStart) {
                     waitForBuffer = true
                 }
             } else if state == .waitingForDataAfterSeek {
@@ -102,7 +103,7 @@ final class AudioPlayerRenderProcessor: NSObject {
         rendererContext.lock.unlock()
 
         var totalFramesCopied: UInt32 = 0
-        if used > 0 && !waitForBuffer && state.contains(.running) && state != .paused {
+        if used > 0 && !waitForBuffer && playingEntry != nil && state.contains(.running) && state != .paused {
             if end > start {
                 let framesToCopy = min(inNumberFrames, used)
                 bufferList.mBuffers.mNumberChannels = 2
@@ -162,6 +163,7 @@ final class AudioPlayerRenderProcessor: NSObject {
                 bufferContext.frameUsedCount -= totalFramesCopied
                 rendererContext.lock.unlock()
             }
+
             if playerContext.internalState != .playing {
                 playerContext.setInternalState(to: .playing, when: { state -> Bool in
                     state.contains(.running) && state != .paused
@@ -175,7 +177,7 @@ final class AudioPlayerRenderProcessor: NSObject {
                 memset(mData + Int(totalFramesCopied * frameSizeInBytes), 0, Int(delta * frameSizeInBytes))
             }
 
-            if playingEntry != nil || AudioPlayer.InternalState.waiting.contains(state) {
+            if !(playingEntry == nil || state == .waitingForDataAfterSeek || state == .waitingForData || state == .rebuffering) {
                 if playerContext.internalState != .rebuffering {
                     playerContext.setInternalState(to: .rebuffering, when: { state -> Bool in
                         state.contains(.running) && state != .paused
@@ -184,7 +186,7 @@ final class AudioPlayerRenderProcessor: NSObject {
             } else if state == .waitingForDataAfterSeek {
                 if totalFramesCopied == 0 {
                     rendererContext.waitingForDataAfterSeekFrameCount.write { $0 += Int32(inNumberFrames - totalFramesCopied) }
-                    if rendererContext.waitingForDataAfterSeekFrameCount.value > rendererContext.framesRequiredForDataAfterSeekPlaying {
+                    if rendererContext.waitingForDataAfterSeekFrameCount.value > Int(rendererContext.framesRequiredForDataAfterSeekPlaying) {
                         if playerContext.internalState != .playing {
                             playerContext.setInternalState(to: .playing) { state -> Bool in
                                 state.contains(.running) && state != .playing

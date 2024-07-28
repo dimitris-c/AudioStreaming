@@ -58,7 +58,7 @@ public class AudioPlayerModel {
 }
 
 private let radioTracks: [AudioContent] = [.offradio, .enlefko, .pepper966, .kosmos, .kosmosJazz, .radiox]
-private let audioTracks: [AudioContent] = [.khruangbin, .piano, .optimized, .nonOptimized, .remoteWave, .local, .localWave]
+private let audioTracks: [AudioContent] = [.khruangbin, .piano, .optimized, .nonOptimized, .remoteWave, .local, .localWave, .loopBeatFlac]
 
 func audioTracksProvider() -> [AudioPlaylist] {
     [

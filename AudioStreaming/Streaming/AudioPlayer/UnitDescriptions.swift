@@ -5,10 +5,8 @@
 
 import AVFoundation
 
-private let outputChannels: UInt32 = 2
-
 enum UnitDescriptions {
-    static var output: AudioComponentDescription = {
+    static let output: AudioComponentDescription = {
         var desc = AudioComponentDescription()
         desc.componentType = kAudioUnitType_Output
         #if os(iOS)

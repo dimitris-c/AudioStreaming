@@ -26,7 +26,7 @@ public struct AudioPlayerConfiguration: Equatable {
                                                            bufferSizeInSeconds: 10,
                                                            secondsRequiredToStartPlaying: 1,
                                                            gracePeriodAfterSeekInSeconds: 0.5,
-                                                           secondsRequiredToStartPlayingAfterBufferUnderrun: 1,
+                                                           secondsRequiredToStartPlayingAfterBufferUnderrun: 7,
                                                            enableLogs: false)
     /// Initializes the configuration for the `AudioPlayer`
     ///
