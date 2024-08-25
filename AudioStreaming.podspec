@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name = 'AudioStreaming'
-  s.version = '1.2.4'
+  s.version = '1.2.5'
   s.license = 'MIT'
   s.summary = 'An AudioPlayer/Streaming library for iOS written in Swift using AVAudioEngine.'
   s.homepage = 'https://github.com/dimitris-c/AudioStreaming'
