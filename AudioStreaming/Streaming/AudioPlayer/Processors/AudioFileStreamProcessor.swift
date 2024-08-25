@@ -228,12 +228,11 @@ final class AudioFileStreamProcessor {
             processAudioDataPacketCount(entry: entry, fileStream: fileStream)
         case kAudioFileStreamProperty_ReadyToProducePackets:
             // check converter for discontinuous stream
+            assignMagicCookieToConverterIfNeeded()
             processPacketUpperBoundAndMaxPacketSize(entry: entry, fileStream: fileStream)
             processReadyToProducePackets(entry: entry, fileStream: fileStream)
         case kAudioFileStreamProperty_FormatList:
             processFormatList(entry: entry, fileStream: fileStream)
-        case kAudioFileStreamProperty_MagicCookieData:
-            assignMagicCookieToConverterIfNeeded()
         default:
             break
         }
