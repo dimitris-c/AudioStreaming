@@ -6,7 +6,7 @@
 import AudioToolbox
 import Foundation
 
-protocol AudioStreamSourceDelegate: AnyObject {
+public protocol AudioStreamSourceDelegate: AnyObject {
     /// Indicates that there's data available
     func dataAvailable(source: CoreAudioStreamSource, data: Data)
     /// Indicates an error occurred
@@ -17,7 +17,7 @@ protocol AudioStreamSourceDelegate: AnyObject {
     func metadataReceived(data: [String: String])
 }
 
-protocol CoreAudioStreamSource: AnyObject {
+public protocol CoreAudioStreamSource: AnyObject {
     /// An `Int` that represents the position of the audio
     var position: Int { get }
     /// The length of the audio in bytes

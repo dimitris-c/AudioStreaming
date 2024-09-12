@@ -13,13 +13,13 @@ enum RemoteAudioSourceError: Error {
 }
 
 public class RemoteAudioSource: AudioStreamSource {
-    weak var delegate: AudioStreamSourceDelegate?
+    public weak var delegate: AudioStreamSourceDelegate?
 
-    var position: Int {
+    public var position: Int {
         return seekOffset + relativePosition
     }
 
-    var length: Int {
+    public var length: Int {
         guard let parsedHeader = parsedHeaderOutput else { return 0 }
         return parsedHeader.fileLength
     }
@@ -40,7 +40,7 @@ public class RemoteAudioSource: AudioStreamSource {
     private var shouldTryParsingIcycastHeaders: Bool = false
     private let icycastHeadersProcessor: IcycastHeadersProcessor
 
-    var audioFileHint: AudioFileTypeID {
+    public var audioFileHint: AudioFileTypeID {
         guard let output = parsedHeaderOutput, output.typeId != 0 else {
             return audioFileType(fileExtension: url.pathExtension)
         }
@@ -49,7 +49,7 @@ public class RemoteAudioSource: AudioStreamSource {
 
     private let mp4Restructure: RemoteMp4Restructure
 
-    let underlyingQueue: DispatchQueue
+    public let underlyingQueue: DispatchQueue
     let streamOperationQueue: OperationQueue
     let netStatusService: NetStatusProvider
     var waitingForNetwork = false
@@ -114,7 +114,7 @@ public class RemoteAudioSource: AudioStreamSource {
                   httpHeaders: [:])
     }
 
-    func close() {
+    public func close() {
         retrierTimeout.cancel()
         streamOperationQueue.isSuspended = false
         streamOperationQueue.cancelAllOperations()
@@ -125,7 +125,7 @@ public class RemoteAudioSource: AudioStreamSource {
         streamRequest = nil
     }
 
-    func seek(at offset: Int) {
+    public func seek(at offset: Int) {
         close()
 
         relativePosition = 0
@@ -144,11 +144,11 @@ public class RemoteAudioSource: AudioStreamSource {
         performOpen(seek: offset)
     }
 
-    func suspend() {
+    public func suspend() {
         streamOperationQueue.isSuspended = true
     }
 
-    func resume() {
+    public func resume() {
         streamOperationQueue.isSuspended = false
     }
 

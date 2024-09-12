@@ -124,7 +124,7 @@ open class AudioPlayer {
     private let frameFilterProcessor: FrameFilterProcessor
 
     private let serializationQueue: DispatchQueue
-    private let sourceQueue: DispatchQueue
+    public let sourceQueue: DispatchQueue
 
     private let entryProvider: AudioEntryProviding
 
@@ -190,6 +190,20 @@ open class AudioPlayer {
     /// - parameter headers: A `Dictionary` specifying any additional headers to be pass to the network request.
     public func play(url: URL, headers: [String: String]) {
         let audioEntry = entryProvider.provideAudioEntry(url: url, headers: headers)
+        play(audioEntry: audioEntry)
+    }
+
+    /// Starts the audio playback for the supplied stream
+    ///
+    /// - parameter source: A `CoreAudioStreamSource` that will providing streaming data
+    /// - parameter entryId: A `String` that provides a unique id for this item
+    /// - parameter format: An `AVAudioFormat` the format of this audio source
+    public func play(source: CoreAudioStreamSource, entryId: String, format: AVAudioFormat) {
+        let audioEntry = AudioEntry(source: source, entryId: AudioEntryId(id: entryId), outputAudioFormat: format)
+        play(audioEntry: audioEntry)
+    }
+
+    private func play(audioEntry: AudioEntry) {
         audioEntry.delegate = self
 
         checkRenderWaitingAndNotifyIfNeeded()
@@ -805,7 +819,7 @@ open class AudioPlayer {
 }
 
 extension AudioPlayer: AudioStreamSourceDelegate {
-    func dataAvailable(source: CoreAudioStreamSource, data: Data) {
+    public func dataAvailable(source: CoreAudioStreamSource, data: Data) {
         guard let readingEntry = playerContext.audioReadingEntry, readingEntry.has(same: source) else {
             return
         }
@@ -835,12 +849,12 @@ extension AudioPlayer: AudioStreamSourceDelegate {
         }
     }
 
-    func errorOccurred(source: CoreAudioStreamSource, error: Error) {
+    public func errorOccurred(source: CoreAudioStreamSource, error: Error) {
         guard let entry = playerContext.audioReadingEntry, entry.has(same: source) else { return }
         raiseUnexpected(error: .networkError(.failure(error)))
     }
 
-    func endOfFileOccurred(source: CoreAudioStreamSource) {
+    public func endOfFileOccurred(source: CoreAudioStreamSource) {
         let hasSameSource = playerContext.audioReadingEntry?.has(same: source) ?? false
         guard playerContext.audioReadingEntry == nil || hasSameSource else {
             source.delegate = nil
@@ -877,7 +891,7 @@ extension AudioPlayer: AudioStreamSourceDelegate {
         }
     }
 
-    func metadataReceived(data: [String: String]) {
+    public func metadataReceived(data: [String: String]) {
         asyncOnMain { [weak self] in
             guard let self = self else { return }
             self.delegate?.audioPlayerDidReadMetadata(player: self, metadata: data)
