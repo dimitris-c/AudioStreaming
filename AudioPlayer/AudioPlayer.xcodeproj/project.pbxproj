@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		42BE42F52C9322AA00C0E448 /* CustomStreamSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42BE42F42C9322AA00C0E448 /* CustomStreamSource.swift */; };
 		9806E8182BC5D12500757370 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9806E8172BC5D12500757370 /* App.swift */; };
 		9806E81A2BC5D12500757370 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9806E8192BC5D12500757370 /* ContentView.swift */; };
 		9806E81C2BC5D12700757370 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9806E81B2BC5D12700757370 /* Assets.xcassets */; };
@@ -47,6 +48,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		42BE42F42C9322AA00C0E448 /* CustomStreamSource.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomStreamSource.swift; sourceTree = "<group>"; };
 		9806E8142BC5D12500757370 /* AudioPlayer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AudioPlayer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9806E8172BC5D12500757370 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		9806E8192BC5D12500757370 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -195,6 +197,7 @@
 		98E3921C2BD845E100B586E9 /* AudioPlayer */ = {
 			isa = PBXGroup;
 			children = (
+				42BE42F42C9322AA00C0E448 /* CustomStreamSource.swift */,
 				9806E8302BC6927D00757370 /* AudioPlayerModel.swift */,
 				9806E8292BC68F8700757370 /* AudioPlayerView.swift */,
 				98BFB41C2BCD7BB800E812C0 /* EqualizerView.swift */,
@@ -292,6 +295,7 @@
 				9816A8BB2BC87BC200AD1299 /* AudioPlayerService.swift in Sources */,
 				984DE9572BDAFC7E004B427A /* AudioPlayerControlsView.swift in Sources */,
 				9806E8182BC5D12500757370 /* App.swift in Sources */,
+				42BE42F52C9322AA00C0E448 /* CustomStreamSource.swift in Sources */,
 				989E08E72BF7A4E300599F17 /* PrefersTabNavigationEnvironmentKey.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

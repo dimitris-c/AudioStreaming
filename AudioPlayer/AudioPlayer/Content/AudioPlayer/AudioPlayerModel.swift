@@ -59,11 +59,13 @@ public class AudioPlayerModel {
 
 private let radioTracks: [AudioContent] = [.offradio, .enlefko, .pepper966, .kosmos, .kosmosJazz, .radiox]
 private let audioTracks: [AudioContent] = [.khruangbin, .piano, .optimized, .nonOptimized, .remoteWave, .local, .localWave, .loopBeatFlac]
+private let customStreams: [AudioContent] = [.custom("custom://sinwave")]
 
 func audioTracksProvider() -> [AudioPlaylist] {
     [
         AudioPlaylist(title: "Radio", tracks: radioTracks.map { AudioTrack.init(from: $0) }),
-        AudioPlaylist(title: "Tracks", tracks: audioTracks.map { AudioTrack.init(from:$0) })
+        AudioPlaylist(title: "Tracks", tracks: audioTracks.map { AudioTrack.init(from:$0) }),
+        AudioPlaylist(title: "Generated", tracks: customStreams.map { AudioTrack.init(from:$0) })
     ]
 }
 
