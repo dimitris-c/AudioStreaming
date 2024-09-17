@@ -261,6 +261,16 @@ open class AudioPlayer {
         queue(url: url, headers: [:], after: afterUrl)
     }
 
+    /// Queues the specified audio stream
+    ///
+    /// - parameter source: A `CoreAudioStreamSource` that will providing streaming data
+    /// - parameter entryId: A `String` that provides a unique id for this item
+    /// - parameter format: An `AVAudioFormat` the format of this audio source
+    public func queue(source: CoreAudioStreamSource, entryId: String, format: AVAudioFormat) {
+        let audioEntry = AudioEntry(source: source, entryId: AudioEntryId(id: entryId), outputAudioFormat: format)
+        queue(audioEntry: audioEntry)
+    }
+
     public func removeFromQueue(url: URL) {
         serializationQueue.sync {
             if let item = entriesQueue.items(type: .upcoming).first(where: { $0.id.id == url.absoluteString }) {
@@ -282,21 +292,8 @@ open class AudioPlayer {
     /// - Parameter url: A `URL` specifying the audio content to be played.
     /// - parameter headers: A `Dictionary` specifying any additional headers to be pass to the network request.
     public func queue(url: URL, headers: [String: String], after afterUrl: URL? = nil) {
-        serializationQueue.sync {
-            let audioEntry = entryProvider.provideAudioEntry(url: url, headers: headers)
-            audioEntry.delegate = self
-            if let afterUrl = afterUrl {
-                if let afterUrlEntry = entriesQueue.items(type: .upcoming).first(where: { $0.id.id == afterUrl.absoluteString }) {
-                    entriesQueue.insert(item: audioEntry, type: .upcoming, after: afterUrlEntry)
-                }
-            } else {
-                entriesQueue.enqueue(item: audioEntry, type: .upcoming)
-            }
-        }
-        checkRenderWaitingAndNotifyIfNeeded()
-        sourceQueue.async { [weak self] in
-            self?.processSource()
-        }
+        let audioEntry = entryProvider.provideAudioEntry(url: url, headers: headers)
+        queue(audioEntry: audioEntry, after: afterUrl)
     }
 
     /// Queues the specified URLs
@@ -308,6 +305,23 @@ open class AudioPlayer {
             for url in urls {
                 let audioEntry = entryProvider.provideAudioEntry(url: url, headers: headers)
                 audioEntry.delegate = self
+                entriesQueue.enqueue(item: audioEntry, type: .upcoming)
+            }
+        }
+        checkRenderWaitingAndNotifyIfNeeded()
+        sourceQueue.async { [weak self] in
+            self?.processSource()
+        }
+    }
+
+    private func queue(audioEntry: AudioEntry, after afterUrl: URL? = nil) {
+        serializationQueue.sync {
+            audioEntry.delegate = self
+            if let afterUrl = afterUrl {
+                if let afterUrlEntry = entriesQueue.items(type: .upcoming).first(where: { $0.id.id == afterUrl.absoluteString }) {
+                    entriesQueue.insert(item: audioEntry, type: .upcoming, after: afterUrlEntry)
+                }
+            } else {
                 entriesQueue.enqueue(item: audioEntry, type: .upcoming)
             }
         }
