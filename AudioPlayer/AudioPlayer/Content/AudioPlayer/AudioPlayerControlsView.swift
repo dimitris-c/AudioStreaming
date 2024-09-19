@@ -4,6 +4,7 @@
 
 import AVFoundation
 import SwiftUI
+import AudioStreaming
 
 struct AudioPlayerControls: View {
     @State var model: Model
@@ -247,9 +248,21 @@ extension AudioPlayerControls {
         func play(_ track: AudioTrack) {
             if track != currentTrack {
                 currentTrack?.status = .idle
-                audioPlayerService.play(url: track.url)
-                currentTrack = track
+                if track.url.scheme == "custom" {
+                    let source = createStreamSource()
+                    let audioFormat = AVAudioFormat(
+                        commonFormat: .pcmFormatFloat32, sampleRate: 44100, channels: 2, interleaved: false
+                    )!
+                    audioPlayerService.play(source: source, entryId: track.url.absoluteString, format: audioFormat)
+                    currentTrack = track
+                } else {
+                    audioPlayerService.play(url: track.url)
+                }
             }
+        }
+
+        func createStreamSource() -> CoreAudioStreamSource {
+            return CustomStreamAudioSource(underlyingQueue: audioPlayerService.player.sourceQueue)
         }
 
         func onTick() {

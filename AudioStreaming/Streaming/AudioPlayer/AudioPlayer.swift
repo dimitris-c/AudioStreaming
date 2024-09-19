@@ -124,7 +124,7 @@ open class AudioPlayer {
     private let frameFilterProcessor: FrameFilterProcessor
 
     private let serializationQueue: DispatchQueue
-    private let sourceQueue: DispatchQueue
+    public let sourceQueue: DispatchQueue
 
     private let entryProvider: AudioEntryProviding
 
@@ -190,6 +190,20 @@ open class AudioPlayer {
     /// - parameter headers: A `Dictionary` specifying any additional headers to be pass to the network request.
     public func play(url: URL, headers: [String: String]) {
         let audioEntry = entryProvider.provideAudioEntry(url: url, headers: headers)
+        play(audioEntry: audioEntry)
+    }
+
+    /// Starts the audio playback for the supplied stream
+    ///
+    /// - parameter source: A `CoreAudioStreamSource` that will providing streaming data
+    /// - parameter entryId: A `String` that provides a unique id for this item
+    /// - parameter format: An `AVAudioFormat` the format of this audio source
+    public func play(source: CoreAudioStreamSource, entryId: String, format: AVAudioFormat) {
+        let audioEntry = AudioEntry(source: source, entryId: AudioEntryId(id: entryId), outputAudioFormat: format)
+        play(audioEntry: audioEntry)
+    }
+
+    private func play(audioEntry: AudioEntry) {
         audioEntry.delegate = self
 
         checkRenderWaitingAndNotifyIfNeeded()
@@ -247,6 +261,16 @@ open class AudioPlayer {
         queue(url: url, headers: [:], after: afterUrl)
     }
 
+    /// Queues the specified audio stream
+    ///
+    /// - parameter source: A `CoreAudioStreamSource` that will providing streaming data
+    /// - parameter entryId: A `String` that provides a unique id for this item
+    /// - parameter format: An `AVAudioFormat` the format of this audio source
+    public func queue(source: CoreAudioStreamSource, entryId: String, format: AVAudioFormat) {
+        let audioEntry = AudioEntry(source: source, entryId: AudioEntryId(id: entryId), outputAudioFormat: format)
+        queue(audioEntry: audioEntry)
+    }
+
     public func removeFromQueue(url: URL) {
         serializationQueue.sync {
             if let item = entriesQueue.items(type: .upcoming).first(where: { $0.id.id == url.absoluteString }) {
@@ -268,21 +292,8 @@ open class AudioPlayer {
     /// - Parameter url: A `URL` specifying the audio content to be played.
     /// - parameter headers: A `Dictionary` specifying any additional headers to be pass to the network request.
     public func queue(url: URL, headers: [String: String], after afterUrl: URL? = nil) {
-        serializationQueue.sync {
-            let audioEntry = entryProvider.provideAudioEntry(url: url, headers: headers)
-            audioEntry.delegate = self
-            if let afterUrl = afterUrl {
-                if let afterUrlEntry = entriesQueue.items(type: .upcoming).first(where: { $0.id.id == afterUrl.absoluteString }) {
-                    entriesQueue.insert(item: audioEntry, type: .upcoming, after: afterUrlEntry)
-                }
-            } else {
-                entriesQueue.enqueue(item: audioEntry, type: .upcoming)
-            }
-        }
-        checkRenderWaitingAndNotifyIfNeeded()
-        sourceQueue.async { [weak self] in
-            self?.processSource()
-        }
+        let audioEntry = entryProvider.provideAudioEntry(url: url, headers: headers)
+        queue(audioEntry: audioEntry, after: afterUrl)
     }
 
     /// Queues the specified URLs
@@ -294,6 +305,23 @@ open class AudioPlayer {
             for url in urls {
                 let audioEntry = entryProvider.provideAudioEntry(url: url, headers: headers)
                 audioEntry.delegate = self
+                entriesQueue.enqueue(item: audioEntry, type: .upcoming)
+            }
+        }
+        checkRenderWaitingAndNotifyIfNeeded()
+        sourceQueue.async { [weak self] in
+            self?.processSource()
+        }
+    }
+
+    private func queue(audioEntry: AudioEntry, after afterUrl: URL? = nil) {
+        serializationQueue.sync {
+            audioEntry.delegate = self
+            if let afterUrl = afterUrl {
+                if let afterUrlEntry = entriesQueue.items(type: .upcoming).first(where: { $0.id.id == afterUrl.absoluteString }) {
+                    entriesQueue.insert(item: audioEntry, type: .upcoming, after: afterUrlEntry)
+                }
+            } else {
                 entriesQueue.enqueue(item: audioEntry, type: .upcoming)
             }
         }
@@ -805,7 +833,7 @@ open class AudioPlayer {
 }
 
 extension AudioPlayer: AudioStreamSourceDelegate {
-    func dataAvailable(source: CoreAudioStreamSource, data: Data) {
+    public func dataAvailable(source: CoreAudioStreamSource, data: Data) {
         guard let readingEntry = playerContext.audioReadingEntry, readingEntry.has(same: source) else {
             return
         }
@@ -835,12 +863,12 @@ extension AudioPlayer: AudioStreamSourceDelegate {
         }
     }
 
-    func errorOccurred(source: CoreAudioStreamSource, error: Error) {
+    public func errorOccurred(source: CoreAudioStreamSource, error: Error) {
         guard let entry = playerContext.audioReadingEntry, entry.has(same: source) else { return }
         raiseUnexpected(error: .networkError(.failure(error)))
     }
 
-    func endOfFileOccurred(source: CoreAudioStreamSource) {
+    public func endOfFileOccurred(source: CoreAudioStreamSource) {
         let hasSameSource = playerContext.audioReadingEntry?.has(same: source) ?? false
         guard playerContext.audioReadingEntry == nil || hasSameSource else {
             source.delegate = nil
@@ -877,7 +905,7 @@ extension AudioPlayer: AudioStreamSourceDelegate {
         }
     }
 
-    func metadataReceived(data: [String: String]) {
+    public func metadataReceived(data: [String: String]) {
         asyncOnMain { [weak self] in
             guard let self = self else { return }
             self.delegate?.audioPlayerDidReadMetadata(player: self, metadata: data)

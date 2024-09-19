@@ -17,7 +17,7 @@ protocol AudioPlayerServiceDelegate: AnyObject {
 final class AudioPlayerService {
     weak var delegate: AudioPlayerServiceDelegate?
 
-    private var player: AudioPlayer
+    var player: AudioPlayer
     private var audioSystemResetObserver: Any?
 
     var duration: Double {
@@ -58,6 +58,11 @@ final class AudioPlayerService {
     func play(url: URL) {
         activateAudioSession()
         player.play(url: url)
+    }
+
+    func play(source: CoreAudioStreamSource, entryId: String, format: AVAudioFormat) {
+        activateAudioSession()
+        player.play(source: source, entryId: entryId, format: format)
     }
 
     func queue(url: URL) {
