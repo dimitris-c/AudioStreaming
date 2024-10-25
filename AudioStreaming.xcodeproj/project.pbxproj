@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4290499A2CCB800300B74C19 /* PlayerStreamTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 429049992CCB7FFE00B74C19 /* PlayerStreamTest.swift */; };
+		4290499E2CCB99C900B74C19 /* short-counting-to-five.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 4290499D2CCB99C900B74C19 /* short-counting-to-five.mp3 */; };
+		429049A02CCB9AD900B74C19 /* short-counting-to-five.wav in Resources */ = {isa = PBXBuildFile; fileRef = 4290499F2CCB9AD900B74C19 /* short-counting-to-five.wav */; };
 		98ABF69E2BAB07A20059C441 /* Mp4Restructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98ABF69D2BAB07A20059C441 /* Mp4Restructure.swift */; };
 		98C82AE62B8CA8BC00AED485 /* RemoteMp4Restructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98C82AE52B8CA8BC00AED485 /* RemoteMp4Restructure.swift */; };
 		98CC396E28BD651E006C9FF9 /* Atomic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98CC396D28BD651E006C9FF9 /* Atomic.swift */; };
@@ -97,6 +100,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		429049992CCB7FFE00B74C19 /* PlayerStreamTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerStreamTest.swift; sourceTree = "<group>"; };
+		4290499D2CCB99C900B74C19 /* short-counting-to-five.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "short-counting-to-five.mp3"; sourceTree = "<group>"; };
+		4290499F2CCB9AD900B74C19 /* short-counting-to-five.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = "short-counting-to-five.wav"; sourceTree = "<group>"; };
 		98ABF69D2BAB07A20059C441 /* Mp4Restructure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mp4Restructure.swift; sourceTree = "<group>"; };
 		98C82AE52B8CA8BC00AED485 /* RemoteMp4Restructure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteMp4Restructure.swift; sourceTree = "<group>"; };
 		98CC396D28BD651E006C9FF9 /* Atomic.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Atomic.swift; sourceTree = "<group>"; };
@@ -249,7 +255,10 @@
 			children = (
 				B59CB4B125421D8200F8CAD0 /* Metadata Stream Processor */,
 				B55CEAB62485171E0001C498 /* Parsers */,
+				429049992CCB7FFE00B74C19 /* PlayerStreamTest.swift */,
 				B51FE0C724892D1600F2A4D2 /* PlayerQueueEntriesTest.swift */,
+				4290499D2CCB99C900B74C19 /* short-counting-to-five.mp3 */,
+				4290499F2CCB9AD900B74C19 /* short-counting-to-five.wav */,
 			);
 			path = Streaming;
 			sourceTree = "<group>";
@@ -575,10 +584,12 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4290499E2CCB99C900B74C19 /* short-counting-to-five.mp3 in Resources */,
 				B59CB4BB25421F3500F8CAD0 /* raw-stream-audio-normal-metadata in Resources */,
 				B59CB4C225421F7A00F8CAD0 /* raw-stream-audio-empty-metadata in Resources */,
 				B59CB4C625421FD400F8CAD0 /* raw-stream-audio-no-metadata in Resources */,
 				B59CB4CE2542204D00F8CAD0 /* raw-stream-audio-normal-metadata-alt in Resources */,
+				429049A02CCB9AD900B74C19 /* short-counting-to-five.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -666,6 +677,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B5EF954E247DA5AC003E8FF8 /* NetworkingClientTests.swift in Sources */,
+				4290499A2CCB800300B74C19 /* PlayerStreamTest.swift in Sources */,
 				B59CB46C25420B4D00F8CAD0 /* MetadataStreamProcessorTests.swift in Sources */,
 				B51FE0C824892D1600F2A4D2 /* PlayerQueueEntriesTest.swift in Sources */,
 				B55CEABA248530C00001C498 /* MetadataParser.swift in Sources */,
