@@ -9,7 +9,7 @@ enum UnitDescriptions {
     static let output: AudioComponentDescription = {
         var desc = AudioComponentDescription()
         desc.componentType = kAudioUnitType_Output
-        #if os(iOS)
+        #if os(iOS) || os(tvOS)
             desc.componentSubType = kAudioUnitSubType_RemoteIO
         #else
             desc.componentSubType = kAudioUnitSubType_DefaultOutput
