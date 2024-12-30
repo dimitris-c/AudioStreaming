@@ -18,6 +18,8 @@ Known limitations:
 
 # Requirements
  - iOS 13.0+
+ - macOS 13.0+
+ - tvOS 16.0+
  - Swift 5.x
 
 # Using AudioStreaming
