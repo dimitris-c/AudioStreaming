@@ -55,7 +55,7 @@ func playerStateAndStopReason(
 
 // MARK: Public States
 
-public enum AudioPlayerState: Equatable {
+public enum AudioPlayerState: Equatable, Sendable {
     case ready
     case running
     case playing
@@ -66,7 +66,7 @@ public enum AudioPlayerState: Equatable {
     case disposed
 }
 
-public enum AudioPlayerStopReason: Equatable {
+public enum AudioPlayerStopReason: Equatable, Sendable {
     case none
     case eof
     case userAction
@@ -74,7 +74,7 @@ public enum AudioPlayerStopReason: Equatable {
     case disposed
 }
 
-public enum AudioPlayerError: LocalizedError, Equatable {
+public enum AudioPlayerError: LocalizedError, Equatable, Sendable {
     case streamParseBytesFailure(AudioFileStreamError)
     case audioSystemError(AudioSystemError)
     case codecError
@@ -100,7 +100,7 @@ public enum AudioPlayerError: LocalizedError, Equatable {
     }
 }
 
-public enum AudioSystemError: LocalizedError, Equatable {
+public enum AudioSystemError: LocalizedError, Equatable, Sendable {
     case engineFailure
     case playerNotFound
     case playerStartError

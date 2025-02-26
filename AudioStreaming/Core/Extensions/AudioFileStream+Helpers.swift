@@ -29,7 +29,7 @@ func fileStreamGetPropertyInfo(fileStream streamId: AudioFileStreamID, propertyI
 ///
 /// Reference:
 /// [Audio File Stream Errors](https://developer.apple.com/documentation/audiotoolbox/1391572-audio_file_stream_errors?language=objc)
-public enum AudioFileStreamError: CustomDebugStringConvertible {
+public enum AudioFileStreamError: CustomDebugStringConvertible, Sendable {
     case badPropertySize
     case dataUnavailable
     case discontinuityCantRecover
