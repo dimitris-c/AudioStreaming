@@ -5,7 +5,7 @@
 
 import AVFoundation
 
-public enum AudioConverterError: CustomDebugStringConvertible {
+public enum AudioConverterError: CustomDebugStringConvertible, Sendable {
     case badPropertySizeError
     case formatNotSupported
     case inputSampleRateOutOfRange
