@@ -128,6 +128,11 @@ open class AudioPlayer {
 
     private let entryProvider: AudioEntryProviding
 
+    #if !os(macOS)
+        /// The session manager for handling audio session interruptions and route changes
+        private let audioSessionManager = AudioSessionManager.shared
+    #endif
+
     var entriesQueue: PlayerQueueEntries
 
     public init(configuration: AudioPlayerConfiguration = .default) {
@@ -164,6 +169,10 @@ open class AudioPlayer {
                 engine.mainMixerNode
             }
         )
+
+        #if !os(macOS)
+            audioSessionManager.interruptionDelegate = self
+        #endif
         configPlayerContext()
         configPlayerNode()
         setupEngine()
@@ -205,6 +214,10 @@ open class AudioPlayer {
 
     private func play(audioEntry: AudioEntry) {
         audioEntry.delegate = self
+
+        #if !os(macOS)
+            audioSessionManager.activateSession()
+        #endif
 
         checkRenderWaitingAndNotifyIfNeeded()
         serializationQueue.sync {
@@ -377,6 +390,11 @@ open class AudioPlayer {
     /// Resumes the audio playback, if previous paused
     public func resume() {
         guard playerContext.internalState == .paused else { return }
+
+        #if !os(macOS)
+            audioSessionManager.activateSession()
+        #endif
+
         playerContext.setInternalState(to: stateBeforePaused)
         serializationQueue.sync {
             do {
@@ -575,6 +593,11 @@ open class AudioPlayer {
             Logger.debug("engine already running 🛵", category: .generic)
             return
         }
+
+        // Ensure we still hold a task & an active session when the engine boots.
+        #if !os(macOS)
+            audioSessionManager.activateSession()
+        #endif
         try startEngine()
     }
 
@@ -599,6 +622,9 @@ open class AudioPlayer {
     ///
     /// - parameter reason: A value of `AudioPlayerStopReason` indicating the reason the engine stopped.
     private func stopEngine(reason: AudioPlayerStopReason) {
+        #if !os(macOS)
+            audioSessionManager.deactivateSession()
+        #endif
         audioEngine.stop()
         player.auAudioUnit.stopHardware()
         rendererContext.resetBuffers()
@@ -912,3 +938,38 @@ extension AudioPlayer: AudioStreamSourceDelegate {
         }
     }
 }
+
+#if !os(macOS)
+    extension AudioPlayer: AudioSessionInterruptionDelegate {
+        // MARK: - Interruption
+        public func handleInterruption(
+            type: AVAudioSession.InterruptionType,
+            options: AVAudioSession.InterruptionOptions
+        ) {
+            switch type {
+            case .began:
+                pause()
+
+            case .ended where options.contains(.shouldResume):
+                audioSessionManager.activateSession()
+                resume()
+
+            default:
+                break
+            }
+        }
+
+        // MARK: - Route change
+        public func handleRouteChange(
+            reason: AVAudioSession.RouteChangeReason,
+            previousRoute: AVAudioSessionRouteDescription
+        ) {
+            guard reason == .oldDeviceUnavailable || reason == .newDeviceAvailable else {
+                return
+            }
+
+            reattachCustomNodes() // rebuild graph
+            try? startEngineIfNeeded() // restarts engine if necessary
+        }
+    }
+#endif
