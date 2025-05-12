@@ -4,13 +4,13 @@
 //
 
 #if os(iOS)
-import UIKit
+    import UIKit
 #else
-import AppKit
+    import AppKit
 #endif
 
-import Foundation
 import AudioStreaming
+import Foundation
 
 struct AudioPlaylist: Equatable, Identifiable {
     var id: String { title }
@@ -29,7 +29,7 @@ public class AudioPlayerModel {
 
     init(audioTracksProvider: () -> [AudioPlaylist] = audioTracksProvider, audioPlayerService: AudioPlayerService) {
         self.audioPlayerService = audioPlayerService
-        self.audioTracks = audioTracksProvider()
+        audioTracks = audioTracksProvider()
     }
 
     deinit {
@@ -63,14 +63,14 @@ private let customStreams: [AudioContent] = [.custom("custom://sinwave")]
 
 func audioTracksProvider() -> [AudioPlaylist] {
     [
-        AudioPlaylist(title: "Radio", tracks: radioTracks.map { AudioTrack.init(from: $0) }),
-        AudioPlaylist(title: "Tracks", tracks: audioTracks.map { AudioTrack.init(from:$0) }),
-        AudioPlaylist(title: "Generated", tracks: customStreams.map { AudioTrack.init(from:$0) })
+        AudioPlaylist(title: "Radio", tracks: radioTracks.map { AudioTrack(from: $0) }),
+        AudioPlaylist(title: "Tracks", tracks: audioTracks.map { AudioTrack(from: $0) }),
+        AudioPlaylist(title: "Generated", tracks: customStreams.map { AudioTrack(from: $0) }),
     ]
 }
 
 func audioQueueTrackProvider() -> [AudioPlaylist] {
     [
-        AudioPlaylist(title: "Tracks", tracks: audioTracks.map { AudioTrack.init(from:$0) })
+        AudioPlaylist(title: "Tracks", tracks: audioTracks.map { AudioTrack(from: $0) }),
     ]
 }

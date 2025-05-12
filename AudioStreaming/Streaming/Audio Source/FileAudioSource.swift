@@ -3,8 +3,8 @@
 //  Copyright © 2020 Decimal. All rights reserved.
 //
 
-import Foundation
 import AVFoundation
+import Foundation
 
 final class FileAudioSource: NSObject, CoreAudioStreamSource {
     weak var delegate: AudioStreamSourceDelegate?
@@ -44,7 +44,7 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
         self.underlyingQueue = underlyingQueue
         self.fileManager = fileManager
         self.readSize = readSize
-        self.mp4Restructure = Mp4Restructure()
+        mp4Restructure = Mp4Restructure()
         buffer = UnsafeMutablePointer.uint8pointer(of: readSize)
         seekOffset = 0
         position = 0

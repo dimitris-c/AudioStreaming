@@ -122,51 +122,51 @@ final class AudioPlayerService {
 
     private func registerSessionEvents() {
         // Note that a real app might need to observer other AVAudioSession notifications as well
-#if os(iOS)
-        audioSystemResetObserver = NotificationCenter.default.addObserver(
-            forName: AVAudioSession.mediaServicesWereResetNotification,
-            object: nil,
-            queue: nil
-        ) { [unowned self] _ in
-            self.configureAudioSession()
-            self.recreatePlayer()
-        }
-#endif
+        #if os(iOS)
+            audioSystemResetObserver = NotificationCenter.default.addObserver(
+                forName: AVAudioSession.mediaServicesWereResetNotification,
+                object: nil,
+                queue: nil
+            ) { [unowned self] _ in
+                self.configureAudioSession()
+                self.recreatePlayer()
+            }
+        #endif
     }
 
     private func configureAudioSession() {
-#if os(iOS)
-        do {
-            print("AudioSession category is AVAudioSessionCategoryPlayback")
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, policy: .longFormAudio, options: [])
-            try AVAudioSession.sharedInstance().setPreferredIOBufferDuration(0.1)
-        } catch let error as NSError {
-            print("Couldn't setup audio session category to Playback \(error.localizedDescription)")
-        }
-#endif
+        #if os(iOS)
+            do {
+                print("AudioSession category is AVAudioSessionCategoryPlayback")
+                try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, policy: .longFormAudio, options: [])
+                try AVAudioSession.sharedInstance().setPreferredIOBufferDuration(0.1)
+            } catch let error as NSError {
+                print("Couldn't setup audio session category to Playback \(error.localizedDescription)")
+            }
+        #endif
     }
 
     private func activateAudioSession() {
-#if os(iOS)
-        do {
-            print("AudioSession is active")
-            try AVAudioSession.sharedInstance().setActive(true, options: [])
+        #if os(iOS)
+            do {
+                print("AudioSession is active")
+                try AVAudioSession.sharedInstance().setActive(true, options: [])
 
-        } catch let error as NSError {
-            print("Couldn't set audio session to active: \(error.localizedDescription)")
-        }
-#endif
+            } catch let error as NSError {
+                print("Couldn't set audio session to active: \(error.localizedDescription)")
+            }
+        #endif
     }
 
     private func deactivateAudioSession() {
-#if os(iOS)
-        do {
-            print("AudioSession is deactivated")
-            try AVAudioSession.sharedInstance().setActive(false)
-        } catch let error as NSError {
-            print("Couldn't deactivate audio session: \(error.localizedDescription)")
-        }
-#endif
+        #if os(iOS)
+            do {
+                print("AudioSession is deactivated")
+                try AVAudioSession.sharedInstance().setActive(false)
+            } catch let error as NSError {
+                print("Couldn't deactivate audio session: \(error.localizedDescription)")
+            }
+        #endif
     }
 }
 

@@ -8,7 +8,6 @@ import SwiftUI
 
 @main
 struct AudioPlayerApp: App {
-
     @State var model = AppModel()
 
     var body: some Scene {

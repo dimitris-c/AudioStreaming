@@ -78,8 +78,7 @@ final class AudioPlayerRenderProcessor: NSObject {
                     requiredFramesToStart = min(requiredFramesToStart, Double(playingEntry.framesState.lastFrameQueued))
                 }
 
-                if readingEntry === playingEntry, framesState.queued < Int(requiredFramesToStart)
-                {
+                if readingEntry === playingEntry, framesState.queued < Int(requiredFramesToStart) {
                     waitForBuffer = true
                 }
             } else if state == .rebuffering {

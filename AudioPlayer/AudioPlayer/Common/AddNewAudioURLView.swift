@@ -60,25 +60,25 @@ struct AddNewAudioURLView: View {
             }
             .navigationTitle("Add Audio URL")
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitleDisplayMode(.inline)
             #endif
-            .toolbar {
-#if os(iOS)
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(Color.gray)
-                    }
-                    .buttonStyle(.plain)
+                .toolbar {
+                    #if os(iOS)
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button {
+                                dismiss()
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundStyle(Color.gray)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    #else
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done", action: dismiss.callAsFunction)
+                        }
+                    #endif
                 }
-#else
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done", action: dismiss.callAsFunction)
-                }
-#endif
-            }
         }
     }
 }

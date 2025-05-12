@@ -12,13 +12,13 @@ extension EnvironmentValues {
 }
 
 #if os(iOS)
-extension PrefersStackNavigationEnvironmentKey: UITraitBridgedEnvironmentKey {
-    static func read(from traitCollection: UITraitCollection) -> Bool {
-        return traitCollection.userInterfaceIdiom == .phone || traitCollection.userInterfaceIdiom == .tv
-    }
+    extension PrefersStackNavigationEnvironmentKey: UITraitBridgedEnvironmentKey {
+        static func read(from traitCollection: UITraitCollection) -> Bool {
+            return traitCollection.userInterfaceIdiom == .phone || traitCollection.userInterfaceIdiom == .tv
+        }
 
-    static func write(to mutableTraits: inout UIMutableTraits, value: Bool) {
-        // Do not write.
+        static func write(to _: inout UIMutableTraits, value _: Bool) {
+            // Do not write.
+        }
     }
-}
 #endif

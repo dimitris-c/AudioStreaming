@@ -25,7 +25,7 @@ struct HTTPHeaderParserOutput {
     let seekable: Bool
 
     var isMp4: Bool {
-        (typeId == kAudioFileMPEG4Type || typeId == kAudioFileM4AType)
+        typeId == kAudioFileMPEG4Type || typeId == kAudioFileM4AType
     }
 }
 

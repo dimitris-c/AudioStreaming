@@ -1,4 +1,4 @@
- //
+//
 //  Created by Dimitris C.
 //  Copyright © 2024 Decimal. All rights reserved.
 //
@@ -6,7 +6,6 @@
 import SwiftUI
 
 struct ContentView: View {
-
     @Environment(AppModel.self) var appModel
     @Environment(\.prefersStackNavigation) private var prefersStackNavigation
 

@@ -2,17 +2,17 @@
 //  Created by Dimitris Chatzieleftheriou on 26/04/2024.
 //
 
+import AudioStreaming
 import AVFoundation
 import SwiftUI
-import AudioStreaming
 
 struct AudioPlayerControls: View {
     @State var model: Model
     @Binding var currentTrack: AudioTrack?
 
     init(appModel: AppModel, currentTrack: Binding<AudioTrack?>) {
-        self._model = State(wrappedValue: Model(audioPlayerService: appModel.audioPlayerService))
-        self._currentTrack = currentTrack
+        _model = State(wrappedValue: Model(audioPlayerService: appModel.audioPlayerService))
+        _currentTrack = currentTrack
     }
 
     var body: some View {
@@ -67,7 +67,7 @@ struct AudioPlayerControls: View {
             VStack {
                 Slider(
                     value: $model.currentTime,
-                    in: 0...(model.totalTime ?? 1.0),
+                    in: 0 ... (model.totalTime ?? 1.0),
                     onEditingChanged: { scrubStarted in
                         if scrubStarted {
                             model.scrubState = .started
@@ -94,7 +94,7 @@ struct AudioPlayerControls: View {
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .foregroundStyle(.black)
-                Slider(value: $model.playbackRate, in: 1.0...4.0, step: 0.2)
+                Slider(value: $model.playbackRate, in: 1.0 ... 4.0, step: 0.2)
                     .onChange(of: model.playbackRate) { _, new in
                         model.update(rate: Float(new))
                     }
@@ -102,7 +102,7 @@ struct AudioPlayerControls: View {
             .padding(.bottom, 8)
             .padding(.horizontal, 16)
         }
-        .onChange(of: currentTrack) { oldValue, newValue in
+        .onChange(of: currentTrack) { _, newValue in
             if let track = newValue {
                 model.play(track)
             }
@@ -277,7 +277,7 @@ extension AudioPlayerControls {
                     currentTime = progress
                 case .started:
                     break
-                case .ended(let seekTime):
+                case let .ended(seekTime):
                     currentTime = seekTime
                     if audioPlayerService.duration > 0 {
                         audioPlayerService.seek(at: seekTime)
@@ -314,7 +314,7 @@ extension AudioPlayerControls {
         }
 
         private func didStartPlaying() {
-            self.displayLink = DisplayLink(onTick: { [weak self] _ in
+            displayLink = DisplayLink(onTick: { [weak self] _ in
                 self?.onTick()
             })
             displayLink?.activate()
@@ -327,5 +327,4 @@ extension AudioPlayerControls {
             displayLink?.deactivate()
         }
     }
-
 }

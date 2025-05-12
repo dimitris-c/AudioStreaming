@@ -22,7 +22,6 @@ protocol Lock {
 /// A wrapper for `os_unfair_lock`
 /// - Tag: UnfairLock
 final class UnfairLock: Lock {
-
     var unfairLock: Lock
 
     init() {
@@ -90,7 +89,6 @@ private class OSStorageLock: Lock {
 }
 
 private class UnfairStorageLock: Lock {
-
     @usableFromInline
     let unfairLock: UnsafeMutablePointer<os_unfair_lock>
 
