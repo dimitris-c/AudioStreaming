@@ -133,6 +133,13 @@ open class AudioPlayer {
         private let audioSessionManager = AudioSessionManager.shared
     #endif
 
+    /// The background handler for managing background tasks
+    private let backgroundHandler = BackgroundHandler()
+
+    // MARK: - Properties
+    private var startupToken: BackgroundHandler.Token?
+    private var transientToken: BackgroundHandler.Token?
+
     var entriesQueue: PlayerQueueEntries
 
     public init(configuration: AudioPlayerConfiguration = .default) {
@@ -216,6 +223,7 @@ open class AudioPlayer {
         audioEntry.delegate = self
 
         #if !os(macOS)
+            startupToken = backgroundHandler.beginIfBackgrounded(reason: "startPlayback")
             audioSessionManager.activateSession()
         #endif
 
@@ -392,6 +400,7 @@ open class AudioPlayer {
         guard playerContext.internalState == .paused else { return }
 
         #if !os(macOS)
+            startupToken = backgroundHandler.beginIfBackgrounded(reason: "resumePlayback")
             audioSessionManager.activateSession()
         #endif
 
@@ -596,6 +605,7 @@ open class AudioPlayer {
 
         // Ensure we still hold a task & an active session when the engine boots.
         #if !os(macOS)
+            transientToken = backgroundHandler.beginIfBackgrounded(reason: "engineStart")
             audioSessionManager.activateSession()
         #endif
         try startEngine()
@@ -623,6 +633,7 @@ open class AudioPlayer {
     /// - parameter reason: A value of `AudioPlayerStopReason` indicating the reason the engine stopped.
     private func stopEngine(reason: AudioPlayerStopReason) {
         #if !os(macOS)
+            backgroundHandler.endBackgroundTask()
             audioSessionManager.deactivateSession()
         #endif
         audioEngine.stop()
@@ -949,10 +960,16 @@ extension AudioPlayer: AudioStreamSourceDelegate {
             switch type {
             case .began:
                 pause()
+                transientToken = backgroundHandler.beginIfBackgrounded(
+                    reason: "intBegan")
+                transientToken = nil
 
             case .ended where options.contains(.shouldResume):
+                transientToken = backgroundHandler.beginIfBackgrounded(
+                    reason: "intEnded")
                 audioSessionManager.activateSession()
                 resume()
+                transientToken = nil
 
             default:
                 break
@@ -968,8 +985,10 @@ extension AudioPlayer: AudioStreamSourceDelegate {
                 return
             }
 
+            transientToken = backgroundHandler.beginIfBackgrounded(reason: "routeChange")
             reattachCustomNodes() // rebuild graph
             try? startEngineIfNeeded() // restarts engine if necessary
+            transientToken = nil
         }
     }
 #endif
