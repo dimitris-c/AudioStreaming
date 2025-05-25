@@ -192,6 +192,17 @@ open class AudioPlayer {
         let audioEntry = entryProvider.provideAudioEntry(url: url, headers: headers)
         play(audioEntry: audioEntry)
     }
+    
+    /// Starts the audio playback for the given URL
+    ///
+    /// - parameter url: A `URL` specifying the audio context to be played.
+    /// - parameter httpMethod: A `String` specifying the HTTP method to use (e.g. "GET", "POST").
+    /// - parameter httpBody: A "Data" specifying the HTTP request body, if any.
+    /// - parameter headers: A `Dictionary` specifying any additional headers to be pass to the network request.
+    public func play(url: URL, httpMethod: String?, httpBody: Data?, headers: [String: String]) {
+        let audioEntry = entryProvider.provideAudioEntry(url: url, httpMethod: httpMethod, httpBody: httpBody, headers: headers)
+        play(audioEntry: audioEntry)
+    }
 
     /// Starts the audio playback for the supplied stream
     ///

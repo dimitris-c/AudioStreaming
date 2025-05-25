@@ -6,6 +6,7 @@
 import AVFoundation
 
 protocol AudioEntryProviding {
+    func provideAudioEntry(url: URL, httpMethod: String?, httpBody: Data?, headers: [String: String]) -> AudioEntry
     func provideAudioEntry(url: URL, headers: [String: String]) -> AudioEntry
     func provideAudioEntry(url: URL) -> AudioEntry
 }
@@ -25,7 +26,14 @@ final class AudioEntryProvider: AudioEntryProviding {
     }
 
     func provideAudioEntry(url: URL, headers: [String: String]) -> AudioEntry {
-        let source = self.source(for: url, headers: headers)
+        let source = self.source(for: url, httpMethod: nil, httpBody: nil, headers: headers)
+        return AudioEntry(source: source,
+                          entryId: AudioEntryId(id: url.absoluteString),
+                          outputAudioFormat: outputAudioFormat)
+    }
+    
+    func provideAudioEntry(url: URL, httpMethod: String?, httpBody: Data?, headers: [String: String]) -> AudioEntry {
+        let source = self.source(for: url, httpMethod: httpMethod, httpBody: httpBody, headers: headers)
         return AudioEntry(source: source,
                           entryId: AudioEntryId(id: url.absoluteString),
                           outputAudioFormat: outputAudioFormat)
@@ -34,10 +42,12 @@ final class AudioEntryProvider: AudioEntryProviding {
     func provideAudioEntry(url: URL) -> AudioEntry {
         provideAudioEntry(url: url, headers: [:])
     }
-
-    func provideAudioSource(url: URL, headers: [String: String]) -> AudioStreamSource {
+    
+    func provideAudioSource(url: URL, httpMethod: String?, httpBody: Data?, headers: [String: String]) -> AudioStreamSource {
         RemoteAudioSource(networking: networkingClient,
                           url: url,
+                          httpMethod: httpMethod,
+                          httpBody: httpBody,
                           underlyingQueue: underlyingQueue,
                           httpHeaders: headers)
     }
@@ -46,10 +56,10 @@ final class AudioEntryProvider: AudioEntryProviding {
         FileAudioSource(url: url, underlyingQueue: underlyingQueue)
     }
 
-    func source(for url: URL, headers: [String: String]) -> CoreAudioStreamSource {
+    func source(for url: URL, httpMethod: String?, httpBody: Data?, headers: [String: String]) -> CoreAudioStreamSource {
         guard !url.isFileURL else {
             return provideFileAudioSource(url: url)
         }
-        return provideAudioSource(url: url, headers: headers)
+        return provideAudioSource(url: url, httpMethod: httpMethod, httpBody: httpBody, headers: headers)
     }
 }
