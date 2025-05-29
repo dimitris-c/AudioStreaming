@@ -37,6 +37,11 @@ class AudioEntry {
         return seekTime + (Double(framesState.played) / outputAudioFormat.sampleRate)
     }
 
+    var framesPlayed: Int {
+        lock.lock(); defer { lock.unlock() }
+        return framesState.played
+    }
+
     var audioStreamFormat = AudioStreamBasicDescription()
 
     /// Hold the seek time, if a seek was requested
