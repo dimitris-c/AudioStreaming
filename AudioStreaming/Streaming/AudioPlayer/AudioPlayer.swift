@@ -81,6 +81,16 @@ open class AudioPlayer {
         return entry.progress
     }
 
+    /// The number of audio frames that have been played
+    public var framesPlayed: Int {
+        guard playerContext.internalState != .pendingNext else { return 0 }
+        playerContext.entriesLock.lock()
+        let playingEntry = playerContext.audioPlayingEntry
+        playerContext.entriesLock.unlock()
+        guard let entry = playingEntry else { return 0 }
+        return entry.framesPlayed
+    }
+
     public private(set) var customAttachedNodes = [AVAudioNode]()
 
     /// The current configuration of the player.
