@@ -14,7 +14,7 @@ struct AudioPlayerView: View {
     @State var addNewAudioIsShown: Bool = false
 
     init(appModel: AppModel) {
-        self._model = State(wrappedValue: AudioPlayerModel(audioPlayerService: appModel.audioPlayerService))
+        _model = State(wrappedValue: AudioPlayerModel(audioPlayerService: appModel.audioPlayerService))
     }
 
     var body: some View {
@@ -52,49 +52,49 @@ struct AudioPlayerView: View {
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .navigationTitle("Audio Player")
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.inline)
         #endif
-        .toolbar {
-            #if os(iOS)
-            let placement: ToolbarItemPlacement = .topBarTrailing
-            #else
-            let placement: ToolbarItemPlacement = .automatic
-            #endif
-            ToolbarItemGroup(placement: placement) {
-                Button {
-                    eqSheetIsShown.toggle()
-                } label: {
-                    Image(systemName: "slider.horizontal.3")
+            .toolbar {
+                #if os(iOS)
+                    let placement: ToolbarItemPlacement = .topBarTrailing
+                #else
+                    let placement: ToolbarItemPlacement = .automatic
+                #endif
+                ToolbarItemGroup(placement: placement) {
+                    Button {
+                        eqSheetIsShown.toggle()
+                    } label: {
+                        Image(systemName: "slider.horizontal.3")
+                    }
+                    .buttonStyle(.plain)
+                    Button {
+                        addNewAudioIsShown.toggle()
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                Button {
-                    addNewAudioIsShown.toggle()
-                } label: {
-                    Image(systemName: "plus")
-                }
-                .buttonStyle(.plain)
             }
-        }
-        .sheet(isPresented: $eqSheetIsShown) {
-            EqualizerView(appModel: appModel)
-            #if os(iOS)
-                .presentationDetents([.medium])
-            #elseif os(macOS)
-                .frame(minWidth: 520, maxWidth: .infinity, minHeight: 400, maxHeight: .infinity)
-            #endif
-        }
-        .sheet(isPresented: $addNewAudioIsShown) {
-            AddNewAudioURLView(
-                onAddNewUrl: { url in
-                    model.addNewAudioTrack(url: url)
-                }
-            )
-            #if os(iOS)
-            .presentationDetents([.height(150)])
-            #elseif os(macOS)
+            .sheet(isPresented: $eqSheetIsShown) {
+                EqualizerView(appModel: appModel)
+                #if os(iOS)
+                    .presentationDetents([.medium])
+                #elseif os(macOS)
+                    .frame(minWidth: 520, maxWidth: .infinity, minHeight: 400, maxHeight: .infinity)
+                #endif
+            }
+            .sheet(isPresented: $addNewAudioIsShown) {
+                AddNewAudioURLView(
+                    onAddNewUrl: { url in
+                        model.addNewAudioTrack(url: url)
+                    }
+                )
+                #if os(iOS)
+                .presentationDetents([.height(150)])
+                #elseif os(macOS)
                 .frame(minWidth: 320, maxWidth: .infinity, minHeight: 140, maxHeight: .infinity)
-            #endif
-        }
+                #endif
+            }
     }
 }
 

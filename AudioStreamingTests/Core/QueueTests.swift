@@ -85,25 +85,25 @@ class QueueTests: XCTestCase {
     }
 
     func testInsertingAtSpecificIndex() {
-           let queue = Queue<Int>()
-           queue.enqueue(item: 1)
-           queue.enqueue(item: 2)
-           queue.enqueue(item: 3)
+        let queue = Queue<Int>()
+        queue.enqueue(item: 1)
+        queue.enqueue(item: 2)
+        queue.enqueue(item: 3)
 
-           queue.insert(item: 6, at: 1)
+        queue.insert(item: 6, at: 1)
 
-           XCTAssertEqual(queue.count, 4)
-           XCTAssertEqual(queue.remove(at: 1), 6)
-       }
+        XCTAssertEqual(queue.count, 4)
+        XCTAssertEqual(queue.remove(at: 1), 6)
+    }
 
-       func testRemovingAtSpecificIndex() {
-           let queue = Queue<Int>()
-           queue.enqueue(item: 1)
-           queue.enqueue(item: 2)
-           queue.enqueue(item: 3)
+    func testRemovingAtSpecificIndex() {
+        let queue = Queue<Int>()
+        queue.enqueue(item: 1)
+        queue.enqueue(item: 2)
+        queue.enqueue(item: 3)
 
-           XCTAssertEqual(queue.remove(at: 1), 2)
+        XCTAssertEqual(queue.remove(at: 1), 2)
 
-           XCTAssertEqual(queue.count, 2)
-       }
+        XCTAssertEqual(queue.count, 2)
+    }
 }

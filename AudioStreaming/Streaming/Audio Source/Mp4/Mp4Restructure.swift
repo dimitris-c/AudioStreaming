@@ -76,7 +76,6 @@ enum Mp4RestructureError: Error {
 }
 
 final class Mp4Restructure {
-
     private var atomOffset: Int = 0
     private var atoms: [MP4Atom] = []
     private var ftyp: MP4Atom?
@@ -142,10 +141,10 @@ final class Mp4Restructure {
                 atoms.append(ftyp)
             case Atoms.mdat:
                 // ref: https://developer.apple.com/documentation/quicktime-file-format/movie_data_atom
-                // This atom can be quite large, and may exceed 2^32 bytes, in which case the size field will be set to 1, 
+                // This atom can be quite large, and may exceed 2^32 bytes, in which case the size field will be set to 1,
                 // and the header will contain a 64-bit extended size field.
                 if atomSize == 1 {
-                    atomSize = Int(try getInteger(data: data, offset: atomOffset + 8) as UInt64)
+                    atomSize = try Int(getInteger(data: data, offset: atomOffset + 8) as UInt64)
                 }
                 let mdat = MP4Atom(type: atomType, size: atomSize, offset: atomOffset)
                 atoms.append(mdat)
@@ -176,14 +175,14 @@ final class Mp4Restructure {
     /// logic taken from qt-faststart.c over at ffmpeg
     /// https://github.com/FFmpeg/FFmpeg/blob/b47b2c5b912558b639c8542993e1256f9c69e675/tools/qt-faststart.c
     private func doRestructureMoov(data: Data) throws -> (Data, Int) {
-        var moovAtomSize: Int = 0
-        var moovAtomType: Int = 0
+        var moovAtomSize = 0
+        var moovAtomType = 0
         var originalData = ByteBuffer(data: data)
-        var offset: Int = 0
+        var offset = 0
         // do search for moov within the new data
         while offset < originalData.length {
-            moovAtomSize = Int(try originalData.getInteger() as UInt32)
-            moovAtomType = Int(try originalData.getInteger() as UInt32)
+            moovAtomSize = try Int(originalData.getInteger() as UInt32)
+            moovAtomType = try Int(originalData.getInteger() as UInt32)
 
             if moovAtomType == Atoms.moov {
                 break

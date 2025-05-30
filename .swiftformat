@@ -1,3 +1,5 @@
+--swiftversion 5.9
+
 # file options
 
 --exclude Tests/XCTestManifests.swift,Snapshots

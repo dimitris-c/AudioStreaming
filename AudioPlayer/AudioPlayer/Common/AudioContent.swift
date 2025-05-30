@@ -52,7 +52,7 @@ enum AudioContent {
             return "Jazzy Frenchy"
         case .loopBeatFlac:
             return "Beat loop"
-        case .custom(let url):
+        case let .custom(url):
             return url
         }
     }
@@ -124,7 +124,7 @@ enum AudioContent {
             return URL(string: "https://github.com/dimitris-c/sample-audio/raw/main/5-MB-WAV.wav")!
         case .loopBeatFlac:
             return URL(string: "https://github.com/dimitris-c/sample-audio/raw/main/drumbeat-loop.flac")!
-        case .custom(let url):
+        case let .custom(url):
             return URL(string: url)!
         }
     }

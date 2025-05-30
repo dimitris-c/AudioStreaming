@@ -33,8 +33,8 @@ final class RemoteMp4Restructure {
     init(url: URL, networking: NetworkingClient, restructure: Mp4Restructure = Mp4Restructure()) {
         self.url = url
         self.networking = networking
-        self.audioData = Data()
-        self.mp4Restructure = restructure
+        audioData = Data()
+        mp4Restructure = restructure
     }
 
     func clear() {

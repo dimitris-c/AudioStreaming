@@ -42,7 +42,7 @@ struct Sidebar_Previews: PreviewProvider {
         NavigationSplitView {
             Preview()
         } detail: {
-           Text("Detail!")
+            Text("Detail!")
         }
     }
 }

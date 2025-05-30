@@ -7,7 +7,7 @@ let package = Package(
     platforms: [
         .iOS(.v12),
         .macOS(.v13),
-        .tvOS(.v16)
+        .tvOS(.v16),
     ],
     products: [
         .library(
@@ -23,15 +23,15 @@ let package = Package(
         .testTarget(
             name: "AudioStreamingTests",
             dependencies: [
-                "AudioStreaming"
+                "AudioStreaming",
             ],
             path: "AudioStreamingTests",
             resources: [
                 .copy("Streaming/Metadata Stream Processor/raw-audio-streams/raw-stream-audio-empty-metadata"),
                 .copy("Streaming/Metadata Stream Processor/raw-audio-streams/raw-stream-audio-no-metadata"),
                 .copy("Streaming/Metadata Stream Processor/raw-audio-streams/raw-stream-audio-normal-metadata"),
-                .copy("Streaming/Metadata Stream Processor/raw-audio-streams/raw-stream-audio-normal-metadata-alt")
-          ]
-        )
+                .copy("Streaming/Metadata Stream Processor/raw-audio-streams/raw-stream-audio-normal-metadata-alt"),
+            ]
+        ),
     ]
 )

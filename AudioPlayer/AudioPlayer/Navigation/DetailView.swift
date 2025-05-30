@@ -3,7 +3,6 @@
 //  Copyright © 2024 Decimal. All rights reserved.
 //
 
-
 import SwiftUI
 
 struct DetailView: View {
@@ -15,7 +14,7 @@ struct DetailView: View {
         switch selection {
         case .audioPlayer:
             AudioPlayerView(appModel: appModel)
-        case .audioQueue: // TODO
+        case .audioQueue: // TODO:
             EmptyView()
         }
     }

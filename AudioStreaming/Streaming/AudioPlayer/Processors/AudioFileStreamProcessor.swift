@@ -256,7 +256,7 @@ final class AudioFileStreamProcessor {
         entry.audioStreamState.dataPacketCount = Double(packetCount)
         let entryFormatID = entry.audioStreamFormat.mFormatID
         let isFLAC = entryFormatID == kAudioFormatFLAC
-        if entryFormatID != kAudioFormatLinearPCM && !isFLAC {
+        if entryFormatID != kAudioFormatLinearPCM, !isFLAC {
             discontinuous = true
         }
     }
