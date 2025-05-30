@@ -25,6 +25,8 @@ public class RemoteAudioSource: AudioStreamSource {
     }
 
     private let url: URL
+    private let httpMethod: String?
+    private let httpBody: Data?
     private let networkingClient: NetworkingClient
     private var streamRequest: NetworkDataStream?
 
@@ -61,12 +63,16 @@ public class RemoteAudioSource: AudioStreamSource {
          netStatusProvider: NetStatusProvider,
          retrier: Retrier,
          url: URL,
+         httpMethod: String?,
+         httpBody: Data?,
          underlyingQueue: DispatchQueue,
          httpHeaders: [String: String])
     {
         networkingClient = networking
         metadataStreamProcessor = metadataStreamSource
         self.url = url
+        self.httpMethod = httpMethod
+        self.httpBody = httpBody
         additionalRequestHeaders = httpHeaders
         relativePosition = 0
         seekOffset = 0
@@ -83,9 +89,11 @@ public class RemoteAudioSource: AudioStreamSource {
         mp4Restructure = RemoteMp4Restructure(url: url, networking: networkingClient)
         startNetworkService()
     }
-
+    
     convenience init(networking: NetworkingClient,
                      url: URL,
+                     httpMethod: String?,
+                     httpBody: Data?,
                      underlyingQueue: DispatchQueue,
                      httpHeaders: [String: String])
     {
@@ -100,6 +108,21 @@ public class RemoteAudioSource: AudioStreamSource {
                   netStatusProvider: netStatusProvider,
                   retrier: retrierTimeout,
                   url: url,
+                  httpMethod: httpMethod,
+                  httpBody: httpBody,
+                  underlyingQueue: underlyingQueue,
+                  httpHeaders: httpHeaders)
+    }
+
+    convenience init(networking: NetworkingClient,
+                     url: URL,
+                     underlyingQueue: DispatchQueue,
+                     httpHeaders: [String: String])
+    {
+        self.init(networking: networking,
+                  url: url,
+                  httpMethod: nil,
+                  httpBody: nil,
                   underlyingQueue: underlyingQueue,
                   httpHeaders: httpHeaders)
     }
@@ -347,6 +370,8 @@ public class RemoteAudioSource: AudioStreamSource {
         urlRequest.networkServiceType = .avStreaming
         urlRequest.cachePolicy = .reloadIgnoringLocalCacheData
         urlRequest.timeoutInterval = 60
+        urlRequest.httpMethod = httpMethod
+        urlRequest.httpBody = httpBody
 
         for header in additionalRequestHeaders {
             urlRequest.addValue(header.value, forHTTPHeaderField: header.key)
@@ -366,6 +391,8 @@ public class RemoteAudioSource: AudioStreamSource {
         urlRequest.networkServiceType = .avStreaming
         urlRequest.cachePolicy = .reloadIgnoringLocalCacheData
         urlRequest.timeoutInterval = 60
+        urlRequest.httpMethod = httpMethod
+        urlRequest.httpBody = httpBody
 
         for header in additionalRequestHeaders {
             urlRequest.addValue(header.value, forHTTPHeaderField: header.key)
