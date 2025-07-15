@@ -6,6 +6,7 @@
 //
 
 import AVFoundation
+import CoreAudio
 
 enum AudioConvertStatus: Int32 {
     case done = 100
