@@ -36,7 +36,7 @@ enum Atoms {
 
     static var cmov: Int { fourCcToInt("cmov") }
     static var stco: Int { fourCcToInt("stco") }
-    static var co64: Int { fourCcToInt("c064") }
+    static var co64: Int { fourCcToInt("co64") }
 
     static var atomPreampleSize: Int = 8
 
@@ -73,6 +73,12 @@ enum Mp4RestructureError: Error {
     case compressedAtomNotSupported
     case nonOptimizedMp4AndServerCannotSeek
     case networkError(Error)
+}
+
+enum OptimizeCheckResult: Equatable {
+    case optimized
+    case needsRestructure(moovOffset: Int)
+    case undetermined
 }
 
 final class Mp4Restructure {
@@ -129,24 +135,36 @@ final class Mp4Restructure {
         return (initialData, mdatOffset)
     }
 
-    /// Returns `nil` if the data is optimized otherwise `Mp4OptimizeInfo`
-    func checkIsOptimized(data: Data) throws -> Mp4OptimizeInfo? {
-        while atomOffset < UInt64(data.count) {
-            var atomSize = try Int(getInteger(data: data, offset: atomOffset) as UInt32)
-            let atomType = try Int(getInteger(data: data, offset: atomOffset + 4) as UInt32)
+    /// Incrementally checks if the MP4 is optimized. Returns tri-state result.
+    func checkIsOptimized(data: Data) throws -> OptimizeCheckResult {
+        while atomOffset + 8 <= data.count {
+            var atomSize: Int = try Int(getInteger(data: data, offset: atomOffset) as UInt32)
+            let atomType: Int = try Int(getInteger(data: data, offset: atomOffset + 4) as UInt32)
+            var headerSize = 8
+
+            // Handle extended size (64-bit)
+            if atomSize == 1 {
+                if atomOffset + 16 > data.count { break }
+                let ext: UInt64 = try getInteger(data: data, offset: atomOffset + 8)
+                atomSize = Int(ext)
+                headerSize = 16
+            } else if atomSize == 0 {
+                // Size extends to EOF; with partial data we can't determine full box
+                break
+            }
+
+            // Bounds and sanity checks
+            if atomSize < headerSize || atomOffset + atomSize > data.count { break }
+
             switch atomType {
             case Atoms.ftyp:
-                let ftypData = data[Int(atomOffset) ..< atomSize]
+                let start = atomOffset
+                let end = atomOffset + atomSize
+                let ftypData = data[start ..< end]
                 let ftyp = MP4Atom(type: atomType, size: atomSize, offset: atomOffset, data: ftypData)
                 self.ftyp = ftyp
                 atoms.append(ftyp)
             case Atoms.mdat:
-                // ref: https://developer.apple.com/documentation/quicktime-file-format/movie_data_atom
-                // This atom can be quite large, and may exceed 2^32 bytes, in which case the size field will be set to 1, 
-                // and the header will contain a 64-bit extended size field.
-                if atomSize == 1 {
-                    atomSize = Int(try getInteger(data: data, offset: atomOffset + 8) as UInt64)
-                }
                 let mdat = MP4Atom(type: atomType, size: atomSize, offset: atomOffset)
                 atoms.append(mdat)
                 foundMdat = true
@@ -158,19 +176,21 @@ final class Mp4Restructure {
                 let atom = MP4Atom(type: atomType, size: atomSize, offset: atomOffset)
                 atoms.append(atom)
             }
+
             if ftyp != nil {
                 if foundMoov && !foundMdat {
                     Logger.debug("🕵️ detected an optimized mp4", category: .generic)
-                    return nil
+                    return .optimized
                 } else if !foundMoov && foundMdat {
-                    Logger.debug("🕵️ detected an non-optimized mp4", category: .generic)
-                    let possibleMoovOffset = Int(atomOffset) + atomSize
-                    return Mp4OptimizeInfo(moovOffset: possibleMoovOffset, moovSize: atomSize)
+                    Logger.debug("🕵️ detected a non-optimized mp4", category: .generic)
+                    let possibleMoovOffset = atomOffset + atomSize
+                    return .needsRestructure(moovOffset: possibleMoovOffset)
                 }
             }
+
             atomOffset += atomSize
         }
-        return nil
+        return .undetermined
     }
 
     /// logic taken from qt-faststart.c over at ffmpeg
@@ -236,6 +256,8 @@ final class Mp4Restructure {
             // the next integer determines the `Number of entries`
             // https://developer.apple.com/documentation/quicktime-file-format/chunk_offset_atom/number_of_entries
             let numberOfOffsetEntries = try Int(moovAtom.getInteger() as UInt32)
+            // Adjust by moov size
+            let adjustDelta = moovAtomSize
             if atomType == Atoms.stco {
                 Logger.debug("🏗️ patching stco atom...", category: .generic)
                 if moovAtom.bytesAvailable < numberOfOffsetEntries * 4 {
@@ -246,7 +268,7 @@ final class Mp4Restructure {
                 for _ in 0 ..< numberOfOffsetEntries {
                     let currentOffset = try Int(moovAtom.getInteger(moovAtom.offset) as UInt32)
                     // adjust the offset by adding the size of moov atom
-                    let adjustOffset = currentOffset + moovAtomSize
+                    let adjustOffset = currentOffset + adjustDelta
 
                     if currentOffset < 0, adjustOffset >= 0 {
                         throw Mp4RestructureError.unableToRestructureData
@@ -261,8 +283,8 @@ final class Mp4Restructure {
                 }
                 for _ in 0 ..< numberOfOffsetEntries {
                     let currentOffset: Int = try moovAtom.getInteger(moovAtom.offset)
-                    // adjust the offset by adding the size of moov atom
-                    moovAtom.put(currentOffset + moovAtomSize)
+                    // adjust the offset by adding the size of moov atom (write as big-endian 64-bit)
+                    moovAtom.put(UInt64(currentOffset + adjustDelta).bigEndian)
                 }
             }
         }
@@ -271,10 +293,10 @@ final class Mp4Restructure {
 
     func getInteger<T: FixedWidthInteger>(data: Data, offset: Int) throws -> T {
         let sizeOfInteger = MemoryLayout<T>.size
-        guard sizeOfInteger <= data.count else {
+        guard offset >= 0, offset + sizeOfInteger <= data.count else {
             throw ByteBuffer.Error.eof
         }
-        let _offset = offset + sizeOfInteger
-        return T(data: data[_offset - sizeOfInteger ..< _offset]).bigEndian
+        let end = offset + sizeOfInteger
+        return T(data: data[offset ..< end]).bigEndian
     }
 }

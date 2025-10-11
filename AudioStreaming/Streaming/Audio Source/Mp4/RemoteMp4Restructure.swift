@@ -75,8 +75,15 @@ final class RemoteMp4Restructure {
                     }
                     self.audioData.append(data)
                     do {
-                        let value = try self.mp4Restructure.checkIsOptimized(data: self.audioData)
-                        if let value {
+                        switch try self.mp4Restructure.checkIsOptimized(data: self.audioData) {
+                        case .undetermined:
+                            break // keep streaming until decision can be made
+                        case .optimized:
+                            self.audioData = Data()
+                            self.task?.cancel()
+                            self.task = nil
+                            completion(.success(nil))
+                        case let .needsRestructure(moovOffset):
                             guard response.response?.statusCode == 206 else {
                                 Logger.error("⛔️ mp4 error: no moov before mdat and the stream is not seekable", category: .networking)
                                 completion(.failure(Mp4RestructureError.nonOptimizedMp4AndServerCannotSeek))
@@ -86,22 +93,15 @@ final class RemoteMp4Restructure {
                             self.audioData = Data()
                             self.task?.cancel()
                             self.task = nil
-                            self.fetchAndRestructureMoovAtom(offset: value.moovOffset) { result in
+                            self.fetchAndRestructureMoovAtom(offset: moovOffset) { result in
                                 switch result {
                                 case let .success(value):
-                                    let data = value.data
-                                    let offset = value.offset
                                     self.dataOptimized = true
-                                    completion(.success(RestructuredData(initialData: data, mdatOffset: offset)))
+                                    completion(.success(RestructuredData(initialData: value.data, mdatOffset: value.offset)))
                                 case let .failure(error):
                                     completion(.failure(Mp4RestructureError.networkError(error)))
                                 }
                             }
-                        } else {
-                            self.audioData = Data()
-                            self.task?.cancel()
-                            self.task = nil
-                            completion(.success(nil))
                         }
                     } catch {
                         completion(.failure(Mp4RestructureError.invalidAtomSize))
@@ -131,6 +131,8 @@ final class RemoteMp4Restructure {
             }
         }
     }
+
+    // removed warmup range helper
 
     private func urlForPartialContent(with url: URL, offset: Int) -> URLRequest {
         var urlRequest = URLRequest(url: url)
