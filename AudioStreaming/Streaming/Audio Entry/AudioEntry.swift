@@ -108,6 +108,9 @@ class AudioEntry {
 
     func calculatedBitrate() -> Double {
         lock.lock(); defer { lock.unlock() }
+        if let explicitBitRate = audioStreamState.bitRate, explicitBitRate > 0 {
+            return explicitBitRate
+        }
         let packets = processedPacketsState
         if packetDuration > 0 {
             let packetsCount = packets.count

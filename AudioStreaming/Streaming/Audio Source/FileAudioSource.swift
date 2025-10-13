@@ -120,11 +120,15 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
             if isMp4, !mp4IsAlreadyOptimized {
                 if !mp4Restructure.dataOptimized {
                     do {
-                        if let mp4OptimizeInfo = try mp4Restructure.checkIsOptimized(data: data) {
-                            try performMp4Restructure(inputStream: inputStream, mp4OptimizeInfo: mp4OptimizeInfo)
-                        } else {
+                        switch try mp4Restructure.checkIsOptimized(data: data) {
+                        case .undetermined:
+                            // Not enough bytes yet; wait for more data before deciding
+                            break
+                        case .optimized:
                             mp4IsAlreadyOptimized = true
                             delegate?.dataAvailable(source: self, data: data)
+                        case let .needsRestructure(moovOffset):
+                            try performMp4Restructure(inputStream: inputStream, moovOffset: moovOffset)
                         }
                     } catch {
                         delegate?.errorOccurred(source: self, error: error)
@@ -141,24 +145,71 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
         }
     }
 
-    func performMp4Restructure(inputStream: InputStream, mp4OptimizeInfo: Mp4OptimizeInfo) throws {
-        let offsetAccepted = inputStream.setProperty(mp4OptimizeInfo.moovOffset, forKey: .fileCurrentOffsetKey)
-        if offsetAccepted {
-            let moovDataBuffer = UnsafeMutablePointer.uint8pointer(of: mp4OptimizeInfo.moovSize)
-            defer { moovDataBuffer.deallocate() }
-            let moovRead = inputStream.read(moovDataBuffer, maxLength: mp4OptimizeInfo.moovSize)
-            if moovRead > 0 {
-                let data = Data(bytes: moovDataBuffer, count: moovRead)
-                let moovData = try mp4Restructure.restructureMoov(data: data)
-                delegate?.dataAvailable(source: self, data: moovData.initialData)
-                if !inputStream.setProperty(moovData.mdatOffset, forKey: .fileCurrentOffsetKey) {
-                    delegate?.errorOccurred(source: self, error: AudioSystemError.playerStartError)
-                }
-            } else {
-                delegate?.errorOccurred(source: self, error: AudioSystemError.playerStartError)
-            }
-        } else {
+    func performMp4Restructure(inputStream: InputStream, moovOffset: Int) throws {
+        let offsetAccepted = inputStream.setProperty(moovOffset, forKey: .fileCurrentOffsetKey)
+        if !offsetAccepted {
             delegate?.errorOccurred(source: self, error: inputStream.streamError ?? AudioSystemError.playerStartError)
+            return
+        }
+
+        // Read moov header (8 bytes)
+        var header = [UInt8](repeating: 0, count: 8)
+        let headerRead = inputStream.read(&header, maxLength: 8)
+        guard headerRead == 8 else {
+            delegate?.errorOccurred(source: self, error: AudioSystemError.playerStartError)
+            return
+        }
+
+        // Parse size and type (big endian)
+        let size32 = Data(header[0 ..< 4]).withUnsafeBytes { $0.load(as: UInt32.self) }.bigEndian
+        let type32 = Data(header[4 ..< 8]).withUnsafeBytes { $0.load(as: UInt32.self) }.bigEndian
+        guard Int(type32) == Atoms.moov else {
+            delegate?.errorOccurred(source: self, error: Mp4RestructureError.missingMoovAtom)
+            return
+        }
+
+        var moovSize = Int(size32)
+        var moovData = Data(header)
+
+        // Extended size (64-bit)
+        if moovSize == 1 {
+            var ext = [UInt8](repeating: 0, count: 8)
+            let extRead = inputStream.read(&ext, maxLength: 8)
+            guard extRead == 8 else {
+                delegate?.errorOccurred(source: self, error: AudioSystemError.playerStartError)
+                return
+            }
+            let ext64 = Data(ext).withUnsafeBytes { $0.load(as: UInt64.self) }.bigEndian
+            moovSize = Int(ext64)
+            moovData.append(contentsOf: ext)
+        }
+
+        let remaining = moovSize - moovData.count
+        if remaining < 0 {
+            delegate?.errorOccurred(source: self, error: AudioSystemError.playerStartError)
+            return
+        }
+        if remaining > 0 {
+            var buffer = [UInt8](repeating: 0, count: remaining)
+            var total = 0
+            while total < remaining {
+                let readBytes = buffer.withUnsafeMutableBytes { ptr -> Int in
+                    let base = ptr.baseAddress!.assumingMemoryBound(to: UInt8.self).advanced(by: total)
+                    return inputStream.read(base, maxLength: remaining - total)
+                }
+                guard readBytes > 0 else {
+                    delegate?.errorOccurred(source: self, error: AudioSystemError.playerStartError)
+                    return
+                }
+                total += readBytes
+            }
+            moovData.append(contentsOf: buffer)
+        }
+
+        let moovResult = try mp4Restructure.restructureMoov(data: moovData)
+        delegate?.dataAvailable(source: self, data: moovResult.initialData)
+        if !inputStream.setProperty(moovResult.mdatOffset, forKey: .fileCurrentOffsetKey) {
+            delegate?.errorOccurred(source: self, error: AudioSystemError.playerStartError)
         }
     }
 

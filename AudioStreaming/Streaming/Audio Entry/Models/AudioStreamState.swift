@@ -12,4 +12,5 @@ final class AudioStreamState {
     var dataPacketOffset: UInt64?
     var dataPacketCount: Double = 0
     var streamFormat = AudioStreamBasicDescription()
+    var bitRate: Double?
 }

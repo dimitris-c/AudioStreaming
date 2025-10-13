@@ -226,6 +226,8 @@ final class AudioFileStreamProcessor {
             processDataByteCount(entry: entry, fileStream: fileStream)
         case kAudioFileStreamProperty_AudioDataPacketCount:
             processAudioDataPacketCount(entry: entry, fileStream: fileStream)
+        case kAudioFileStreamProperty_BitRate:
+            processBitRate(entry: entry, fileStream: fileStream)
         case kAudioFileStreamProperty_ReadyToProducePackets:
             // check converter for discontinuous stream
             assignMagicCookieToConverterIfNeeded()
@@ -233,6 +235,8 @@ final class AudioFileStreamProcessor {
             processReadyToProducePackets(entry: entry, fileStream: fileStream)
         case kAudioFileStreamProperty_FormatList:
             processFormatList(entry: entry, fileStream: fileStream)
+        case kAudioFileStreamProperty_PacketTableInfo:
+            processPacketTableInfo(entry: entry, fileStream: fileStream)
         default:
             break
         }
@@ -336,28 +340,56 @@ final class AudioFileStreamProcessor {
         entry.audioStreamState.dataPacketOffset = audioDataPacketCount
     }
 
-    private func processFormatList(entry: AudioEntry, fileStream: AudioFileStreamID) {
+    private func processBitRate(entry: AudioEntry, fileStream: AudioFileStreamID) {
+        var bitRate: UInt32 = 0
+        let status = fileStreamGetProperty(value: &bitRate, fileStream: fileStream, propertyId: kAudioFileStreamProperty_BitRate)
+        guard status == noErr else { return }
         entry.lock.lock(); defer { entry.lock.unlock() }
+        entry.audioStreamState.bitRate = Double(bitRate)
+    }
+
+    private func processPacketTableInfo(entry: AudioEntry, fileStream: AudioFileStreamID) {
+        var pti = AudioFilePacketTableInfo(mNumberValidFrames: 0,
+                                           mPrimingFrames: 0,
+                                           mRemainderFrames: 0)
+        let status = fileStreamGetProperty(value: &pti, fileStream: fileStream, propertyId: kAudioFileStreamProperty_PacketTableInfo)
+        guard status == noErr else { return }
+        // Use valid frames to refine duration if present
+        entry.lock.lock(); defer { entry.lock.unlock() }
+        if pti.mNumberValidFrames > 0 {
+            entry.audioStreamState.dataPacketCount = Double(pti.mNumberValidFrames) / Double(max(1, entry.audioStreamFormat.mFramesPerPacket))
+        }
+    }
+
+    private func processFormatList(entry: AudioEntry, fileStream: AudioFileStreamID) {
         let info = fileStreamGetPropertyInfo(fileStream: fileStream, propertyId: kAudioFileStreamProperty_FormatList)
-        guard info.status == noErr else { return }
-        var list: [AudioFormatListItem] = Array(repeating: AudioFormatListItem(), count: Int(info.size))
-        var size = UInt32(info.size)
+        guard info.status == noErr, info.size > 0 else { return }
+
+        let itemStride = MemoryLayout<AudioFormatListItem>.stride
+        let itemCount = Int(info.size) / itemStride
+        guard itemCount > 0 else { return }
+
+        var list = [AudioFormatListItem](repeating: AudioFormatListItem(), count: itemCount)
+        var size = UInt32(itemCount * itemStride)
         AudioFileStreamGetProperty(fileStream, kAudioFileStreamProperty_FormatList, &size, &list)
-        let step = MemoryLayout<AudioFormatListItem>.size
-        var i = 0
-        while i * step < size {
+
+        var chosenASBD: AudioStreamBasicDescription?
+        for i in 0..<itemCount {
             let asbd = list[i].mASBD
             let formatId = asbd.mFormatID
             if formatId == kAudioFormatMPEG4AAC_HE || formatId == kAudioFormatMPEG4AAC_HE_V2 {
-                playerContext.audioReadingEntry?.audioStreamFormat = asbd
+                chosenASBD = asbd
                 break
             }
-            i += step
+            if chosenASBD == nil {
+                chosenASBD = asbd
+            }
         }
 
-        if fileFormatsForDelayedConverterCreation.contains(currentFileFormat) {
-            if let inputStreamFormat = playerContext.audioReadingEntry?.audioStreamFormat {
-                createAudioConverter(from: inputStreamFormat, to: outputAudioFormat)
+        if let asbd = chosenASBD {
+            entry.lock.withLock { entry.audioStreamFormat = asbd }
+            if fileFormatsForDelayedConverterCreation.contains(currentFileFormat) {
+                createAudioConverter(from: asbd, to: outputAudioFormat)
             }
         }
     }

@@ -651,18 +651,22 @@ open class AudioPlayer {
 
         guard playerContext.internalState != .paused else { return }
 
+        let snapshot = playerContext.entriesLock.withLock {
+            (reading: playerContext.audioReadingEntry, playing: playerContext.audioPlayingEntry)
+        }
+
         if playerContext.internalState == .pendingNext {
             let entry = entriesQueue.dequeue(type: .upcoming)
             playerContext.setInternalState(to: .waitingForData)
             setCurrentReading(entry: entry, startPlaying: true, shouldClearQueue: true)
             rendererContext.resetBuffers()
-        } else if let playingEntry = playerContext.audioPlayingEntry,
+        } else if let playingEntry = snapshot.playing,
                   playingEntry.seekRequest.requested,
-                  playingEntry != playerContext.audioReadingEntry
+                  playingEntry != snapshot.reading
         {
             playingEntry.audioStreamState.processedDataFormat = false
             playingEntry.reset()
-            if let readingEntry = playerContext.audioReadingEntry {
+            if let readingEntry = snapshot.reading {
                 readingEntry.delegate = nil
                 readingEntry.close()
             }
@@ -677,20 +681,20 @@ open class AudioPlayer {
                 setCurrentReading(entry: playingEntry, startPlaying: true, shouldClearQueue: false)
             }
 
-        } else if playerContext.audioReadingEntry == nil {
+        } else if snapshot.reading == nil {
             if entriesQueue.count(for: .upcoming) > 0 {
                 let entry = entriesQueue.dequeue(type: .upcoming)
-                let shouldStartPlaying = playerContext.audioPlayingEntry == nil
+                let shouldStartPlaying = snapshot.playing == nil
                 playerContext.setInternalState(to: .waitingForData)
                 setCurrentReading(entry: entry, startPlaying: shouldStartPlaying, shouldClearQueue: false)
-            } else if playerContext.audioPlayingEntry == nil {
+            } else if snapshot.playing == nil {
                 if playerContext.internalState != .stopped {
                     stopEngine(reason: .eof)
                 }
             }
         }
 
-        if let playingEntry = playerContext.audioPlayingEntry,
+        if let playingEntry = snapshot.playing,
            playingEntry.audioStreamState.processedDataFormat,
            playingEntry.calculatedBitrate() > 0.0
         {
