@@ -337,27 +337,34 @@ final class AudioFileStreamProcessor {
     }
 
     private func processFormatList(entry: AudioEntry, fileStream: AudioFileStreamID) {
-        entry.lock.lock(); defer { entry.lock.unlock() }
         let info = fileStreamGetPropertyInfo(fileStream: fileStream, propertyId: kAudioFileStreamProperty_FormatList)
-        guard info.status == noErr else { return }
-        var list: [AudioFormatListItem] = Array(repeating: AudioFormatListItem(), count: Int(info.size))
-        var size = UInt32(info.size)
+        guard info.status == noErr, info.size > 0 else { return }
+
+        let itemStride = MemoryLayout<AudioFormatListItem>.stride
+        let itemCount = Int(info.size) / itemStride
+        guard itemCount > 0 else { return }
+
+        var list = [AudioFormatListItem](repeating: AudioFormatListItem(), count: itemCount)
+        var size = UInt32(itemCount * itemStride)
         AudioFileStreamGetProperty(fileStream, kAudioFileStreamProperty_FormatList, &size, &list)
-        let step = MemoryLayout<AudioFormatListItem>.size
-        var i = 0
-        while i * step < size {
+
+        var chosenASBD: AudioStreamBasicDescription?
+        for i in 0..<itemCount {
             let asbd = list[i].mASBD
             let formatId = asbd.mFormatID
             if formatId == kAudioFormatMPEG4AAC_HE || formatId == kAudioFormatMPEG4AAC_HE_V2 {
-                playerContext.audioReadingEntry?.audioStreamFormat = asbd
+                chosenASBD = asbd
                 break
             }
-            i += step
+            if chosenASBD == nil {
+                chosenASBD = asbd
+            }
         }
 
-        if fileFormatsForDelayedConverterCreation.contains(currentFileFormat) {
-            if let inputStreamFormat = playerContext.audioReadingEntry?.audioStreamFormat {
-                createAudioConverter(from: inputStreamFormat, to: outputAudioFormat)
+        if let asbd = chosenASBD {
+            entry.lock.withLock { entry.audioStreamFormat = asbd }
+            if fileFormatsForDelayedConverterCreation.contains(currentFileFormat) {
+                createAudioConverter(from: asbd, to: outputAudioFormat)
             }
         }
     }
