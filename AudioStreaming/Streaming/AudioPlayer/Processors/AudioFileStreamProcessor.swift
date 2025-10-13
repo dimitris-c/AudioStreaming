@@ -226,6 +226,8 @@ final class AudioFileStreamProcessor {
             processDataByteCount(entry: entry, fileStream: fileStream)
         case kAudioFileStreamProperty_AudioDataPacketCount:
             processAudioDataPacketCount(entry: entry, fileStream: fileStream)
+        case kAudioFileStreamProperty_BitRate:
+            processBitRate(entry: entry, fileStream: fileStream)
         case kAudioFileStreamProperty_ReadyToProducePackets:
             // check converter for discontinuous stream
             assignMagicCookieToConverterIfNeeded()
@@ -233,6 +235,8 @@ final class AudioFileStreamProcessor {
             processReadyToProducePackets(entry: entry, fileStream: fileStream)
         case kAudioFileStreamProperty_FormatList:
             processFormatList(entry: entry, fileStream: fileStream)
+        case kAudioFileStreamProperty_PacketTableInfo:
+            processPacketTableInfo(entry: entry, fileStream: fileStream)
         default:
             break
         }
@@ -334,6 +338,27 @@ final class AudioFileStreamProcessor {
         fileStreamGetProperty(value: &audioDataPacketCount, fileStream: fileStream, propertyId: kAudioFileStreamProperty_AudioDataPacketCount)
         entry.lock.lock(); defer { entry.lock.unlock() }
         entry.audioStreamState.dataPacketOffset = audioDataPacketCount
+    }
+
+    private func processBitRate(entry: AudioEntry, fileStream: AudioFileStreamID) {
+        var bitRate: UInt32 = 0
+        let status = fileStreamGetProperty(value: &bitRate, fileStream: fileStream, propertyId: kAudioFileStreamProperty_BitRate)
+        guard status == noErr else { return }
+        entry.lock.lock(); defer { entry.lock.unlock() }
+        entry.audioStreamState.bitRate = Double(bitRate)
+    }
+
+    private func processPacketTableInfo(entry: AudioEntry, fileStream: AudioFileStreamID) {
+        var pti = AudioFilePacketTableInfo(mNumberValidFrames: 0,
+                                           mPrimingFrames: 0,
+                                           mRemainderFrames: 0)
+        let status = fileStreamGetProperty(value: &pti, fileStream: fileStream, propertyId: kAudioFileStreamProperty_PacketTableInfo)
+        guard status == noErr else { return }
+        // Use valid frames to refine duration if present
+        entry.lock.lock(); defer { entry.lock.unlock() }
+        if pti.mNumberValidFrames > 0 {
+            entry.audioStreamState.dataPacketCount = Double(pti.mNumberValidFrames) / Double(max(1, entry.audioStreamFormat.mFramesPerPacket))
+        }
     }
 
     private func processFormatList(entry: AudioEntry, fileStream: AudioFileStreamID) {
