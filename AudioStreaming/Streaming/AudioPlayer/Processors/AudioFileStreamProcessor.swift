@@ -6,6 +6,7 @@
 //
 
 import AVFoundation
+import CoreAudio
 
 enum AudioConvertStatus: Int32 {
     case done = 100
@@ -104,6 +105,8 @@ final class AudioFileStreamProcessor {
         let dataLengthInBytes = Double(readingEntry.audioDataLengthBytes())
         let entryDuration = readingEntry.duration()
         let duration = entryDuration < readingEntry.progress && entryDuration > 0 ? readingEntry.progress : entryDuration
+      
+        guard duration > 0.0 else { return }
 
         var seekByteOffset = Int64(dataOffset + (readingEntry.seekRequest.time / duration) * dataLengthInBytes)
 
