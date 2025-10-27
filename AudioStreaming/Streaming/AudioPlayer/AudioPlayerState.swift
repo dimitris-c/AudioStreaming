@@ -106,6 +106,7 @@ public enum AudioSystemError: LocalizedError, Equatable, Sendable {
     case playerStartError
     case fileStreamError(AudioFileStreamError)
     case converterError(AudioConverterError)
+    case codecError
 
     public var errorDescription: String? {
         switch self {
@@ -116,6 +117,8 @@ public enum AudioSystemError: LocalizedError, Equatable, Sendable {
             return "Audio file stream error'd: \(error)"
         case let .converterError(error):
             return "Audio converter error'd: \(error)"
+        case .codecError:
+            return "Audio codec error"
         }
     }
 }

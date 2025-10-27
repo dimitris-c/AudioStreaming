@@ -20,6 +20,7 @@ enum AudioContent {
     case local
     case localWave
     case loopBeatFlac
+    case oggVorbis
     case custom(String)
 
     var title: String {
@@ -52,6 +53,8 @@ enum AudioContent {
             return "Jazzy Frenchy"
         case .loopBeatFlac:
             return "Beat loop"
+        case .oggVorbis:
+            return "Jazzy Fetchy"
         case .custom(let url):
             return url
         }
@@ -87,6 +90,8 @@ enum AudioContent {
             return "Music by: bensound.com - m4a non-optimized"
         case .loopBeatFlac:
             return "Remote flac"
+        case .oggVorbis:
+            return "Remote Ogg Vorbis"
         case .custom:
             return ""
         }
@@ -124,6 +129,8 @@ enum AudioContent {
             return URL(string: "https://github.com/dimitris-c/sample-audio/raw/main/5-MB-WAV.wav")!
         case .loopBeatFlac:
             return URL(string: "https://github.com/dimitris-c/sample-audio/raw/main/drumbeat-loop.flac")!
+        case .oggVorbis:
+            return URL(string: "https://github.com/dimitris-c/sample-audio/raw/refs/heads/main/bensound-jazzyfrenchy.ogg")!
         case .custom(let url):
             return URL(string: url)!
         }

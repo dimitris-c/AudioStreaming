@@ -7,6 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		981DA0652EAD51B60062223D /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 981DA0632EAD51B60062223D /* README.md */; };
+		981DA0662EAD51B60062223D /* OggVorbisBridge.c in Sources */ = {isa = PBXBuildFile; fileRef = 981DA0612EAD51B60062223D /* OggVorbisBridge.c */; };
+		981DA0672EAD51B60062223D /* OggVorbisDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 981DA0622EAD51B60062223D /* OggVorbisDecoder.swift */; };
+		981DA0682EAD51B60062223D /* OggVorbisBridge.h in Headers */ = {isa = PBXBuildFile; fileRef = 981DA0602EAD51B60062223D /* OggVorbisBridge.h */; };
+		981DA06B2EAD53650062223D /* opus in Frameworks */ = {isa = PBXBuildFile; productRef = 981DA06A2EAD53650062223D /* opus */; };
+		981DA06E2EAD53880062223D /* ogg in Frameworks */ = {isa = PBXBuildFile; productRef = 981DA06D2EAD53880062223D /* ogg */; };
+		981DA0712EAD539A0062223D /* vorbis in Frameworks */ = {isa = PBXBuildFile; productRef = 981DA0702EAD539A0062223D /* vorbis */; };
+		981DA0732EAD53D80062223D /* OggVorbisStreamProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 981DA0722EAD53D80062223D /* OggVorbisStreamProcessor.swift */; };
 		98ABF69E2BAB07A20059C441 /* Mp4Restructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98ABF69D2BAB07A20059C441 /* Mp4Restructure.swift */; };
 		98C82AE62B8CA8BC00AED485 /* RemoteMp4Restructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98C82AE52B8CA8BC00AED485 /* RemoteMp4Restructure.swift */; };
 		98CC396E28BD651E006C9FF9 /* Atomic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98CC396D28BD651E006C9FF9 /* Atomic.swift */; };
@@ -97,6 +105,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		981DA0602EAD51B60062223D /* OggVorbisBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OggVorbisBridge.h; sourceTree = "<group>"; };
+		981DA0612EAD51B60062223D /* OggVorbisBridge.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = OggVorbisBridge.c; sourceTree = "<group>"; };
+		981DA0622EAD51B60062223D /* OggVorbisDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OggVorbisDecoder.swift; sourceTree = "<group>"; };
+		981DA0632EAD51B60062223D /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		981DA0722EAD53D80062223D /* OggVorbisStreamProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OggVorbisStreamProcessor.swift; sourceTree = "<group>"; };
 		98ABF69D2BAB07A20059C441 /* Mp4Restructure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mp4Restructure.swift; sourceTree = "<group>"; };
 		98C82AE52B8CA8BC00AED485 /* RemoteMp4Restructure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteMp4Restructure.swift; sourceTree = "<group>"; };
 		98CC396D28BD651E006C9FF9 /* Atomic.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Atomic.swift; sourceTree = "<group>"; };
@@ -176,6 +189,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				981DA06E2EAD53880062223D /* ogg in Frameworks */,
+				981DA0712EAD539A0062223D /* vorbis in Frameworks */,
+				981DA06B2EAD53650062223D /* opus in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -190,6 +206,17 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		981DA0642EAD51B60062223D /* OggVorbis */ = {
+			isa = PBXGroup;
+			children = (
+				981DA0602EAD51B60062223D /* OggVorbisBridge.h */,
+				981DA0612EAD51B60062223D /* OggVorbisBridge.c */,
+				981DA0622EAD51B60062223D /* OggVorbisDecoder.swift */,
+				981DA0632EAD51B60062223D /* README.md */,
+			);
+			path = OggVorbis;
+			sourceTree = "<group>";
+		};
 		98C82AE42B8CA8AA00AED485 /* Mp4 */ = {
 			isa = PBXGroup;
 			children = (
@@ -276,6 +303,7 @@
 		B55CEAC024855AA20001C498 /* Processors */ = {
 			isa = PBXGroup;
 			children = (
+				981DA0722EAD53D80062223D /* OggVorbisStreamProcessor.swift */,
 				B5B36E422655A32200DC96F5 /* FrameFilterProcessor.swift */,
 				B5667A8F2499018D00D93F85 /* AudioFileStreamProcessor.swift */,
 				B5667B3D249BC43000D93F85 /* AudioPlayerRenderProcessor.swift */,
@@ -435,6 +463,7 @@
 		B5EF9553247E9235003E8FF8 /* Streaming */ = {
 			isa = PBXGroup;
 			children = (
+				981DA0642EAD51B60062223D /* OggVorbis */,
 				B5E1DE2924B7179E00955BFB /* AudioPlayer */,
 				B58BD7FC255DB653005B756D /* Audio Source */,
 				B55A7369247FCB160050C53D /* Audio Entry */,
@@ -475,6 +504,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				981DA0682EAD51B60062223D /* OggVorbisBridge.h in Headers */,
 				B5AEDBBF24744153007D8101 /* AudioStreaming.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -499,6 +529,9 @@
 			);
 			name = AudioStreaming;
 			packageProductDependencies = (
+				981DA06A2EAD53650062223D /* opus */,
+				981DA06D2EAD53880062223D /* ogg */,
+				981DA0702EAD539A0062223D /* vorbis */,
 			);
 			productName = AudioStreaming;
 			productReference = B5AEDBAE24744153007D8101 /* AudioStreaming.framework */;
@@ -553,6 +586,9 @@
 			);
 			mainGroup = B5AEDBA424744153007D8101;
 			packageReferences = (
+				981DA0692EAD53650062223D /* XCRemoteSwiftPackageReference "opus-binary-xcframework" */,
+				981DA06C2EAD53880062223D /* XCRemoteSwiftPackageReference "ogg-binary-xcframework" */,
+				981DA06F2EAD539A0062223D /* XCRemoteSwiftPackageReference "vorbis-binary-xcframework" */,
 			);
 			productRefGroup = B5AEDBAF24744153007D8101 /* Products */;
 			projectDirPath = "";
@@ -569,6 +605,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				981DA0652EAD51B60062223D /* README.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -623,6 +660,8 @@
 				B51B9F9A24DBE5BF00BDEAA2 /* AVAudioFormat+Convenience.swift in Sources */,
 				B51FE0C624890CCB00F2A4D2 /* PlayerQueueEntries.swift in Sources */,
 				B5EF9557247E9439003E8FF8 /* AudioStreamSource.swift in Sources */,
+				981DA0662EAD51B60062223D /* OggVorbisBridge.c in Sources */,
+				981DA0672EAD51B60062223D /* OggVorbisDecoder.swift in Sources */,
 				B5D4A40925D9321400E1450C /* IcycastHeaderParser.swift in Sources */,
 				B59DF1A32493E90C0043C498 /* AudioFileStream+Helpers.swift in Sources */,
 				B54D876D2490E4A000C361A0 /* UnitDescriptions.swift in Sources */,
@@ -651,6 +690,7 @@
 				B55A736C247FCB420050C53D /* HTTPHeaderParser.swift in Sources */,
 				B55F77D124D82CD50057F431 /* AVAudioUnit+Convenience.swift in Sources */,
 				B55CE96E248058B60001C498 /* MetadataParser.swift in Sources */,
+				981DA0732EAD53D80062223D /* OggVorbisStreamProcessor.swift in Sources */,
 				B5838644254584BE0087A712 /* AudioStreamState.swift in Sources */,
 				B500732024D00BAC00BB4475 /* Logger.swift in Sources */,
 				98C82AE62B8CA8BC00AED485 /* RemoteMp4Restructure.swift in Sources */,
@@ -837,7 +877,7 @@
 				ENABLE_MODULE_VERIFIER = YES;
 				INFOPLIST_FILE = AudioStreaming/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -855,6 +895,7 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,3";
+				TVOS_DEPLOYMENT_TARGET = 16.6;
 			};
 			name = Debug;
 		};
@@ -872,7 +913,7 @@
 				ENABLE_MODULE_VERIFIER = YES;
 				INFOPLIST_FILE = AudioStreaming/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -889,6 +930,7 @@
 				SWIFT_OBJC_BRIDGING_HEADER = "";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,3";
+				TVOS_DEPLOYMENT_TARGET = 16.6;
 			};
 			name = Release;
 		};
@@ -966,6 +1008,51 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		981DA0692EAD53650062223D /* XCRemoteSwiftPackageReference "opus-binary-xcframework" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sbooth/opus-binary-xcframework";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.2.2;
+			};
+		};
+		981DA06C2EAD53880062223D /* XCRemoteSwiftPackageReference "ogg-binary-xcframework" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sbooth/ogg-binary-xcframework?tab=readme-ov-file";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.1.2;
+			};
+		};
+		981DA06F2EAD539A0062223D /* XCRemoteSwiftPackageReference "vorbis-binary-xcframework" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sbooth/vorbis-binary-xcframework";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.1.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		981DA06A2EAD53650062223D /* opus */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 981DA0692EAD53650062223D /* XCRemoteSwiftPackageReference "opus-binary-xcframework" */;
+			productName = opus;
+		};
+		981DA06D2EAD53880062223D /* ogg */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 981DA06C2EAD53880062223D /* XCRemoteSwiftPackageReference "ogg-binary-xcframework" */;
+			productName = ogg;
+		};
+		981DA0702EAD539A0062223D /* vorbis */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 981DA06F2EAD539A0062223D /* XCRemoteSwiftPackageReference "vorbis-binary-xcframework" */;
+			productName = vorbis;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B5AEDBA524744153007D8101 /* Project object */;
 }

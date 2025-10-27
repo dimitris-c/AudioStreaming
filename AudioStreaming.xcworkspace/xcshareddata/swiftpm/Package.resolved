@@ -1,0 +1,33 @@
+{
+  "originHash" : "4fa8ea7fa4070ecd3e94a79088d185dbc2f1d89a7bdd15b474b5d93b42852604",
+  "pins" : [
+    {
+      "identity" : "ogg-binary-xcframework?tab=readme-ov-file",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sbooth/ogg-binary-xcframework?tab=readme-ov-file",
+      "state" : {
+        "revision" : "c0e822e18738ad913864e98d9614927ac1e9337c",
+        "version" : "0.1.2"
+      }
+    },
+    {
+      "identity" : "opus-binary-xcframework",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sbooth/opus-binary-xcframework",
+      "state" : {
+        "revision" : "74201a6af424e7e3a007fd5e401e9d2ce6896628",
+        "version" : "0.2.2"
+      }
+    },
+    {
+      "identity" : "vorbis-binary-xcframework",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sbooth/vorbis-binary-xcframework",
+      "state" : {
+        "revision" : "842020eabcebe410e698c68545d6597b2d232e51",
+        "version" : "0.1.2"
+      }
+    }
+  ],
+  "version" : 3
+}

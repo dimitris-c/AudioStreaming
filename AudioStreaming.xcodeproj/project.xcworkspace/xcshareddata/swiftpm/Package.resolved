@@ -1,0 +1,15 @@
+{
+  "originHash" : "84d61c22f4c9b9a6ddcf9f4529fa37841dcf93afb79bad55351f2ea228b3a0b0",
+  "pins" : [
+    {
+      "identity" : "opus-binary-xcframework",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sbooth/opus-binary-xcframework",
+      "state" : {
+        "revision" : "74201a6af424e7e3a007fd5e401e9d2ce6896628",
+        "version" : "0.2.2"
+      }
+    }
+  ],
+  "version" : 3
+}

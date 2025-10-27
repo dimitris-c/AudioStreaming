@@ -7,6 +7,9 @@ import AudioToolbox
 import Foundation
 
 /// mapping from mime types to `AudioFileTypeID`
+// Custom file type for Ogg Vorbis
+let kAudioFileOggType: AudioFileTypeID = 0x6F676720 // 'ogg '
+
 let fileTypesFromMimeType: [String: AudioFileTypeID] =
     [
         "audio/mp3": kAudioFileMP3Type,
@@ -33,7 +36,10 @@ let fileTypesFromMimeType: [String: AudioFileTypeID] =
         "video/3gpp": kAudioFile3GPType,
         "audio/3gp2": kAudioFile3GP2Type,
         "video/3gp2": kAudioFile3GP2Type,
-        "audio/flac": kAudioFileFLACType
+        "audio/flac": kAudioFileFLACType,
+        "audio/ogg": kAudioFileOggType,
+        "audio/vorbis": kAudioFileOggType,
+        "application/ogg": kAudioFileOggType
     ]
 
 /// Method that converts mime type to AudioFileTypeID
@@ -58,6 +64,8 @@ let fileTypesFromFileExtension: [String: AudioFileTypeID] =
         "ac3": kAudioFileAC3Type,
         "3gp": kAudioFile3GPType,
         "flac": kAudioFileFLACType,
+        "ogg": kAudioFileOggType,
+        "oga": kAudioFileOggType,
     ]
 
 func audioFileType(fileExtension: String) -> AudioFileTypeID {

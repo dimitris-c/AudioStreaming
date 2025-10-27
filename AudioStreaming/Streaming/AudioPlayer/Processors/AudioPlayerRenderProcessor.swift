@@ -255,6 +255,7 @@ final class AudioPlayerRenderProcessor: NSObject {
                 }
             }
             if rendererContext.waiting.value {
+                print("AudioPlayerRenderProcessor: 🔔 SIGNALING waiting processor")
                 rendererContext.packetsSemaphore.signal()
             }
         }
