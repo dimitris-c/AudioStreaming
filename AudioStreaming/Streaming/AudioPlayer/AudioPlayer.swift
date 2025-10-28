@@ -91,6 +91,12 @@ open class AudioPlayer {
         return entry.framesPlayed
     }
 
+    public var upcomingItems: [AudioEntryId] {
+        serializationQueue.sync {
+            return entriesQueue.items(type: .upcoming).map { $0.id }
+        }
+    }
+
     public private(set) var customAttachedNodes = [AVAudioNode]()
 
     /// The current configuration of the player.
@@ -287,7 +293,7 @@ open class AudioPlayer {
     /// - parameter source: A `CoreAudioStreamSource` that will providing streaming data
     /// - parameter entryId: A `String` that provides a unique id for this item
     /// - parameter format: An `AVAudioFormat` the format of this audio source
-    public func queue(source: CoreAudioStreamSource, entryId: String, format: AVAudioFormat) {
+    public func queue(source: CoreAudioStreamSource, entryId: String, format: AVAudioFormat, after afterUrl: URL? = nil) {
         let audioEntry = AudioEntry(source: source, entryId: AudioEntryId(id: entryId), outputAudioFormat: format)
         queue(audioEntry: audioEntry)
     }
@@ -339,6 +345,23 @@ open class AudioPlayer {
         serializationQueue.sync {
             audioEntry.delegate = self
             if let afterUrl = afterUrl {
+                if let afterUrlEntry = entriesQueue.items(type: .upcoming).first(where: { $0.id.id == afterUrl.absoluteString }) {
+                    entriesQueue.insert(item: audioEntry, type: .upcoming, after: afterUrlEntry)
+                }
+            } else {
+                entriesQueue.enqueue(item: audioEntry, type: .upcoming)
+            }
+        }
+        checkRenderWaitingAndNotifyIfNeeded()
+        sourceQueue.async { [weak self] in
+            self?.processSource()
+        }
+    }
+
+    private func queue(audioEntry: AudioEntry, after afterId: String? = nil) {
+        serializationQueue.sync {
+            audioEntry.delegate = self
+            if let afterId = afterUrl {
                 if let afterUrlEntry = entriesQueue.items(type: .upcoming).first(where: { $0.id.id == afterUrl.absoluteString }) {
                     entriesQueue.insert(item: audioEntry, type: .upcoming, after: afterUrlEntry)
                 }
