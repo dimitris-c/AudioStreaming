@@ -320,7 +320,7 @@ open class AudioPlayer {
     /// - parameter headers: A `Dictionary` specifying any additional headers to be pass to the network request.
     public func queue(url: URL, headers: [String: String], after afterUrl: URL? = nil) {
         let audioEntry = entryProvider.provideAudioEntry(url: url, headers: headers)
-        queue(audioEntry: audioEntry, after: afterUrl)
+        queue(audioEntry: audioEntry, after: afterUrl?.absoluteString)
     }
 
     /// Queues the specified URLs
@@ -341,28 +341,11 @@ open class AudioPlayer {
         }
     }
 
-    private func queue(audioEntry: AudioEntry, after afterUrl: URL? = nil) {
-        serializationQueue.sync {
-            audioEntry.delegate = self
-            if let afterUrl = afterUrl {
-                if let afterUrlEntry = entriesQueue.items(type: .upcoming).first(where: { $0.id.id == afterUrl.absoluteString }) {
-                    entriesQueue.insert(item: audioEntry, type: .upcoming, after: afterUrlEntry)
-                }
-            } else {
-                entriesQueue.enqueue(item: audioEntry, type: .upcoming)
-            }
-        }
-        checkRenderWaitingAndNotifyIfNeeded()
-        sourceQueue.async { [weak self] in
-            self?.processSource()
-        }
-    }
-
     private func queue(audioEntry: AudioEntry, after afterId: String? = nil) {
         serializationQueue.sync {
             audioEntry.delegate = self
-            if let afterId = afterUrl {
-                if let afterUrlEntry = entriesQueue.items(type: .upcoming).first(where: { $0.id.id == afterUrl.absoluteString }) {
+            if let afterId {
+                if let afterUrlEntry = entriesQueue.items(type: .upcoming).first(where: { $0.id.id == afterId }) {
                     entriesQueue.insert(item: audioEntry, type: .upcoming, after: afterUrlEntry)
                 }
             } else {
