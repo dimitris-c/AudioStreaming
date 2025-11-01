@@ -8,9 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		981DA0652EAD51B60062223D /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 981DA0632EAD51B60062223D /* README.md */; };
-		981DA0662EAD51B60062223D /* OggVorbisBridge.c in Sources */ = {isa = PBXBuildFile; fileRef = 981DA0612EAD51B60062223D /* OggVorbisBridge.c */; };
 		981DA0672EAD51B60062223D /* OggVorbisDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 981DA0622EAD51B60062223D /* OggVorbisDecoder.swift */; };
-		981DA0682EAD51B60062223D /* OggVorbisBridge.h in Headers */ = {isa = PBXBuildFile; fileRef = 981DA0602EAD51B60062223D /* OggVorbisBridge.h */; };
 		981DA06B2EAD53650062223D /* opus in Frameworks */ = {isa = PBXBuildFile; productRef = 981DA06A2EAD53650062223D /* opus */; };
 		981DA06E2EAD53880062223D /* ogg in Frameworks */ = {isa = PBXBuildFile; productRef = 981DA06D2EAD53880062223D /* ogg */; };
 		981DA0712EAD539A0062223D /* vorbis in Frameworks */ = {isa = PBXBuildFile; productRef = 981DA0702EAD539A0062223D /* vorbis */; };
@@ -105,8 +103,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		981DA0602EAD51B60062223D /* OggVorbisBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OggVorbisBridge.h; sourceTree = "<group>"; };
-		981DA0612EAD51B60062223D /* OggVorbisBridge.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = OggVorbisBridge.c; sourceTree = "<group>"; };
 		981DA0622EAD51B60062223D /* OggVorbisDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OggVorbisDecoder.swift; sourceTree = "<group>"; };
 		981DA0632EAD51B60062223D /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		981DA0722EAD53D80062223D /* OggVorbisStreamProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OggVorbisStreamProcessor.swift; sourceTree = "<group>"; };
@@ -209,8 +205,6 @@
 		981DA0642EAD51B60062223D /* OggVorbis */ = {
 			isa = PBXGroup;
 			children = (
-				981DA0602EAD51B60062223D /* OggVorbisBridge.h */,
-				981DA0612EAD51B60062223D /* OggVorbisBridge.c */,
 				981DA0622EAD51B60062223D /* OggVorbisDecoder.swift */,
 				981DA0632EAD51B60062223D /* README.md */,
 			);
@@ -504,7 +498,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				981DA0682EAD51B60062223D /* OggVorbisBridge.h in Headers */,
 				B5AEDBBF24744153007D8101 /* AudioStreaming.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -660,7 +653,6 @@
 				B51B9F9A24DBE5BF00BDEAA2 /* AVAudioFormat+Convenience.swift in Sources */,
 				B51FE0C624890CCB00F2A4D2 /* PlayerQueueEntries.swift in Sources */,
 				B5EF9557247E9439003E8FF8 /* AudioStreamSource.swift in Sources */,
-				981DA0662EAD51B60062223D /* OggVorbisBridge.c in Sources */,
 				981DA0672EAD51B60062223D /* OggVorbisDecoder.swift in Sources */,
 				B5D4A40925D9321400E1450C /* IcycastHeaderParser.swift in Sources */,
 				B59DF1A32493E90C0043C498 /* AudioFileStream+Helpers.swift in Sources */,

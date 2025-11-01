@@ -1,6 +1,15 @@
 {
-  "originHash" : "4fa8ea7fa4070ecd3e94a79088d185dbc2f1d89a7bdd15b474b5d93b42852604",
+  "originHash" : "1ea3e98859215ca12f48674ae21401ee15e132c5ca57c4ec4854c1d1cbb01b9a",
   "pins" : [
+    {
+      "identity" : "ogg-binary-xcframework",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sbooth/ogg-binary-xcframework",
+      "state" : {
+        "revision" : "c0e822e18738ad913864e98d9614927ac1e9337c",
+        "version" : "0.1.2"
+      }
+    },
     {
       "identity" : "ogg-binary-xcframework?tab=readme-ov-file",
       "kind" : "remoteSourceControl",

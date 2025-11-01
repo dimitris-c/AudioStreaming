@@ -12,6 +12,7 @@ typedef void * VFFileRef;
 extern "C" {
 #endif
 
+// Stream info structure
 typedef struct {
     int sample_rate;
     int channels;
@@ -44,5 +45,3 @@ long VFReadInterleavedFloat(VFFileRef vf, float *dst, int max_frames);
 #endif
 
 #endif // VORBIS_FILE_BRIDGE_H
-
-
