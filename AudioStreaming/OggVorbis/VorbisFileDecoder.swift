@@ -13,15 +13,11 @@ final class VorbisFileDecoder {
     private(set) var channels: Int = 0
     private(set) var durationSeconds: Double = -1
     private(set) var totalPcmSamples: Int64 = -1
+    private(set) var nominalBitrate: Int = 0
     private(set) var processingFormat: AVAudioFormat?
     
     // Thread safety
     private let decoderLock = NSLock()
-    
-    // Debug counters
-    private var totalBytesReceived = 0
-    private var totalFramesRead = 0
-    private var readCalls = 0
     
     // Silent frame generation
     private var silentFrameBuffer: UnsafeMutablePointer<Float>?
@@ -33,11 +29,7 @@ final class VorbisFileDecoder {
         decoderLock.lock()
         defer { decoderLock.unlock() }
         
-        print("VorbisFileDecoder: Creating stream with \(capacityBytes) bytes capacity")
         stream = VFStreamCreate(capacityBytes)
-        totalBytesReceived = 0
-        totalFramesRead = 0
-        readCalls = 0
     }
     
     /// Clean up resources
@@ -54,8 +46,6 @@ final class VorbisFileDecoder {
             silentFrameBuffer.deallocate()
             self.silentFrameBuffer = nil
         }
-        
-        print("VorbisFileDecoder: Destroyed decoder")
     }
     
     deinit {
@@ -73,14 +63,7 @@ final class VorbisFileDecoder {
                   rawBuf.count > 0, 
                   let stream = stream else { return }
             
-            let beforeAvailable = VFStreamAvailableBytes(stream)
-            print("VorbisFileDecoder: Pushing \(rawBuf.count) bytes (buffer has \(beforeAvailable) bytes available)...")
-            
             VFStreamPush(stream, base, rawBuf.count)
-            
-            totalBytesReceived += rawBuf.count
-            let afterAvailable = VFStreamAvailableBytes(stream)
-            print("VorbisFileDecoder: Pushed \(rawBuf.count) bytes (total received: \(totalBytesReceived), buffer now has: \(afterAvailable))")
         }
     }
     
@@ -101,7 +84,6 @@ final class VorbisFileDecoder {
         
         if let stream = stream { 
             VFStreamMarkEOF(stream)
-            print("VorbisFileDecoder: Marked EOF")
         }
     }
     
@@ -113,16 +95,14 @@ final class VorbisFileDecoder {
         
         guard vf == nil, let stream = stream else { return }
         
-        print("VorbisFileDecoder: Attempting to open Vorbis file")
         var outVF: VFFileRef?
         let rc = VFOpen(stream, &outVF)
         if rc < 0 {
-            print("VorbisFileDecoder: Failed to open Vorbis file: \(rc)")
+            Logger.error("Failed to open Vorbis file", category: .audioRendering)
             throw NSError(domain: "VorbisFileDecoder", code: Int(rc), 
-                          userInfo: [NSLocalizedDescriptionKey: "Failed to open Vorbis file: \(rc)"])
+                          userInfo: [NSLocalizedDescriptionKey: "Failed to open Vorbis file"])
         }
         
-        print("VorbisFileDecoder: Successfully opened Vorbis file")
         vf = outVF
         
         // Get stream info
@@ -132,8 +112,7 @@ final class VorbisFileDecoder {
             channels = Int(info.channels)
             totalPcmSamples = Int64(info.total_pcm_samples)
             durationSeconds = info.duration_seconds
-            
-            print("VorbisFileDecoder: Stream info - Sample rate: \(sampleRate), Channels: \(channels), Duration: \(durationSeconds), Total samples: \(totalPcmSamples)")
+            nominalBitrate = Int(info.bitrate_nominal)
             
             // Create audio format
             let layoutTag: AudioChannelLayoutTag
@@ -158,11 +137,8 @@ final class VorbisFileDecoder {
             for i in 0..<silentFrameSize {
                 silentFrameBuffer?[i] = 0.0
             }
-            
-            print("VorbisFileDecoder: Created processing format: \(processingFormat?.description ?? "nil")")
-            print("VorbisFileDecoder: Created silent frame buffer with \(silentFrameSize) samples")
         } else {
-            print("VorbisFileDecoder: Failed to get stream info")
+            Logger.error("Failed to get stream info", category: .audioRendering)
         }
     }
     
@@ -175,16 +151,12 @@ final class VorbisFileDecoder {
         decoderLock.lock()
         defer { decoderLock.unlock() }
         
-        readCalls += 1
-        
         guard let vf = vf, buffer.format.channelCount > 0 else { 
-            print("VorbisFileDecoder: Cannot read frames - vf: \(vf != nil), channels: \(buffer.format.channelCount)")
             return generateSilentFrames(into: buffer, frameCount: frameCount)
         }
         
         // Get float channel data from buffer
         guard let floatChannelData = buffer.floatChannelData else { 
-            print("VorbisFileDecoder: No float channel data available")
             return generateSilentFrames(into: buffer, frameCount: frameCount)
         }
         
@@ -196,23 +168,10 @@ final class VorbisFileDecoder {
         // Read interleaved frames
         let framesRead = Int(VFReadInterleavedFloat(vf, tempBuffer, Int32(maxFrames)))
         
-        print("VorbisFileDecoder: Read \(framesRead) frames (call #\(readCalls), requested: \(maxFrames))")
-        
         // If no frames were read, generate silent frames instead of returning 0
         if framesRead <= 0 {
-            print("VorbisFileDecoder: No frames read, generating silent frames")
             return generateSilentFrames(into: buffer, frameCount: frameCount)
         }
-        
-        // Check for audio data
-        var maxLevel: Float = 0
-        for i in 0..<min(20, framesRead * channels) {
-            let level = abs(tempBuffer[i])
-            if level > maxLevel {
-                maxLevel = level
-            }
-        }
-        print("VorbisFileDecoder: Max audio level in first 20 samples: \(maxLevel)")
         
         // De-interleave into buffer
         for ch in 0..<min(Int(buffer.format.channelCount), channels) {
@@ -221,9 +180,6 @@ final class VorbisFileDecoder {
                 dst[frame] = tempBuffer[frame * channels + ch]
             }
         }
-        
-        totalFramesRead += framesRead
-        print("VorbisFileDecoder: Total frames read: \(totalFramesRead)")
         
         return framesRead
     }
@@ -245,7 +201,6 @@ final class VorbisFileDecoder {
             }
         }
         
-        print("VorbisFileDecoder: Generated \(framesToGenerate) silent frames")
         return framesToGenerate
     }
     

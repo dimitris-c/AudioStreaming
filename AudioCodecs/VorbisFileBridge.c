@@ -9,7 +9,8 @@ struct VFRemoteStream {
     uint8_t *buf;
     size_t cap, head, tail, size;
     int eof;
-    long long pos;
+    long long pos;           // Current read position in the stream
+    long long total_pushed;  // Total bytes pushed into the buffer
     pthread_mutex_t m;
     pthread_cond_t cv;
 };
@@ -93,6 +94,7 @@ void VFStreamPush(VFStreamRef sr, const uint8_t *data, size_t len) {
             pthread_cond_wait(&s->cv, &s->m);
         }
     }
+    s->total_pushed += (long long)len;
     pthread_cond_broadcast(&s->cv);
     pthread_mutex_unlock(&s->m);
 }
@@ -137,10 +139,72 @@ static size_t read_cb(void *ptr, size_t size, size_t nmemb, void *datasrc) {
     return size ? (got / size) : 0;
 }
 
-// Seek callback - non-seekable by default
+// Seek callback - seek within the ring buffer
 static int seek_cb(void *datasrc, ogg_int64_t offset, int whence) {
-    (void)datasrc; (void)offset; (void)whence;
-    return -1;
+    struct VFRemoteStream *s = (struct VFRemoteStream *)datasrc;
+    if (!s) return -1;
+    
+    pthread_mutex_lock(&s->m);
+    
+    ogg_int64_t new_pos = 0;
+    switch (whence) {
+        case SEEK_SET:
+            new_pos = offset;
+            break;
+        case SEEK_CUR:
+            new_pos = s->pos + offset;
+            break;
+        case SEEK_END:
+            new_pos = s->total_pushed + offset;
+            break;
+        default:
+            pthread_mutex_unlock(&s->m);
+            return -1;
+    }
+    
+    // Check if the new position is valid (within available data)
+    if (new_pos < 0 || new_pos > s->total_pushed) {
+        pthread_mutex_unlock(&s->m);
+        return -1; // Can't seek outside available data
+    }
+    
+    // Calculate how much data we've already consumed from the buffer
+    long long already_consumed = s->pos - ((long long)s->total_pushed - (long long)s->size);
+    
+    // Calculate the new head position
+    long long pos_delta = new_pos - s->pos;
+    
+    // For forward seeks, we need to have enough data in the buffer
+    if (pos_delta > 0 && pos_delta > (long long)s->size) {
+        pthread_mutex_unlock(&s->m);
+        return -1; // Not enough data in buffer to seek forward
+    }
+    
+    // For backward seeks, check if that data is still in the buffer
+    if (pos_delta < 0 && (-pos_delta) > already_consumed) {
+        pthread_mutex_unlock(&s->m);
+        return -1; // Data has been discarded from buffer
+    }
+    
+    // Adjust head pointer
+    if (pos_delta >= 0) {
+        // Forward seek: advance head
+        s->head = (s->head + pos_delta) % s->cap;
+        s->size -= (size_t)pos_delta;
+    } else {
+        // Backward seek: rewind head
+        size_t rewind = (size_t)(-pos_delta);
+        if (s->head >= rewind) {
+            s->head -= rewind;
+        } else {
+            s->head = s->cap - (rewind - s->head);
+        }
+        s->size += rewind;
+    }
+    
+    s->pos = new_pos;
+    pthread_mutex_unlock(&s->m);
+    return 0;
 }
 
 // Close callback - no-op
@@ -165,7 +229,7 @@ int VFOpen(VFStreamRef sr, VFFileRef *out_vf) {
     
     ov_callbacks cbs;
     cbs.read_func = read_cb;
-    cbs.seek_func = NULL; // non-seekable streaming
+    cbs.seek_func = NULL; // Non-seekable streaming (seeking handled at Swift level)
     cbs.close_func = close_cb;
     cbs.tell_func = tell_cb;
     
@@ -196,6 +260,7 @@ int VFGetInfo(VFFileRef fr, VFStreamInfo *out_info) {
     out_info->channels = info->channels;
     out_info->total_pcm_samples = ov_pcm_total(vf, -1);
     out_info->duration_seconds = ov_time_total(vf, -1);
+    out_info->bitrate_nominal = info->bitrate_nominal;
     
     return 0;
 }
@@ -223,4 +288,23 @@ long VFReadInterleavedFloat(VFFileRef fr, float *dst, int max_frames) {
     }
     
     return frames;
+}
+
+// Seek to a specific time in seconds
+int VFSeekTime(VFFileRef fr, double time_seconds) {
+    OggVorbis_File *vf = (OggVorbis_File *)fr;
+    if (!vf) return -1;
+    
+    // Use ov_time_seek for time-based seeking
+    // Returns 0 on success, nonzero on failure
+    return ov_time_seek(vf, time_seconds);
+}
+
+// Check if the stream is seekable
+int VFIsSeekable(VFFileRef fr) {
+    OggVorbis_File *vf = (OggVorbis_File *)fr;
+    if (!vf) return 0;
+    
+    // Returns nonzero if the stream is seekable
+    return ov_seekable(vf);
 }

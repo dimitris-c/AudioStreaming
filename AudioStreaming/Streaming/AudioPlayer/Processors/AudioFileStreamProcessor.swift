@@ -93,6 +93,7 @@ final class AudioFileStreamProcessor {
     func closeFileStreamIfNeeded() {
         if isProcessingOggVorbis {
             isProcessingOggVorbis = false
+            oggVorbisProcessor.cleanup()
             return
         }
         

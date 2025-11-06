@@ -90,6 +90,19 @@ open class AudioPlayer {
         guard let entry = playingEntry else { return 0 }
         return entry.framesPlayed
     }
+    
+    /// Indicates whether seeking is supported for the currently playing audio
+    ///
+    /// Returns `false` for Ogg Vorbis streams, `true` for other formats
+    public var isSeekable: Bool {
+        playerContext.entriesLock.lock()
+        let playingEntry = playerContext.audioPlayingEntry
+        playerContext.entriesLock.unlock()
+        guard let entry = playingEntry else { return true }
+        
+        // Check if this is an Ogg Vorbis file
+        return entry.audioFileHint != kAudioFileOggType
+    }
 
     public private(set) var customAttachedNodes = [AVAudioNode]()
 

@@ -21,6 +21,20 @@ final class OggVorbisStreamProcessor {
     /// The callback to notify when processing is complete or an error occurs
     var processorCallback: ((FileStreamProcessorEffect) -> Void)?
     
+    // MARK: - Constants
+    
+    /// Correction factor for Ogg container overhead in bitrate-based duration calculation.
+    /// Ogg containers add 3-4% overhead (page headers, packet headers, metadata).
+    /// The nominal bitrate only accounts for audio data, not container overhead.
+    /// By reducing the bitrate slightly, we increase the calculated duration to match reality.
+    private let oggContainerOverheadFactor: Double = 0.96  // 4% overhead
+    
+    /// Fallback bitrate estimates when nominal bitrate is unavailable
+    private let fallbackBitrateStereo: Double = 160_000  // 160 kbps for stereo
+    private let fallbackBitrateMono: Double = 96_000     // 96 kbps for mono
+    
+    // MARK: - Properties
+    
     private let playerContext: AudioPlayerContext
     private let rendererContext: AudioRendererContext
     private let outputAudioFormat: AudioStreamBasicDescription
@@ -35,6 +49,9 @@ final class OggVorbisStreamProcessor {
     // Buffer for PCM conversion
     private var pcmBuffer: AVAudioPCMBuffer?
     private let frameCount = 1024
+    
+    // Seeking state (currently unused - seeking not fully supported)
+    // Future enhancement: implement proper seeking for local files
     
     // Debug logging
     private var totalFramesProcessed = 0
@@ -56,10 +73,22 @@ final class OggVorbisStreamProcessor {
     }
     
     deinit {
+        cleanup()
+    }
+    
+    /// Clean up all resources and reset state
+    func cleanup() {
         cleanupBuffers()
+        
         if let converter = audioConverter {
             AudioConverterDispose(converter)
+            audioConverter = nil
         }
+        
+        // Destroy and reset the decoder
+        vfDecoder.destroy()
+        isInitialized = false
+        totalFramesProcessed = 0
     }
     
     // MARK: - Data Processing
@@ -76,7 +105,6 @@ final class OggVorbisStreamProcessor {
             vfDecoder.create(capacityBytes: 2_097_152)
             isInitialized = true
             totalFramesProcessed = 0
-            print("OggVorbisStreamProcessor: Initialized with 2MB ring buffer")
         }
         
         vfDecoder.push(data)
@@ -254,22 +282,27 @@ final class OggVorbisStreamProcessor {
         entry.sampleRate = Float(vfDecoder.sampleRate)
         entry.packetDuration = Double(1) / Double(vfDecoder.sampleRate)
         
-        // Set dataPacketOffset for duration calculation (frames = packets since mFramesPerPacket = 1)
+        // For streaming Ogg files, totalPcmSamples may not be available (returns error code)
+        // In that case, use bitrate-based duration calculation with container overhead correction
         if vfDecoder.totalPcmSamples > 0 {
+            // We have total samples - use packet offset for accurate duration
             entry.audioStreamState.dataPacketOffset = UInt64(vfDecoder.totalPcmSamples)
+        } else {
+            // Streaming - use bitrate for duration estimation
+            if vfDecoder.nominalBitrate > 0 {
+                entry.audioStreamState.bitRate = Double(vfDecoder.nominalBitrate) * oggContainerOverheadFactor
+            } else {
+                // Fallback: use typical bitrates for Vorbis quality
+                let estimatedBitrate = vfDecoder.channels == 2 ? fallbackBitrateStereo : fallbackBitrateMono
+                entry.audioStreamState.bitRate = estimatedBitrate * oggContainerOverheadFactor
+            }
         }
-        
-        // Bitrate will be estimated from the actual data
-        // Don't set a fixed value - let it be calculated dynamically
         entry.audioStreamState.processedDataFormat = true
         entry.audioStreamState.readyForDecoding = true
         entry.lock.unlock()
         
         // Create audio converter from source format to output format
         createAudioConverter(from: asbd, to: outputAudioFormat)
-        
-        let duration = vfDecoder.totalPcmSamples > 0 ? Double(vfDecoder.totalPcmSamples) / Double(vfDecoder.sampleRate) : 0
-        print("OggVorbisStreamProcessor: Format setup - Rate: \(vfDecoder.sampleRate)Hz, Channels: \(vfDecoder.channels), Duration: \(String(format: "%.2f", duration))s, Total samples: \(vfDecoder.totalPcmSamples)")
     }
     
     /// Create audio converter from source format to output format
@@ -285,7 +318,7 @@ final class OggVorbisStreamProcessor {
         
         let status = AudioConverterNew(&source, &dest, &audioConverter)
         if status != noErr {
-            print("OggVorbisStreamProcessor: ERROR - Failed to create AudioConverter: \(status)")
+            Logger.error("Failed to create AudioConverter", category: .audioRendering)
         }
     }
     
@@ -450,31 +483,17 @@ final class OggVorbisStreamProcessor {
     }
     
     /// Process a seek request
+    ///
+    /// Seeking is not supported for Ogg Vorbis streams.
+    /// For HTTP streams, seeking is extremely difficult because:
+    /// 1. Need to find Ogg page boundaries
+    /// 2. Need Vorbis headers to initialize decoder
+    /// 3. Headers are only at the beginning of the file
+    ///
+    /// Note: Future enhancement could support seeking in local files
+    /// by fetching headers and using libvorbisfile's built-in seeking.
     func processSeek() {
-        guard let readingEntry = playerContext.audioReadingEntry else { return }
-        
-        guard readingEntry.calculatedBitrate() > 0.0 || (playerContext.audioPlayingEntry?.length ?? 0) > 0 else {
-            return
-        }
-        
-        // Reset the decoder state
-        isInitialized = false
-        totalFramesProcessed = 0
-        cleanupBuffers()
-        
-        // Clear initial bytes to force reinitialization
-        readingEntry.lock.lock()
-        readingEntry.audioStreamState.initialOggBytes = nil
-        readingEntry.audioStreamState.hasAttemptedOggVorbisParse = false
-        readingEntry.lock.unlock()
-        
-        readingEntry.reset()
-        readingEntry.seek(at: Int(readingEntry.seekRequest.time))
-        rendererContext.waitingForDataAfterSeekFrameCount.write { $0 = 0 }
-        playerContext.setInternalState(to: .waitingForDataAfterSeek)
-        rendererContext.resetBuffers()
-        
-        print("OggVorbisStreamProcessor: Seek processed")
+        // Seeking not supported - UI should check AudioPlayer.isSeekable
     }
     
     // MARK: - Helper Methods

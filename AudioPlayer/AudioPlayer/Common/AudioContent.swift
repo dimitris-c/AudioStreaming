@@ -21,6 +21,7 @@ enum AudioContent {
     case localWave
     case loopBeatFlac
     case oggVorbis
+    case oggVorbisLocal
     case custom(String)
 
     var title: String {
@@ -46,7 +47,7 @@ enum AudioContent {
         case .local:
             return "Jazzy Frenchy"
         case .localWave:
-            return "Local file"
+            return "Hip Jazz"
         case .optimized:
             return "Jazzy Frenchy"
         case .nonOptimized:
@@ -55,6 +56,8 @@ enum AudioContent {
             return "Beat loop"
         case .oggVorbis:
             return "Jazzy Fetchy"
+        case .oggVorbisLocal:
+            return "Hip Jazz"
         case .custom(let url):
             return url
         }
@@ -79,7 +82,7 @@ enum AudioContent {
         case .piano:
             return "Remote mp3"
         case .remoteWave:
-            return "wave"
+            return "Local wav"
         case .local:
             return "Music by: bensound.com"
         case .localWave:
@@ -92,6 +95,8 @@ enum AudioContent {
             return "Remote flac"
         case .oggVorbis:
             return "Remote Ogg Vorbis"
+        case .oggVorbisLocal:
+            return "Local Ogg Vorbis"
         case .custom:
             return ""
         }
@@ -131,6 +136,9 @@ enum AudioContent {
             return URL(string: "https://github.com/dimitris-c/sample-audio/raw/main/drumbeat-loop.flac")!
         case .oggVorbis:
             return URL(string: "https://github.com/dimitris-c/sample-audio/raw/refs/heads/main/bensound-jazzyfrenchy.ogg")!
+        case .oggVorbisLocal:
+            let path = Bundle.main.path(forResource: "hipjazz", ofType: "ogg")!
+            return URL(fileURLWithPath: path)
         case .custom(let url):
             return URL(string: url)!
         }

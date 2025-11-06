@@ -18,6 +18,7 @@ typedef struct {
     int channels;
     long long total_pcm_samples; // -1 if unknown
     double duration_seconds;     // < 0 if unknown
+    long bitrate_nominal;        // nominal bitrate in bits/sec, or 0 if unknown
 } VFStreamInfo;
 
 // Stream lifecycle
@@ -39,6 +40,12 @@ int VFGetInfo(VFFileRef vf, VFStreamInfo *out_info);
 
 // Read interleaved float32 PCM frames into dst; returns number of frames read, 0 on EOF, <0 on error
 long VFReadInterleavedFloat(VFFileRef vf, float *dst, int max_frames);
+
+// Seek to a specific time in seconds; returns 0 on success, <0 on error
+int VFSeekTime(VFFileRef vf, double time_seconds);
+
+// Check if the stream is seekable; returns 1 if seekable, 0 if not
+int VFIsSeekable(VFFileRef vf);
 
 #ifdef __cplusplus
 }

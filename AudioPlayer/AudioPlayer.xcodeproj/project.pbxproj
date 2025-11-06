@@ -24,6 +24,7 @@
 		981DA0762EAD61A90062223D /* AudioStreaming in Frameworks */ = {isa = PBXBuildFile; productRef = 981DA0752EAD61A90062223D /* AudioStreaming */; };
 		984DE9552BDAE59C004B427A /* Notifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 984DE9542BDAE59C004B427A /* Notifier.swift */; };
 		984DE9572BDAFC7E004B427A /* AudioPlayerControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 984DE9562BDAFC7E004B427A /* AudioPlayerControlsView.swift */; };
+		9881693E2EBCDB0100CE7EFF /* hipjazz.ogg in Resources */ = {isa = PBXBuildFile; fileRef = 9881693D2EBCDB0100CE7EFF /* hipjazz.ogg */; };
 		989E08E72BF7A4E300599F17 /* PrefersTabNavigationEnvironmentKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 989E08E62BF7A4E300599F17 /* PrefersTabNavigationEnvironmentKey.swift */; };
 		98BFB41A2BC97AF800E812C0 /* DisplayLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BFB4192BC97AF800E812C0 /* DisplayLink.swift */; };
 		98BFB41D2BCD7BB800E812C0 /* EqualizerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BFB41C2BCD7BB800E812C0 /* EqualizerView.swift */; };
@@ -51,6 +52,7 @@
 		9816A8BA2BC87BC200AD1299 /* AudioPlayerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerService.swift; sourceTree = "<group>"; };
 		984DE9542BDAE59C004B427A /* Notifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notifier.swift; sourceTree = "<group>"; };
 		984DE9562BDAFC7E004B427A /* AudioPlayerControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerControlsView.swift; sourceTree = "<group>"; };
+		9881693D2EBCDB0100CE7EFF /* hipjazz.ogg */ = {isa = PBXFileReference; lastKnownFileType = file; path = hipjazz.ogg; sourceTree = "<group>"; };
 		989E08E62BF7A4E300599F17 /* PrefersTabNavigationEnvironmentKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrefersTabNavigationEnvironmentKey.swift; sourceTree = "<group>"; };
 		98BFB4192BC97AF800E812C0 /* DisplayLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayLink.swift; sourceTree = "<group>"; };
 		98BFB41B2BCAAD8A00E812C0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -153,6 +155,7 @@
 		9816A8B02BC832E100AD1299 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				9881693D2EBCDB0100CE7EFF /* hipjazz.ogg */,
 				9816A8AE2BC832DB00AD1299 /* bensound-jazzyfrenchy.m4a */,
 				9816A8AF2BC832DC00AD1299 /* hipjazz.wav */,
 				9816A8AD2BC832DB00AD1299 /* bensound-jazzyfrenchy.mp3 */,
@@ -256,6 +259,7 @@
 				9806E81C2BC5D12700757370 /* Assets.xcassets in Resources */,
 				9816A8B12BC8330C00AD1299 /* bensound-jazzyfrenchy.mp3 in Resources */,
 				9816A8B22BC8330C00AD1299 /* bensound-jazzyfrenchy.m4a in Resources */,
+				9881693E2EBCDB0100CE7EFF /* hipjazz.ogg in Resources */,
 				9816A8B32BC8330C00AD1299 /* hipjazz.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

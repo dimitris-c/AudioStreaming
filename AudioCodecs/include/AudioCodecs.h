@@ -8,7 +8,6 @@
 #ifndef AudioCodecs_h
 #define AudioCodecs_h
 
-#import "OggVorbisBridge.h"
 #import "VorbisFileBridge.h"
 
 #endif /* AudioCodecs_h */

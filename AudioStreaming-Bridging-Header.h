@@ -8,6 +8,7 @@
 #ifndef AudioStreaming_Bridging_Header_h
 #define AudioStreaming_Bridging_Header_h
 
-#import <AudioCodecs/OggVorbisBridge.h>
+// Bridging header for AudioStreaming
+// Add C imports here if needed
 
 #endif /* AudioStreaming_Bridging_Header_h */
