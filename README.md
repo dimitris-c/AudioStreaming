@@ -24,7 +24,7 @@ Under the hood `AudioStreaming` uses `AVAudioEngine` and `CoreAudio` for playbac
 
 
 # Requirements
- - iOS 13.0+
+ - iOS 15.0+
  - macOS 13.0+
  - tvOS 16.0+
  - Swift 5.x
