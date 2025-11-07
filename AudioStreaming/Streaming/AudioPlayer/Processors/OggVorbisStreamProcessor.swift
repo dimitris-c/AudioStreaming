@@ -336,9 +336,12 @@ final class OggVorbisStreamProcessor {
         let channels = Int(pcmBuffer.format.channelCount)
         let frames = framesRead
         
-        // First interleave the deinterleaved PCM data into a contiguous buffer
+        // Interleave the deinterleaved PCM data into a contiguous buffer
         let interleavedBufferSize = frames * channels * MemoryLayout<Float>.size
-        let interleavedBuffer = UnsafeMutableRawPointer.allocate(byteCount: interleavedBufferSize, alignment: MemoryLayout<Float>.alignment)
+        let interleavedBuffer = UnsafeMutableRawPointer.allocate(
+            byteCount: interleavedBufferSize, 
+            alignment: MemoryLayout<Float>.alignment
+        )
         defer { interleavedBuffer.deallocate() }
         
         let floatBuffer = interleavedBuffer.assumingMemoryBound(to: Float.self)

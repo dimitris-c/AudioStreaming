@@ -279,11 +279,10 @@ long VFReadInterleavedFloat(VFFileRef fr, float *dst, int max_frames) {
     vorbis_info const *info = ov_info(vf, -1);
     int ch = info->channels;
     
-    // Apply volume boost to help with quiet files
-    const float boost = 2.0f;
+    // Interleave the PCM data
     for (long f = 0; f < frames; ++f) {
         for (int c = 0; c < ch; ++c) {
-            dst[f * ch + c] = pcm[c][f] * boost;
+            dst[f * ch + c] = pcm[c][f];
         }
     }
     
