@@ -41,6 +41,10 @@ int VFGetInfo(VFFileRef vf, VFStreamInfo *out_info);
 // Read interleaved float32 PCM frames into dst; returns number of frames read, 0 on EOF, <0 on error
 long VFReadInterleavedFloat(VFFileRef vf, float *dst, int max_frames);
 
+// Read deinterleaved float32 PCM frames (channel-by-channel); returns number of frames read, 0 on EOF, <0 on error
+// out_pcm will point to an array of channel pointers (float**)
+long VFReadFloat(VFFileRef vf, float ***out_pcm, int max_frames);
+
 // Seek to a specific time in seconds; returns 0 on success, <0 on error
 int VFSeekTime(VFFileRef vf, double time_seconds);
 

@@ -160,25 +160,26 @@ final class VorbisFileDecoder {
             return generateSilentFrames(into: buffer, frameCount: frameCount)
         }
         
-        // Create temporary buffer for interleaved data
+        // Read deinterleaved frames directly
         let maxFrames = min(frameCount, Int(buffer.frameCapacity))
-        let tempBuffer = UnsafeMutablePointer<Float>.allocate(capacity: maxFrames * channels)
-        defer { tempBuffer.deallocate() }
-        
-        // Read interleaved frames
-        let framesRead = Int(VFReadInterleavedFloat(vf, tempBuffer, Int32(maxFrames)))
+        var pcmChannels: UnsafeMutablePointer<UnsafeMutablePointer<Float>?>?
+        let framesRead = Int(VFReadFloat(vf, &pcmChannels, Int32(maxFrames)))
         
         // If no frames were read, generate silent frames instead of returning 0
         if framesRead <= 0 {
             return generateSilentFrames(into: buffer, frameCount: frameCount)
         }
         
-        // De-interleave into buffer
-        for ch in 0..<min(Int(buffer.format.channelCount), channels) {
-            let dst = floatChannelData[ch]
-            for frame in 0..<framesRead {
-                dst[frame] = tempBuffer[frame * channels + ch]
-            }
+        // Copy deinterleaved data directly (no conversion needed!)
+        guard let pcm = pcmChannels else {
+            return generateSilentFrames(into: buffer, frameCount: frameCount)
+        }
+        
+        let channelCount = min(Int(buffer.format.channelCount), channels)
+        for ch in 0..<channelCount {
+            guard let input = pcm[ch] else { continue }
+            let output = floatChannelData[ch]
+            memcpy(output, input, framesRead * MemoryLayout<Float>.stride)
         }
         
         return framesRead

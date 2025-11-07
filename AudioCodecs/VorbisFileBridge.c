@@ -265,7 +265,19 @@ int VFGetInfo(VFFileRef fr, VFStreamInfo *out_info) {
     return 0;
 }
 
-// Read interleaved float PCM frames
+// Read deinterleaved float PCM frames
+long VFReadFloat(VFFileRef fr, float ***out_pcm, int max_frames) {
+    OggVorbis_File *vf = (OggVorbis_File *)fr;
+    if (!vf || !out_pcm || max_frames <= 0) return -1;
+    
+    int bitstream = 0;
+    long frames = ov_read_float(vf, out_pcm, max_frames, &bitstream);
+    
+    // Returns: frames read (0 = EOF, <0 = error)
+    return frames;
+}
+
+// Read interleaved float PCM frames (legacy, less efficient)
 long VFReadInterleavedFloat(VFFileRef fr, float *dst, int max_frames) {
     OggVorbis_File *vf = (OggVorbis_File *)fr;
     if (!vf || !dst || max_frames <= 0) return -1;

@@ -9,13 +9,6 @@ import Foundation
 import AVFoundation
 import CoreAudio
 
-/// Info for AudioConverter callback
-struct OggVorbisConvertInfo {
-    var done: Bool
-    let numberOfFrames: UInt32
-    var audioBuffer = AudioBuffer()
-}
-
 /// A processor for Ogg Vorbis audio streams using libvorbisfile
 final class OggVorbisStreamProcessor {
     /// The callback to notify when processing is complete or an error occurs
@@ -43,8 +36,7 @@ final class OggVorbisStreamProcessor {
     private var isInitialized = false
     
     // Audio converter for format conversion
-    private var audioConverter: AudioConverterRef?
-    private var inputFormat = AudioStreamBasicDescription()
+    private var audioConverter: AVAudioConverter?
     
     // Buffer for PCM conversion
     private var pcmBuffer: AVAudioPCMBuffer?
@@ -80,10 +72,7 @@ final class OggVorbisStreamProcessor {
     func cleanup() {
         cleanupBuffers()
         
-        if let converter = audioConverter {
-            AudioConverterDispose(converter)
-            audioConverter = nil
-        }
+        audioConverter = nil
         
         // Destroy and reset the decoder
         vfDecoder.destroy()
@@ -266,16 +255,8 @@ final class OggVorbisStreamProcessor {
         
         entry.lock.lock()
         
-        // Create an interleaved format matching decoded Vorbis output
-        var asbd = AudioStreamBasicDescription()
-        asbd.mSampleRate = processingFormat.sampleRate
-        asbd.mFormatID = kAudioFormatLinearPCM
-        asbd.mFormatFlags = kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked
-        asbd.mChannelsPerFrame = UInt32(vfDecoder.channels)
-        asbd.mFramesPerPacket = 1
-        asbd.mBitsPerChannel = 32
-        asbd.mBytesPerFrame = asbd.mChannelsPerFrame * 4 // 4 bytes per float
-        asbd.mBytesPerPacket = asbd.mBytesPerFrame
+        // Use the decoder's deinterleaved format directly
+        var asbd = processingFormat.streamDescription.pointee
         
         // Store the format in the entry
         entry.audioStreamFormat = asbd
@@ -301,66 +282,47 @@ final class OggVorbisStreamProcessor {
         entry.audioStreamState.readyForDecoding = true
         entry.lock.unlock()
         
-        // Create audio converter from source format to output format
-        createAudioConverter(from: asbd, to: outputAudioFormat)
+        // Create audio converter from decoder format to output format
+        createAudioConverter(from: processingFormat, to: outputAudioFormat)
     }
     
-    /// Create audio converter from source format to output format
-    private func createAudioConverter(from sourceFormat: AudioStreamBasicDescription, to destFormat: AudioStreamBasicDescription) {
-        if let existingConverter = audioConverter {
-            AudioConverterDispose(existingConverter)
-            audioConverter = nil
-        }
+    /// Create audio converter from decoder format to output format
+    private func createAudioConverter(from sourceFormat: AVAudioFormat, to destFormat: AudioStreamBasicDescription) {
+        audioConverter = nil
         
-        var source = sourceFormat
         var dest = destFormat
-        inputFormat = sourceFormat
         
-        let status = AudioConverterNew(&source, &dest, &audioConverter)
-        if status != noErr {
-            Logger.error("Failed to create AudioConverter", category: .audioRendering)
+        guard let destAVFormat = AVAudioFormat(streamDescription: &dest) else {
+            Logger.error("Failed to create output AVAudioFormat", category: .audioRendering)
+            return
         }
+        
+        guard let converter = AVAudioConverter(from: sourceFormat, to: destAVFormat) else {
+            Logger.error("Failed to create AVAudioConverter", category: .audioRendering)
+            return
+        }
+        
+        audioConverter = converter
     }
     
     // MARK: - Audio Processing
     
-    /// Process decoded audio using AudioConverter
+    /// Process decoded audio using AVAudioConverter
     /// - Parameters:
     ///   - pcmBuffer: The PCM buffer containing decoded audio
     ///   - framesRead: Number of frames read
     private func processDecodedAudio(pcmBuffer: AVAudioPCMBuffer, framesRead: Int) {
         guard let entry = playerContext.audioReadingEntry,
-              let floatChannelData = pcmBuffer.floatChannelData,
               let converter = audioConverter else { return }
         
-        let channels = Int(pcmBuffer.format.channelCount)
-        let frames = framesRead
+        // Set the input buffer's frame length
+        pcmBuffer.frameLength = UInt32(framesRead)
         
-        // Interleave the deinterleaved PCM data into a contiguous buffer
-        let interleavedBufferSize = frames * channels * MemoryLayout<Float>.size
-        let interleavedBuffer = UnsafeMutableRawPointer.allocate(
-            byteCount: interleavedBufferSize, 
-            alignment: MemoryLayout<Float>.alignment
-        )
-        defer { interleavedBuffer.deallocate() }
-        
-        let floatBuffer = interleavedBuffer.assumingMemoryBound(to: Float.self)
-        for frame in 0..<frames {
-            for ch in 0..<channels {
-                floatBuffer[frame * channels + ch] = floatChannelData[ch][frame]
-            }
-        }
-        
-        // Setup convert info for callback
-        var convertInfo = OggVorbisConvertInfo(
-            done: false,
-            numberOfFrames: UInt32(frames),
-            audioBuffer: AudioBuffer(
-                mNumberChannels: UInt32(channels),
-                mDataByteSize: UInt32(interleavedBufferSize),
-                mData: interleavedBuffer
-            )
-        )
+        // Create output buffer with converter's output format
+        guard let outputBuffer = AVAudioPCMBuffer(
+            pcmFormat: converter.outputFormat,
+            frameCapacity: UInt32(framesRead)
+        ) else { return }
         
         // Process through AudioConverter
         rendererContext.lock.lock()
@@ -414,34 +376,22 @@ final class OggVorbisStreamProcessor {
             }
         }
         
-        // Convert using AudioConverterFillComplexBuffer to a temporary buffer
-        // Then copy to ring buffer handling wrap-around
-        let outputBufferSize = frames * Int(rendererContext.bufferContext.sizeInBytes)
-        let outputBuffer = UnsafeMutableRawPointer.allocate(byteCount: outputBufferSize, alignment: MemoryLayout<Float>.alignment)
-        defer { outputBuffer.deallocate() }
+        var error: NSError?
+        var inputConsumed = false
         
-        var framesToDecode = UInt32(frames)
-        var outputBufferList = AudioBufferList()
-        outputBufferList.mNumberBuffers = 1
-        outputBufferList.mBuffers.mNumberChannels = rendererContext.audioBuffer.mNumberChannels
-        outputBufferList.mBuffers.mDataByteSize = UInt32(outputBufferSize)
-        outputBufferList.mBuffers.mData = outputBuffer
-        
-        let status = AudioConverterFillComplexBuffer(
-            converter,
-            _oggVorbisConverterCallback,
-            &convertInfo,
-            &framesToDecode,
-            &outputBufferList,
-            nil
-        )
-        
-        guard status == noErr || status == AudioConvertStatus.processed.rawValue else {
-            return
+        let status = converter.convert(to: outputBuffer, error: &error) { inNumPackets, outStatus in
+            if inputConsumed {
+                outStatus.pointee = .noDataNow
+                return nil
+            }
+            inputConsumed = true
+            outStatus.pointee = .haveData
+            return pcmBuffer
         }
         
-        // Now copy the converted data to the ring buffer, handling wrap-around
-        if framesToDecode == 0 { return }
+        guard status != .error, outputBuffer.frameLength > 0 else {
+            return
+        }
         
         rendererContext.lock.lock()
         let start = rendererContext.bufferContext.frameStartIndex
@@ -452,10 +402,10 @@ final class OggVorbisStreamProcessor {
         
         // Calculate actual space available
         let actualFramesLeft = totalFrameCount - currentUsed
-        let framesToCopy = min(framesToDecode, actualFramesLeft)
+        let framesToCopy = min(UInt32(outputBuffer.frameLength), actualFramesLeft)
         
+        guard let sourceData = outputBuffer.audioBufferList.pointee.mBuffers.mData?.assumingMemoryBound(to: UInt8.self) else { return }
         let bytesPerFrame = Int(rendererContext.bufferContext.sizeInBytes)
-        let sourceData = outputBuffer.assumingMemoryBound(to: UInt8.self)
         let destData = rendererContext.audioBuffer.mData?.assumingMemoryBound(to: UInt8.self)
         
         if currentEnd >= start {
@@ -537,34 +487,3 @@ final class OggVorbisStreamProcessor {
         pcmBuffer = nil
     }
 }
-
-// MARK: - AudioConverterFillComplexBuffer callback
-
-private func _oggVorbisConverterCallback(
-    inAudioConverter _: AudioConverterRef,
-    ioNumberDataPackets: UnsafeMutablePointer<UInt32>,
-    ioData: UnsafeMutablePointer<AudioBufferList>,
-    outDataPacketDescription: UnsafeMutablePointer<UnsafeMutablePointer<AudioStreamPacketDescription>?>?,
-    inUserData: UnsafeMutableRawPointer?
-) -> OSStatus {
-    guard let convertInfo = inUserData?.assumingMemoryBound(to: OggVorbisConvertInfo.self) else {
-        return -1
-    }
-    
-    // Tell the converter to stop if we're done
-    if convertInfo.pointee.done {
-        ioNumberDataPackets.pointee = 0
-        return AudioConvertStatus.done.rawValue
-    }
-    
-    // Provide input buffer to converter
-    ioData.pointee.mNumberBuffers = 1
-    ioData.pointee.mBuffers = convertInfo.pointee.audioBuffer
-    
-    // Set packet count
-    ioNumberDataPackets.pointee = convertInfo.pointee.numberOfFrames
-    convertInfo.pointee.done = true
-    
-    return AudioConvertStatus.processed.rawValue
-}
-
