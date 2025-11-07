@@ -96,15 +96,27 @@ open class AudioPlayer {
     
     /// Indicates whether seeking is supported for the currently playing audio
     ///
-    /// Returns `false` for Ogg Vorbis streams, `true` for other formats
+    /// Returns `false` if:
+    /// - The audio format doesn't support seeking (e.g., Ogg Vorbis streams)
+    /// - The stream has no valid duration (e.g., live radio streams)
+    ///
+    /// Use this property to enable/disable seek controls in your UI
     public var isSeekable: Bool {
+        guard playerContext.internalState != .pendingNext else { return true }
+        
         playerContext.entriesLock.lock()
         let playingEntry = playerContext.audioPlayingEntry
         playerContext.entriesLock.unlock()
         guard let entry = playingEntry else { return true }
         
-        // Check if this is an Ogg Vorbis file
-        return entry.audioFileHint != kAudioFileOggType
+        // Check if format supports seeking (Ogg Vorbis doesn't)
+        if entry.audioFileHint == kAudioFileOggType {
+            return false
+        }
+        
+        // Check if stream has a valid duration (live streams don't)
+        let entryDuration = entry.duration()
+        return entryDuration > 0
     }
 
     public private(set) var customAttachedNodes = [AVAudioNode]()
