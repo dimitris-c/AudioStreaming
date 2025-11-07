@@ -12,7 +12,6 @@ Under the hood `AudioStreaming` uses `AVAudioEngine` and `CoreAudio` for playbac
 - **Ogg Vorbis** (both local and remote files) ✨
 
 #### Known limitations
-~~- As described above non-optimised M4A files are not supported this is a limitation of [AudioFileStream Services](https://developer.apple.com/documentation/audiotoolbox/audio_file_stream_services?language=swift)~~
 
 **Ogg Vorbis Seeking:**
 - Seeking is **not supported** for Ogg Vorbis files in the current release
@@ -25,7 +24,7 @@ Under the hood `AudioStreaming` uses `AVAudioEngine` and `CoreAudio` for playbac
 
 
 # Requirements
- - iOS 13.0+
+ - iOS 15.0+
  - macOS 13.0+
  - tvOS 16.0+
  - Swift 5.x
