@@ -177,6 +177,33 @@ Under the hood the concrete class for frame filters, `FrameFilterProcessor` inst
 On Xcode 11.0+ you can add a new dependency by going to **File / Swift Packages / Add Package Dependency...**
 and enter package repository URL https://github.com/dimitris-c/AudioStreaming.git, then follow the instructions.
 
+# Development
+
+### Testing
+
+This package uses Swift Package Manager for development and testing. To run tests:
+
+```bash
+# Run all tests
+swift test
+
+# Run tests in parallel for faster execution
+swift test --parallel
+
+# Build the package
+swift build
+```
+
+### Opening in Xcode
+
+You can open the package directly in Xcode:
+
+```bash
+open Package.swift
+```
+
+Or simply double-click the `Package.swift` file. Xcode will automatically resolve dependencies and make the package ready for development.
+
 # Licence
 
 AudioStreaming is available under the MIT license. See the LICENSE file for more info.

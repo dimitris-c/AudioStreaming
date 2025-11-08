@@ -48,7 +48,7 @@ let package = Package(
                 .product(name: "vorbis", package: "vorbis-binary-xcframework")
             ],
             path: "AudioStreaming",
-            exclude: ["AudioStreaming.h", "Streaming/OggVorbis"],
+            exclude: ["AudioStreaming.h", "Streaming/OggVorbis", "Info.plist"],
             swiftSettings: []
         ),
         .testTarget(
@@ -57,12 +57,11 @@ let package = Package(
                 "AudioStreaming"
             ],
             path: "AudioStreamingTests",
+            exclude: ["Info.plist", "Streaming/output"],
             resources: [
-                .copy("Streaming/Metadata Stream Processor/raw-audio-streams/raw-stream-audio-empty-metadata"),
-                .copy("Streaming/Metadata Stream Processor/raw-audio-streams/raw-stream-audio-no-metadata"),
-                .copy("Streaming/Metadata Stream Processor/raw-audio-streams/raw-stream-audio-normal-metadata"),
-                .copy("Streaming/Metadata Stream Processor/raw-audio-streams/raw-stream-audio-normal-metadata-alt")
-          ]
+                // Test resources for metadata stream processor tests
+                .copy("Streaming/Metadata Stream Processor/raw-audio-streams")
+            ]
         )
     ]
 )
