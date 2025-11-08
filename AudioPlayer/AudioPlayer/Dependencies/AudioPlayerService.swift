@@ -180,7 +180,7 @@ extension AudioPlayerService: AudioPlayerDelegate {
     func audioPlayerDidFinishBuffering(player _: AudioPlayer, with _: AudioEntryId) {}
 
     func audioPlayerStateChanged(player _: AudioPlayer, with newState: AudioPlayerState, previous _: AudioPlayerState) {
-        print("audioPlayerDidStartPlaying newState: \(newState)")
+        print("audioPlayerStateChanged newState: \(newState)")
         Task { await statusChangedNotifier.send(newState) }
         delegate?.statusChanged(status: newState)
     }

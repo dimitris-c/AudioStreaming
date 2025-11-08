@@ -8,16 +8,23 @@ Under the hood `AudioStreaming` uses `AVAudioEngine` and `CoreAudio` for playbac
 #### Supported audio
 - Online streaming (Shoutcast/ICY streams) with metadata parsing
 - AIFF, AIFC, WAVE, CAF, NeXT, ADTS, MPEG Audio Layer 3, AAC audio formats
-- M4A
+- M4A (optimized and non-optimized) from v1.2.0
+- **Ogg Vorbis** (both local and remote files) ✨
 
-As of 1.2.0 version, there's support for non-optimized M4A, please report any issues
+#### Known limitations
 
-Known limitations: 
-~~- As described above non-optimised M4A files are not supported this is a limitation of [AudioFileStream Services](https://developer.apple.com/documentation/audiotoolbox/audio_file_stream_services?language=swift)~~
+**Ogg Vorbis Seeking:**
+- Seeking is **not supported** for Ogg Vorbis files in the current release
+- This is due to technical challenges with the Ogg container format over HTTP streaming:
+  - Seeking requires finding precise Ogg page boundaries in the stream
+  - The Vorbis decoder needs the full headers (identification, comment, and setup packets) to initialize, which are only available at the beginning of the file
+  - HTTP range requests need to be carefully orchestrated to fetch headers and seek to the correct position
+- Your UI can check `player.isSeekable` to determine if seeking is available for the currently playing file
+- Future releases may add experimental support for seeking using progressive download or intelligent header caching
 
 
 # Requirements
- - iOS 13.0+
+ - iOS 15.0+
  - macOS 13.0+
  - tvOS 16.0+
  - Swift 5.x
@@ -169,6 +176,33 @@ Under the hood the concrete class for frame filters, `FrameFilterProcessor` inst
 
 On Xcode 11.0+ you can add a new dependency by going to **File / Swift Packages / Add Package Dependency...**
 and enter package repository URL https://github.com/dimitris-c/AudioStreaming.git, then follow the instructions.
+
+# Development
+
+### Testing
+
+This package uses Swift Package Manager for development and testing. To run tests:
+
+```bash
+# Run all tests
+swift test
+
+# Run tests in parallel for faster execution
+swift test --parallel
+
+# Build the package
+swift build
+```
+
+### Opening in Xcode
+
+You can open the package directly in Xcode:
+
+```bash
+open Package.swift
+```
+
+Or simply double-click the `Package.swift` file. Xcode will automatically resolve dependencies and make the package ready for development.
 
 # Licence
 

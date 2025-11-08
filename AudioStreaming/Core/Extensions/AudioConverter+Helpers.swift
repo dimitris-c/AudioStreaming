@@ -16,6 +16,7 @@ public enum AudioConverterError: CustomDebugStringConvertible, Sendable {
     case propertyNotSupported
     case requiresPacketDescriptionsError
     case unspecifiedError
+    case cannotCreateConverter
 
     init(osstatus: OSStatus) {
         switch osstatus {
@@ -65,7 +66,9 @@ public enum AudioConverterError: CustomDebugStringConvertible, Sendable {
         case .requiresPacketDescriptionsError:
             return "Required packet descriptions (error)"
         case .unspecifiedError:
-            return "Unspecified error "
+            return "Unspecified error"
+        case .cannotCreateConverter:
+            return "Cannot create audio converter"
         }
     }
 }

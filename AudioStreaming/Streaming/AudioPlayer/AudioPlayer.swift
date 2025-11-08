@@ -31,7 +31,10 @@ open class AudioPlayer {
     /// result in the audio being exhausted before it could fetch new data.
     public var rate: Float {
         get { rateNode.rate }
-        set { rateNode.rate = newValue }
+        set { 
+            rateNode.rate = newValue 
+            rateNode.bypass = (newValue == 1.0)
+        }
     }
 
     /// The player's current state.
@@ -89,6 +92,31 @@ open class AudioPlayer {
         playerContext.entriesLock.unlock()
         guard let entry = playingEntry else { return 0 }
         return entry.framesPlayed
+    }
+    
+    /// Indicates whether seeking is supported for the currently playing audio
+    ///
+    /// Returns `false` if:
+    /// - The audio format doesn't support seeking (e.g., Ogg Vorbis streams)
+    /// - The stream has no valid duration (e.g., live radio streams)
+    ///
+    /// Use this property to enable/disable seek controls in your UI
+    public var isSeekable: Bool {
+        guard playerContext.internalState != .pendingNext else { return true }
+        
+        playerContext.entriesLock.lock()
+        let playingEntry = playerContext.audioPlayingEntry
+        playerContext.entriesLock.unlock()
+        guard let entry = playingEntry else { return true }
+        
+        // Check if format supports seeking (Ogg Vorbis doesn't)
+        if entry.audioFileHint == kAudioFileOggType {
+            return false
+        }
+        
+        // Check if stream has a valid duration (live streams don't)
+        let entryDuration = entry.duration()
+        return entryDuration > 0
     }
 
     public private(set) var customAttachedNodes = [AVAudioNode]()
@@ -176,6 +204,7 @@ open class AudioPlayer {
         )
         configPlayerContext()
         configPlayerNode()
+        configureRateNode()
         setupEngine()
     }
 
@@ -508,6 +537,16 @@ open class AudioPlayer {
         } catch {
             Logger.error("⚠️ error setting up audio engine: %@", category: .generic, args: error.localizedDescription)
         }
+    }
+
+    // Add this new method
+    private func configureRateNode() {
+        // Set overlap to a lower value for faster transitions (default is 8.0)
+        rateNode.overlap = 4.0
+        // Ensure pitch is not shifted
+        rateNode.pitch = 0
+        // Bypass by default since rate starts at 1.0
+        rateNode.bypass = true
     }
 
     /// Creates and configures an `AVAudioUnit` with an output configuration

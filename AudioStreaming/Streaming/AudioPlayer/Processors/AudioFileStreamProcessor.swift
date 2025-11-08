@@ -34,6 +34,13 @@ final class AudioFileStreamProcessor {
     private let playerContext: AudioPlayerContext
     private let rendererContext: AudioRendererContext
     private let outputAudioFormat: AudioStreamBasicDescription
+    
+    // Add Ogg Vorbis processor
+    private lazy var oggVorbisProcessor = OggVorbisStreamProcessor(
+        playerContext: playerContext,
+        rendererContext: rendererContext,
+        outputAudioFormat: outputAudioFormat
+    )
 
     var audioFileStream: AudioFileStreamID?
     var audioConverter: AudioConverterRef?
@@ -42,9 +49,12 @@ final class AudioFileStreamProcessor {
 
     var currentFileFormat: String = ""
     let fileFormatsForDelayedConverterCreation: Set = ["fa4m", "f4pm"]
+    
+    // Track if we're processing Ogg Vorbis
+    private var isProcessingOggVorbis: Bool = false
 
     var isFileStreamOpen: Bool {
-        audioFileStream != nil
+        audioFileStream != nil || isProcessingOggVorbis
     }
 
     init(playerContext: AudioPlayerContext,
@@ -54,6 +64,11 @@ final class AudioFileStreamProcessor {
         self.playerContext = playerContext
         self.rendererContext = rendererContext
         self.outputAudioFormat = outputAudioFormat
+        
+        // Set up Ogg Vorbis processor callback
+        oggVorbisProcessor.processorCallback = { [weak self] effect in
+            self?.fileStreamCallback?(effect)
+        }
     }
 
     /// Opens the `AudioFileStream`
@@ -63,12 +78,25 @@ final class AudioFileStreamProcessor {
     /// - Returns: An `OSStatus` value indicating if an error occurred or not.
 
     func openFileStream(with fileHint: AudioFileTypeID) -> OSStatus {
-        let data = UnsafeMutableRawPointer.from(object: self)
-        return AudioFileStreamOpen(data, _propertyListenerProc, _propertyPacketsProc, fileHint, &audioFileStream)
+        // Check if this is an Ogg Vorbis file
+        if fileHint == kAudioFileOggType {
+            isProcessingOggVorbis = true
+            return noErr
+        } else {
+            isProcessingOggVorbis = false
+            let data = UnsafeMutableRawPointer.from(object: self)
+            return AudioFileStreamOpen(data, _propertyListenerProc, _propertyPacketsProc, fileHint, &audioFileStream)
+        }
     }
 
     /// Closes the currently open `AudioFileStream` instance, if opened.
     func closeFileStreamIfNeeded() {
+        if isProcessingOggVorbis {
+            isProcessingOggVorbis = false
+            oggVorbisProcessor.cleanup()
+            return
+        }
+        
         guard let fileStream = audioFileStream else {
             Logger.debug("audio file stream not opened", category: .generic)
             return
@@ -83,8 +111,14 @@ final class AudioFileStreamProcessor {
     ///
     /// - Returns: An `OSStatus` value indicating if an error occurred or not.
     func parseFileStreamBytes(data: Data) -> OSStatus {
-        guard let stream = audioFileStream else { return 0 }
         guard !data.isEmpty else { return 0 }
+        
+        // Check if we're processing Ogg Vorbis
+        if isProcessingOggVorbis {
+            return oggVorbisProcessor.parseOggVorbisData(data: data)
+        }
+        
+        guard let stream = audioFileStream else { return 0 }
         let flags: AudioFileStreamParseFlags = discontinuous ? .discontinuity : .init()
         return data.withUnsafeBytes { buffer -> OSStatus in
             AudioFileStreamParseBytes(stream, UInt32(buffer.count), buffer.baseAddress, flags)
@@ -92,10 +126,17 @@ final class AudioFileStreamProcessor {
     }
 
     func processSeek() {
-        guard let stream = audioFileStream else { return }
         guard let readingEntry = playerContext.audioReadingEntry else {
             return
         }
+        
+        // If processing Ogg Vorbis, use the Ogg Vorbis processor
+        if isProcessingOggVorbis {
+            oggVorbisProcessor.processSeek()
+            return
+        }
+        
+        guard let stream = audioFileStream else { return }
 
         guard readingEntry.calculatedBitrate() > 0.0 || (playerContext.audioPlayingEntry?.length ?? 0) > 0 else {
             return
