@@ -62,17 +62,7 @@ final class AudioPlayerService {
 
     func play(url: URL) {
         activateAudioSession()
-//        player.play(url: url)
-
-        player.queue(url: AudioContent.piano.streamUrl)
-        player.queue(url: AudioContent.loopBeatFlac.streamUrl)
-
-//        player.queue(url: URL(string: "https://github.com/dimitris-c/sample-audio/raw/refs/heads/main/01%20-%20Before%20the%20Light%20Knew%20Us%20(Mixed).ogg")!)
-//                player.queue(url: URL(string: "https://github.com/dimitris-c/sample-audio/raw/refs/heads/main/01%20-%20Before%20the%20Light%20Knew%20Us%20(Mixed).m4a")!)
-
-//        player.queue(url: URL(string: "https://github.com/dimitris-c/sample-audio/raw/refs/heads/main/02%20-%20Classrooms%20(Mixed).m4a")!)
-
-//        player.queue(url: URL(string: "https://github.com/dimitris-c/sample-audio/raw/refs/heads/main/02%20-%20Classrooms%20(Mixed).ogg")!)
+        player.play(url: url)
     }
 
     func play(source: CoreAudioStreamSource, entryId: String, format: AVAudioFormat) {
