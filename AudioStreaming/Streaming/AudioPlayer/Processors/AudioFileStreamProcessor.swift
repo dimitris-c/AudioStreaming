@@ -7,6 +7,7 @@
 
 import AVFoundation
 import CoreAudio
+import OSLog
 
 enum AudioConvertStatus: Int32 {
     case done = 100

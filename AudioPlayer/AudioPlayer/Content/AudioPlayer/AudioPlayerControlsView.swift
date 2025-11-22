@@ -37,6 +37,18 @@ struct AudioPlayerControls: View {
                 }
                 .buttonStyle(.plain)
                 .padding(.leading, 8)
+                Button(action: {
+                    model.cycleLoopMode()
+                }) {
+                    Image(systemName: model.iconForLoopMode)
+                        .symbolVariant(model.isLoopActive ? .circle.fill : .none)
+                        .font(.title)
+                        .imageScale(.small)
+                        .foregroundStyle(model.isLoopActive ? .mint : .gray)
+                }
+                .buttonStyle(.plain)
+                .padding(.leading, 8)
+                .help(model.loopModeDescription)
                 Spacer()
                 HStack {
                     Slider(value: $model.volume)
@@ -101,6 +113,31 @@ struct AudioPlayerControls: View {
             }
             .padding(.bottom, 8)
             .padding(.horizontal, 16)
+            
+            if model.isLoopActive {
+                Divider()
+                VStack(alignment: .leading) {
+                    Text("Loop Times: \(model.loopTimes == 0 ? "∞" : "\(Int(model.loopTimes))")")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.black)
+                    HStack {
+                        Text("1")
+                            .font(.caption)
+                        Slider(value: $model.loopTimes, in: 0...10, step: 1)
+                            .onChange(of: model.loopTimes) { _, new in
+                                model.updateLoopTimes(new)
+                            }
+                        Text("∞")
+                            .font(.caption)
+                    }
+                    Text(model.loopTimes == 0 ? "Loop infinitely" : "Loop \(Int(model.loopTimes)) time\(Int(model.loopTimes) == 1 ? "" : "s")")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.bottom, 8)
+                .padding(.horizontal, 16)
+            }
         }
         .onChange(of: currentTrack) { oldValue, newValue in
             if let track = newValue {
@@ -132,6 +169,9 @@ extension AudioPlayerControls {
 
         var isPlaying: Bool = false
         var isMuted: Bool = false
+        
+        var loopMode: AudioPlayerLoopMode = .off
+        var loopTimes: Double = 0  // 0 means infinite
 
         var volume: Float = 0.5
 
@@ -157,6 +197,52 @@ extension AudioPlayerControls {
                 return "speaker.wave.2"
             } else {
                 return "speaker.wave.3"
+            }
+        }
+        
+        var iconForLoopMode: String {
+            switch loopMode {
+            case .off:
+                return "repeat"
+            case .single:
+                return "repeat.1"
+            case .all:
+                return "repeat"
+            }
+        }
+        
+        var loopModeDescription: String {
+            switch loopMode {
+            case .off:
+                return "Loop: Off"
+            case .single(let times):
+                if let times = times, times > 0 {
+                    return "Loop: Single (\(times)x)"
+                }
+                return "Loop: Single (∞)"
+            case .all(let times):
+                if let times = times, times > 0 {
+                    return "Loop: All (\(times)x)"
+                }
+                return "Loop: All (∞)"
+            }
+        }
+        
+        var isLoopActive: Bool {
+            if case .off = loopMode {
+                return false
+            }
+            return true
+        }
+        
+        var currentLoopTimes: Int? {
+            switch loopMode {
+            case .off:
+                return nil
+            case .single(let times):
+                return times
+            case .all(let times):
+                return times
             }
         }
 
@@ -219,6 +305,19 @@ extension AudioPlayerControls {
         func mute() {
             isMuted.toggle()
             audioPlayerService.toggleMute()
+        }
+        
+        func cycleLoopMode() {
+            audioPlayerService.cycleLoopMode()
+            loopMode = audioPlayerService.loopMode
+            // Update loopTimes to match the current mode's times
+            loopTimes = Double(currentLoopTimes ?? 0)
+        }
+        
+        func updateLoopTimes(_ times: Double) {
+            let timesValue = times == 0 ? nil : Int(times)
+            audioPlayerService.setLoopTimes(timesValue)
+            loopMode = audioPlayerService.loopMode
         }
 
         func playPause() {

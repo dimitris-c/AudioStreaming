@@ -8,6 +8,7 @@
 import Foundation
 import AVFoundation
 import CoreAudio
+import OSLog
 
 /// A processor for Ogg Vorbis audio streams using libvorbisfile
 final class OggVorbisStreamProcessor {

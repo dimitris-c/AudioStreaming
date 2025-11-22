@@ -6,6 +6,7 @@
 //
 
 import AVFoundation
+import OSLog
 
 final class AudioPlayerRenderProcessor: NSObject {
     /// The AVAudioEngine's `AVAudioEngineManualRenderingBlock` render block from manual rendering

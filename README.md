@@ -56,6 +56,27 @@ player.queue(urls: [
 ])
 ```
 
+### Loop mode
+```swift
+let player = AudioPlayer()
+player.play(url: URL(fileURLWithPath: "your-local-path/to/audio-file.mp3")!)
+
+// no looping (default)
+player.loopMode = .off
+
+// loop the current track infinitely
+player.loopMode = .single(times: nil)
+
+// loop the current track 3 times
+player.loopMode = .single(times: 3)
+
+// loop the entire queue infinitely
+player.loopMode = .all(times: nil)
+
+// loop the entire queue 2 times
+player.loopMode = .all(times: 2)
+```
+
 ### Adjusting playback properties
 ```swift
 let player = AudioPlayer()

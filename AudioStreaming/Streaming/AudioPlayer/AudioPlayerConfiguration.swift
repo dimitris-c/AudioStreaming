@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import OSLog
 
 public struct AudioPlayerConfiguration: Equatable {
     /// All pending items will be flushed when seeking a track if this is set to `true`
@@ -44,7 +45,7 @@ public struct AudioPlayerConfiguration: Equatable {
                 secondsRequiredToStartPlaying: Double = 1,
                 gracePeriodAfterSeekInSeconds: Double = 0.5,
                 secondsRequiredToStartPlayingAfterBufferUnderrun: Int = 1,
-                enableLogs: Bool = false)
+                enableLogs: Bool = true)
     {
         self.flushQueueOnSeek = flushQueueOnSeek
         self.bufferSizeInSeconds = bufferSizeInSeconds
@@ -52,6 +53,7 @@ public struct AudioPlayerConfiguration: Equatable {
         self.gracePeriodAfterSeekInSeconds = gracePeriodAfterSeekInSeconds
         self.secondsRequiredToStartPlayingAfterBufferUnderrun = secondsRequiredToStartPlayingAfterBufferUnderrun
         self.enableLogs = enableLogs
+        Logger.isEnabled = enableLogs
     }
 
     /// Normalize values on any zero values passed

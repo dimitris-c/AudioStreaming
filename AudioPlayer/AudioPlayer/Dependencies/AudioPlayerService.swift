@@ -39,6 +39,11 @@ final class AudioPlayerService {
     var state: AudioPlayerState {
         player.state
     }
+    
+    var loopMode: AudioPlayerLoopMode {
+        get { player.loopMode }
+        set { player.loopMode = newValue }
+    }
 
     var statusChangedNotifier = Notifier<AudioPlayerState>()
     var metadataReceivedNotifier = Notifier<[String: String]>()
@@ -57,7 +62,17 @@ final class AudioPlayerService {
 
     func play(url: URL) {
         activateAudioSession()
-        player.play(url: url)
+//        player.play(url: url)
+
+        player.queue(url: AudioContent.piano.streamUrl)
+        player.queue(url: AudioContent.loopBeatFlac.streamUrl)
+
+//        player.queue(url: URL(string: "https://github.com/dimitris-c/sample-audio/raw/refs/heads/main/01%20-%20Before%20the%20Light%20Knew%20Us%20(Mixed).ogg")!)
+//                player.queue(url: URL(string: "https://github.com/dimitris-c/sample-audio/raw/refs/heads/main/01%20-%20Before%20the%20Light%20Knew%20Us%20(Mixed).m4a")!)
+
+//        player.queue(url: URL(string: "https://github.com/dimitris-c/sample-audio/raw/refs/heads/main/02%20-%20Classrooms%20(Mixed).m4a")!)
+
+//        player.queue(url: URL(string: "https://github.com/dimitris-c/sample-audio/raw/refs/heads/main/02%20-%20Classrooms%20(Mixed).ogg")!)
     }
 
     func play(source: CoreAudioStreamSource, entryId: String, format: AVAudioFormat) {
@@ -113,6 +128,32 @@ final class AudioPlayerService {
 
     func seek(at time: Double) {
         player.seek(to: time)
+    }
+    
+    func setLoopMode(_ mode: AudioPlayerLoopMode) {
+        player.loopMode = mode
+    }
+    
+    func cycleLoopMode() {
+        switch player.loopMode {
+        case .off:
+            player.loopMode = .single(times: nil)
+        case .single:
+            player.loopMode = .all(times: nil)
+        case .all:
+            player.loopMode = .off
+        }
+    }
+    
+    func setLoopTimes(_ times: Int?) {
+        switch player.loopMode {
+        case .off:
+            break
+        case .single:
+            player.loopMode = .single(times: times)
+        case .all:
+            player.loopMode = .all(times: times)
+        }
     }
 
     private func recreatePlayer() {

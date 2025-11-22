@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import OSLog
 
 final class RemoteMp4Restructure {
     struct RestructuredData {

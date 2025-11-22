@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import OSLog
 
 struct MP4Atom: Equatable, CustomDebugStringConvertible {
     let type: Int

@@ -1,6 +1,7 @@
 import Foundation
 import AudioCodecs
 import AVFoundation
+import OSLog
 
 /// A simple decoder for Ogg Vorbis files using libvorbisfile
 final class VorbisFileDecoder {
