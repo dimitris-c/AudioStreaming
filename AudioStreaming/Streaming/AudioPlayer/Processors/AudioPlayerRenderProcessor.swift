@@ -101,7 +101,6 @@ final class AudioPlayerRenderProcessor: NSObject {
                 }
             }
         }
-        rendererContext.lock.unlock()
 
         var totalFramesCopied: UInt32 = 0
         if used > 0 && !waitForBuffer && playingEntry != nil && state.contains(.running) && state != .paused {
@@ -121,10 +120,8 @@ final class AudioPlayerRenderProcessor: NSObject {
                 }
                 totalFramesCopied = framesToCopy
 
-                rendererContext.lock.lock()
                 bufferContext.frameStartIndex = (bufferContext.frameStartIndex + totalFramesCopied) % bufferContext.totalFrameCount
                 bufferContext.frameUsedCount -= totalFramesCopied
-                rendererContext.lock.unlock()
 
             } else {
                 let frameToCopy = min(inNumberFrames, bufferContext.totalFrameCount - start)
@@ -159,10 +156,8 @@ final class AudioPlayerRenderProcessor: NSObject {
                 }
                 totalFramesCopied = frameToCopy + moreFramesToCopy
 
-                rendererContext.lock.lock()
                 bufferContext.frameStartIndex = (bufferContext.frameStartIndex + totalFramesCopied) % bufferContext.totalFrameCount
                 bufferContext.frameUsedCount -= totalFramesCopied
-                rendererContext.lock.unlock()
             }
 
             if playerContext.internalState != .playing {
@@ -171,7 +166,7 @@ final class AudioPlayerRenderProcessor: NSObject {
                 })
             }
         }
-
+        rendererContext.lock.unlock()
         if totalFramesCopied < inNumberFrames {
             let delta = inNumberFrames - totalFramesCopied
             if let mData = bufferList.mBuffers.mData {
