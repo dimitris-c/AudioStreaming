@@ -65,6 +65,12 @@ final class AudioPlayerRenderProcessor: NSObject {
         let frameSizeInBytes = bufferContext.sizeInBytes
         let used = bufferContext.frameUsedCount
         let start = bufferContext.frameStartIndex
+        #if DEBUG
+        assert(start < bufferContext.totalFrameCount,
+               "frameStartIndex (\(start)) >= totalFrameCount (\(bufferContext.totalFrameCount)) - logic error!")
+        assert(used <= bufferContext.totalFrameCount,
+               "frameUsedCount (\(used)) > totalFrameCount (\(bufferContext.totalFrameCount)) - logic error!")
+        #endif
         let end = (bufferContext.frameStartIndex + bufferContext.frameUsedCount) % bufferContext.totalFrameCount
         let signal = rendererContext.waiting.value && used < bufferContext.totalFrameCount / 2
 
@@ -122,12 +128,33 @@ final class AudioPlayerRenderProcessor: NSObject {
                 totalFramesCopied = framesToCopy
 
                 rendererContext.lock.lock()
+                #if DEBUG
+                if totalFramesCopied > bufferContext.frameUsedCount {
+                    Logger.debug("Buffer race: tried to consume %d frames but only %d available (reset likely occurred)",
+                                 category: .audioRendering,
+                                 args: totalFramesCopied, bufferContext.frameUsedCount)
+                }
+                #endif
                 bufferContext.frameStartIndex = (bufferContext.frameStartIndex + totalFramesCopied) % bufferContext.totalFrameCount
-                bufferContext.frameUsedCount -= totalFramesCopied
+                if totalFramesCopied <= bufferContext.frameUsedCount {
+                    bufferContext.frameUsedCount -= totalFramesCopied
+                } else {
+                    bufferContext.frameUsedCount = 0
+                }
                 rendererContext.lock.unlock()
 
             } else {
-                let frameToCopy = min(inNumberFrames, bufferContext.totalFrameCount - start)
+                let frameToCopy: UInt32
+                if start < bufferContext.totalFrameCount {
+                    frameToCopy = min(inNumberFrames, bufferContext.totalFrameCount - start)
+                } else {
+                    #if DEBUG
+                    Logger.debug("Buffer race: start index %d >= totalFrameCount %d (reset likely occurred)",
+                                 category: .audioRendering,
+                                 args: start, bufferContext.totalFrameCount)
+                    #endif
+                    frameToCopy = 0
+                }
                 bufferList.mBuffers.mNumberChannels = 2
                 bufferList.mBuffers.mDataByteSize = frameSizeInBytes * frameToCopy
 
@@ -160,8 +187,19 @@ final class AudioPlayerRenderProcessor: NSObject {
                 totalFramesCopied = frameToCopy + moreFramesToCopy
 
                 rendererContext.lock.lock()
+                #if DEBUG
+                if totalFramesCopied > bufferContext.frameUsedCount {
+                    Logger.debug("Buffer race: tried to consume %d frames but only %d available (reset likely occurred)",
+                                 category: .audioRendering,
+                                 args: totalFramesCopied, bufferContext.frameUsedCount)
+                }
+                #endif
                 bufferContext.frameStartIndex = (bufferContext.frameStartIndex + totalFramesCopied) % bufferContext.totalFrameCount
-                bufferContext.frameUsedCount -= totalFramesCopied
+                if totalFramesCopied <= bufferContext.frameUsedCount {
+                    bufferContext.frameUsedCount -= totalFramesCopied
+                } else {
+                    bufferContext.frameUsedCount = 0
+                }
                 rendererContext.lock.unlock()
             }
 

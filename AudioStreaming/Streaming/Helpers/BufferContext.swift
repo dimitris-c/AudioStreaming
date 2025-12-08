@@ -13,7 +13,13 @@ final class BufferContext {
     var frameUsedCount: UInt32 = 0
 
     var end: UInt32 {
-        (frameStartIndex + frameUsedCount) % totalFrameCount
+        #if DEBUG
+        assert(frameStartIndex < totalFrameCount,
+               "frameStartIndex (\(frameStartIndex)) exceeds totalFrameCount (\(totalFrameCount)) - logic error!")
+        assert(frameUsedCount <= totalFrameCount,
+               "frameUsedCount (\(frameUsedCount)) exceeds totalFrameCount (\(totalFrameCount)) - logic error!")
+        #endif
+        return (frameStartIndex + frameUsedCount) % totalFrameCount
     }
 
     init(sizeInBytes: UInt32, totalFrameCount: UInt32) {
