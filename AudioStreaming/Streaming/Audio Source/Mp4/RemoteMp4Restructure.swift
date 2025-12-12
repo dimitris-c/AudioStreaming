@@ -31,6 +31,8 @@ final class RemoteMp4Restructure {
 
     private let mp4Restructure: Mp4Restructure
 
+    private var ignoreFailureDueToCancel: Bool = false
+
     init(url: URL, networking: NetworkingClient, restructure: Mp4Restructure = Mp4Restructure()) {
         self.url = url
         self.networking = networking
@@ -81,6 +83,7 @@ final class RemoteMp4Restructure {
                             break // keep streaming until decision can be made
                         case .optimized:
                             self.audioData = Data()
+                            self.ignoreFailureDueToCancel = true
                             self.task?.cancel()
                             self.task = nil
                             completion(.success(nil))
@@ -92,6 +95,7 @@ final class RemoteMp4Restructure {
                             }
                             // stop request, fetch moov and restructure
                             self.audioData = Data()
+                            self.ignoreFailureDueToCancel = true
                             self.task?.cancel()
                             self.task = nil
                             self.fetchAndRestructureMoovAtom(offset: moovOffset) { result in
@@ -108,6 +112,15 @@ final class RemoteMp4Restructure {
                         completion(.failure(Mp4RestructureError.invalidAtomSize))
                     }
                 case let .stream(.failure(error)):
+                    // Ignore the error if it was caused by our intentional cancel
+                    if ignoreFailureDueToCancel {
+                        ignoreFailureDueToCancel = false
+                        break
+                    }
+                    let nsError = error as NSError
+                    if nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled {
+                        break
+                    }
                     completion(.failure(Mp4RestructureError.networkError(error)))
                 case .complete:
                     break

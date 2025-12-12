@@ -145,17 +145,84 @@ final class Mp4Restructure {
 
             // Handle extended size (64-bit)
             if atomSize == 1 {
-                if atomOffset + 16 > data.count { break }
+                if atomOffset + 16 > data.count {
+                    // Mark presence from header only to allow early decisions
+                    switch atomType {
+                    case Atoms.ftyp:
+                        if ftyp == nil {
+                            ftyp = MP4Atom(type: atomType, size: Int.max, offset: atomOffset, data: nil)
+                        }
+                    case Atoms.mdat:
+                        foundMdat = true
+                    case Atoms.moov:
+                        foundMoov = true
+                    default:
+                        break
+                    }
+                    if ftyp != nil, foundMoov, !foundMdat {
+                        Logger.debug("🕵️ detected an optimized mp4", category: .generic)
+                        return .optimized
+                    }
+                    // For non-optimized case we need a reliable moov offset; wait for more data
+                    break
+                }
                 let ext: UInt64 = try getInteger(data: data, offset: atomOffset + 8)
                 atomSize = Int(ext)
                 headerSize = 16
             } else if atomSize == 0 {
-                // Size extends to EOF; with partial data we can't determine full box
+                // Size extends to EOF; still record what we saw and decide if possible
+                switch atomType {
+                case Atoms.ftyp:
+                    if ftyp == nil {
+                        // We only have header; store minimal info
+                        let start = atomOffset
+                        let end = min(data.count, atomOffset + headerSize)
+                        let ftypData = data[start ..< end]
+                        let ftyp = MP4Atom(type: atomType, size: 0, offset: atomOffset, data: ftypData)
+                        self.ftyp = ftyp
+                    }
+                case Atoms.mdat:
+                    foundMdat = true
+                case Atoms.moov:
+                    foundMoov = true
+                default:
+                    break
+                }
+                if ftyp != nil, foundMoov, !foundMdat {
+                    Logger.debug("🕵️ detected an optimized mp4", category: .generic)
+                    return .optimized
+                }
+                // Otherwise we can't reliably compute moov offset yet
                 break
             }
 
             // Bounds and sanity checks
-            if atomSize < headerSize || atomOffset + atomSize > data.count { break }
+            if atomSize < headerSize {
+                break
+            }
+            if atomOffset + atomSize > data.count {
+                // We have the header but not the full atom yet. Record presence for decision.
+                switch atomType {
+                case Atoms.ftyp:
+                    if ftyp == nil {
+                        ftyp = MP4Atom(type: atomType, size: atomSize, offset: atomOffset, data: nil)
+                    }
+                case Atoms.moov:
+                    foundMoov = true
+                case Atoms.mdat:
+                    foundMdat = true
+                default:
+                    break
+                }
+                
+                if ftyp != nil {
+                    if foundMoov && !foundMdat {
+                        Logger.debug("🕵️ detected an optimized mp4 (header-only observation)", category: .generic)
+                        return .optimized
+                    }
+                }
+                break
+            }
 
             switch atomType {
             case Atoms.ftyp:

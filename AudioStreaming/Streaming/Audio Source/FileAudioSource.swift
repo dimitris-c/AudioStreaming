@@ -34,6 +34,7 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
     private var inputStream: InputStream?
 
     private var mp4Restructure: Mp4Restructure
+    private var mp4ProbeBuffer: Data = Data()
 
     init(url: URL,
          fileManager: FileManager = .default,
@@ -120,14 +121,17 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
             if isMp4, !mp4IsAlreadyOptimized {
                 if !mp4Restructure.dataOptimized {
                     do {
-                        switch try mp4Restructure.checkIsOptimized(data: data) {
+                        mp4ProbeBuffer.append(data)
+                        switch try mp4Restructure.checkIsOptimized(data: mp4ProbeBuffer) {
                         case .undetermined:
                             // Not enough bytes yet; wait for more data before deciding
                             break
                         case .optimized:
                             mp4IsAlreadyOptimized = true
+                            mp4ProbeBuffer = Data()
                             delegate?.dataAvailable(source: self, data: data)
                         case let .needsRestructure(moovOffset):
+                            mp4ProbeBuffer = Data()
                             try performMp4Restructure(inputStream: inputStream, moovOffset: moovOffset)
                         }
                     } catch {
