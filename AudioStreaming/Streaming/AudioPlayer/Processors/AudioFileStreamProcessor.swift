@@ -125,6 +125,34 @@ final class AudioFileStreamProcessor {
             AudioFileStreamParseBytes(stream, UInt32(buffer.count), buffer.baseAddress, flags)
         }
     }
+    
+    /// Flushes any remaining packets from the AudioFileStream parser.
+    ///
+    /// This must be called at the end of a stream to ensure the final packet is delivered,
+    /// particularly important for formats like FLAC that use sync words to determine packet boundaries.
+    ///
+    /// As documented in AudioFileStream.h:
+    /// "At the end of the stream, this function must be called once with null data pointer
+    /// and zero data byte size to flush any remaining packets out of the parser."
+    ///
+    /// - Returns: An `OSStatus` value indicating if an error occurred or not.
+    func flushRemainingPackets() -> OSStatus {
+        // Ogg Vorbis doesn't need flushing (handled internally)
+        if isProcessingOggVorbis {
+            return noErr
+        }
+        
+        guard let stream = audioFileStream else { return noErr }
+        
+        // Call AudioFileStreamParseBytes with 0 bytes and nil data to flush the final packet
+        let status = AudioFileStreamParseBytes(stream, 0, nil, [])
+        
+        if status != noErr {
+            Logger.debug("Failed to flush AudioFileStream packets: \(status)", category: .generic)
+        }
+        
+        return status
+    }
 
     func processSeek() {
         guard let readingEntry = playerContext.audioReadingEntry else {

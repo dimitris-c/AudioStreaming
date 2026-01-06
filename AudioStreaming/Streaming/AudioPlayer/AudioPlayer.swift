@@ -1082,6 +1082,14 @@ extension AudioPlayer: AudioStreamSourceDelegate {
             return
         }
 
+        // Flush any remaining packets from AudioFileStream before marking EOF
+        // This is critical for formats like FLAC that use sync words to determine packet boundaries.
+        // Without this flush, the final partial packet will not be delivered.
+        let flushStatus = fileStreamProcessor.flushRemainingPackets()
+        if flushStatus != noErr {
+            Logger.debug("Failed to flush remaining packets at EOF: \(flushStatus)", category: .generic)
+        }
+
         readingEntry.lock.lock()
         readingEntry.framesState.lastFrameQueued = readingEntry.framesState.queued
         readingEntry.lock.unlock()
