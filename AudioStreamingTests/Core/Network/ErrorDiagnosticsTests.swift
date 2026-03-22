@@ -16,9 +16,56 @@ final class NetworkErrorTests: XCTestCase {
     }
 
     func testServerErrorDescriptionIncludesStatusCode() {
-        XCTAssertEqual(NetworkError.serverError(statusCode: 403).localizedDescription, "HTTP server error 403")
-        XCTAssertEqual(NetworkError.serverError(statusCode: 404).localizedDescription, "HTTP server error 404")
-        XCTAssertEqual(NetworkError.serverError(statusCode: 500).localizedDescription, "HTTP server error 500")
+        let details403 = makeResponseDetails(statusCode: 403, contentType: "text/html", url: "https://example.com/stream")
+        let details404 = makeResponseDetails(statusCode: 404, contentType: nil, url: nil)
+        let details500 = makeResponseDetails(statusCode: 500, contentType: "application/json", url: "https://example.com/api")
+
+        XCTAssertEqual(
+            NetworkError.serverError(details403).localizedDescription,
+            "HTTP server error 403 contentType=text/html url=https://example.com/stream"
+        )
+        XCTAssertEqual(
+            NetworkError.serverError(details404).localizedDescription,
+            "HTTP server error 404 url=https://example.com"
+        )
+        XCTAssertEqual(
+            NetworkError.serverError(details500).localizedDescription,
+            "HTTP server error 500 contentType=application/json url=https://example.com/api"
+        )
+
+        let details403WithBody = details403.appendingBodySnippet("Access denied by origin")
+        XCTAssertEqual(
+            NetworkError.serverError(details403WithBody).localizedDescription,
+            "HTTP server error 403 contentType=text/html url=https://example.com/stream bodySnippet=Access denied by origin"
+        )
+    }
+
+    func testServerErrorPreservesStructuredResponseDetails() {
+        let details = makeResponseDetails(
+            statusCode: 403,
+            contentType: "text/html; charset=utf-8",
+            url: "https://worldwide-fm.radiocult.fm/stream",
+            headers: [
+                "cf-ray": "12345",
+                "Server": "cloudflare"
+            ]
+        )
+
+        let error = NetworkError.serverError(details)
+
+        guard case let .serverError(responseDetails) = error else {
+            return XCTFail("Expected serverError with response details.")
+        }
+
+        XCTAssertEqual(responseDetails.statusCode, 403)
+        XCTAssertEqual(responseDetails.contentType, "text/html; charset=utf-8")
+        XCTAssertEqual(responseDetails.url, "https://worldwide-fm.radiocult.fm/stream")
+        XCTAssertEqual(responseDetails.headers["cf-ray"], "12345")
+        XCTAssertEqual(responseDetails.headers["Server"], "cloudflare")
+        XCTAssertNil(responseDetails.bodySnippet)
+
+        let detailsWithBody = responseDetails.appendingBodySnippet("Forbidden")
+        XCTAssertEqual(detailsWithBody.bodySnippet, "Forbidden")
     }
 
     func testMissingDataDescription() {
@@ -52,5 +99,24 @@ final class NetworkErrorTests: XCTestCase {
         XCTAssertTrue(playerStartDescription.contains("Player couldn't start"))
         XCTAssertTrue(playerStartDescription.contains(NSOSStatusErrorDomain))
         XCTAssertTrue(playerStartDescription.contains("-10875"))
+    }
+
+    private func makeResponseDetails(
+        statusCode: Int,
+        contentType: String?,
+        url: String?,
+        headers: [String: String] = [:]
+    ) -> HTTPResponseDetails {
+        var headerFields = headers
+        if let contentType {
+            headerFields["Content-Type"] = contentType
+        }
+        let response = HTTPURLResponse(
+            url: URL(string: url ?? "https://example.com")!,
+            statusCode: statusCode,
+            httpVersion: "HTTP/1.1",
+            headerFields: headerFields
+        )!
+        return HTTPResponseDetails(response: response)
     }
 }

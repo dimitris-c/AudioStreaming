@@ -1059,7 +1059,11 @@ extension AudioPlayer: AudioStreamSourceDelegate {
 
     public func errorOccurred(source: CoreAudioStreamSource, error: Error) {
         guard let entry = playerContext.audioReadingEntry, entry.has(same: source) else { return }
-        raiseUnexpected(error: .networkError(.failure(error)))
+        if let networkError = error as? NetworkError {
+            raiseUnexpected(error: .networkError(networkError))
+        } else {
+            raiseUnexpected(error: .networkError(.failure(error)))
+        }
     }
 
     public func endOfFileOccurred(source: CoreAudioStreamSource) {
