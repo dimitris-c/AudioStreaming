@@ -360,7 +360,7 @@ public class RemoteAudioSource: AudioStreamSource {
         } else if statusCode >= 300 {
             delegate?.errorOccurred(
                 source: self,
-                error: NetworkError.serverError
+                error: NetworkError.serverError(statusCode: statusCode)
             )
         }
     }

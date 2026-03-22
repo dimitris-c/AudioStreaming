@@ -12,19 +12,48 @@ enum DataStreamError: Error {
 
 public enum NetworkError: Error, Equatable {
     case failure(Error)
-    case serverError
+    case serverError(statusCode: Int)
     case missingData
+
     public static func == (lhs: NetworkError, rhs: NetworkError) -> Bool {
         switch (lhs, rhs) {
-        case (.failure, failure):
-            return true
-        case (.serverError, .serverError):
-            return true
+        case let (.failure(lhsError), .failure(rhsError)):
+            return compareErrors(lhsError, rhsError)
+        case let (.serverError(lhsStatusCode), .serverError(rhsStatusCode)):
+            return lhsStatusCode == rhsStatusCode
         case (.missingData, .missingData):
             return true
         default:
             return false
         }
+    }
+}
+
+extension NetworkError: LocalizedError {
+    public var errorDescription: String? {
+        switch self {
+        case let .failure(error):
+            let nsError = error as NSError
+            return "\(error.localizedDescription) [\(nsError.domain):\(nsError.code)]"
+        case let .serverError(statusCode):
+            return "HTTP server error \(statusCode)"
+        case .missingData:
+            return "Missing audio data from network stream"
+        }
+    }
+}
+
+func compareErrors(_ lhs: Error?, _ rhs: Error?) -> Bool {
+    switch (lhs, rhs) {
+    case (nil, nil):
+        return true
+    case let (lhs?, rhs?):
+        let lhsNSError = lhs as NSError
+        let rhsNSError = rhs as NSError
+        return lhsNSError.domain == rhsNSError.domain &&
+            lhsNSError.code == rhsNSError.code
+    default:
+        return false
     }
 }
 
