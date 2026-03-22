@@ -100,25 +100,46 @@ public enum AudioPlayerError: LocalizedError, Equatable, Sendable {
     }
 }
 
+public struct AudioSystemErrorDetails: Equatable, Sendable {
+    public let description: String
+    public let domain: String
+    public let code: Int
+
+    init(error: Error) {
+        let nsError = error as NSError
+        description = error.localizedDescription
+        domain = nsError.domain
+        code = nsError.code
+    }
+}
+
 public enum AudioSystemError: LocalizedError, Equatable, Sendable {
-    case engineFailure
-    case playerNotFound
-    case playerStartError
+    case engineFailure(AudioSystemErrorDetails?)
+    case playerNotFound(AudioSystemErrorDetails?)
+    case playerStartError(AudioSystemErrorDetails?)
     case fileStreamError(AudioFileStreamError)
     case converterError(AudioConverterError)
     case codecError
 
     public var errorDescription: String? {
         switch self {
-        case .engineFailure: return "Audio engine couldn't start"
-        case .playerNotFound: return "Player not found"
-        case .playerStartError: return "Player couldn't start"
+        case let .engineFailure(error):
+            return detailedDescription(prefix: "Audio engine couldn't start", error: error)
+        case let .playerNotFound(error):
+            return detailedDescription(prefix: "Player not found", error: error)
+        case let .playerStartError(error):
+            return detailedDescription(prefix: "Player couldn't start", error: error)
         case let .fileStreamError(error):
-            return "Audio file stream error'd: \(error)"
+            return "Audio file stream errored: \(error)"
         case let .converterError(error):
-            return "Audio converter error'd: \(error)"
+            return "Audio converter errored: \(error)"
         case .codecError:
             return "Audio codec error"
         }
     }
+}
+
+private func detailedDescription(prefix: String, error: AudioSystemErrorDetails?) -> String {
+    guard let error else { return prefix }
+    return "\(prefix): \(error.description) [\(error.domain):\(error.code)]"
 }
