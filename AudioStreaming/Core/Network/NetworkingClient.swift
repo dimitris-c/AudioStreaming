@@ -43,7 +43,7 @@ extension NetworkError: LocalizedError {
     }
 }
 
-func compareErrors(_ lhs: Error?, _ rhs: Error?) -> Bool {
+private func compareErrors(_ lhs: Error?, _ rhs: Error?) -> Bool {
     switch (lhs, rhs) {
     case (nil, nil):
         return true
