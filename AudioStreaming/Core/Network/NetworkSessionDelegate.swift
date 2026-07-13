@@ -6,8 +6,14 @@
 import Foundation
 import OSLog
 
+/// Provides a `URLCredential` in response to a client-certificate authentication challenge,
+/// or `nil` to fall back to the system's default handling. Used to support mutual TLS (mTLS)
+/// against servers that sit behind a client-certificate-authenticated proxy.
+public typealias ClientCertificateProvider = (URLAuthenticationChallenge) -> URLCredential?
+
 final class NetworkSessionDelegate: NSObject, URLSessionDataDelegate {
     weak var taskProvider: StreamTaskProvider?
+    var clientCertificateProvider: ClientCertificateProvider?
 
     func stream(for task: URLSessionTask) -> NetworkDataStream? {
         guard let taskProvider = taskProvider else {
@@ -49,5 +55,18 @@ final class NetworkSessionDelegate: NSObject, URLSessionDataDelegate {
         }
         stream.didReceive(response: response as? HTTPURLResponse)
         completionHandler(.allow)
+    }
+
+    func urlSession(_: URLSession,
+                    didReceive challenge: URLAuthenticationChallenge,
+                    completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void)
+    {
+        guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodClientCertificate,
+              let credential = clientCertificateProvider?(challenge)
+        else {
+            completionHandler(.performDefaultHandling, nil)
+            return
+        }
+        completionHandler(.useCredential, credential)
     }
 }
