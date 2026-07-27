@@ -6,7 +6,22 @@
 import XCTest
 @testable import AudioStreaming
 
-class NetworkingClientTests: XCTestCase {
+final class NetworkingClientTests: XCTestCase {
+    private var server: MockHTTPServer!
+
+    override func setUpWithError() throws {
+        try super.setUpWithError()
+        server = try MockHTTPServer()
+        try server.start()
+        XCTAssertGreaterThan(server.port, 0, "server failed to bind a port")
+    }
+
+    override func tearDownWithError() throws {
+        server?.stop()
+        server = nil
+        try super.tearDownWithError()
+    }
+
     func testInitialiseCorrectly() throws {
         let networking = NetworkingClient()
 
@@ -28,9 +43,9 @@ class NetworkingClientTests: XCTestCase {
         XCTAssertTrue(networking.networkQueue == queue)
     }
 
-    func testShouldStartRequestImmediatelly() {
+    func testShouldStartRequestImmediatelly() throws {
         let networking = NetworkingClient()
-        let url = URL(string: "https://httpbun.com/get")!
+        let url = URL(string: "http://127.0.0.1:\(server.port)/get")!
         let request = URLRequest(url: url)
 
         let expectation = self.expectation(description: "\(url)")
@@ -58,8 +73,8 @@ class NetworkingClientTests: XCTestCase {
 
         waitForExpectations(timeout: 10, handler: nil)
 
-        XCTAssertEqual(responseCompletion?.response?.statusCode, 200)
         XCTAssertNotNil(responseCompletion)
+        XCTAssertEqual(responseCompletion?.response?.statusCode, 200)
         XCTAssertNotNil(receivedData)
     }
 }
