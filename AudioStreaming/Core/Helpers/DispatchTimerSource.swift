@@ -11,12 +11,21 @@ import Foundation
 final class DispatchTimerSource {
     private var handler: (() -> Void)?
     private let timer: DispatchSourceTimer
-    var state: SourceState = .suspended
+    private let lock = NSLock()
+    private var _state: SourceState = .suspended
 
     /// The state of the timer
     enum SourceState {
         case activated
         case suspended
+    }
+
+    /// Read-only: the suspend/resume balance is only correct when the state check and the state
+    /// change happen together under the lock, which is what `activate()`/`suspend()` do.
+    var state: SourceState {
+        lock.lock()
+        defer { lock.unlock() }
+        return _state
     }
 
     var isRunning: Bool {
@@ -39,8 +48,18 @@ final class DispatchTimerSource {
     deinit {
         timer.setEventHandler(handler: nil)
         timer.cancel()
-        // balance called of cancel/resume to avoid crashes
-        timer.resume()
+        // A suspended dispatch source traps if it is released without being resumed first — but
+        // resuming one that is already running is an over-resume, which traps just the same. The
+        // balancing resume therefore has to be conditional: this object is routinely deallocated
+        // while its timer is still activated, e.g. a pending retry whose owner goes away.
+        lock.lock()
+        let needsResume = _state == .suspended
+        _state = .activated
+        lock.unlock()
+
+        if needsResume {
+            timer.resume()
+        }
     }
 
     /// Adds an event handler to the timer.
@@ -58,15 +77,21 @@ final class DispatchTimerSource {
 
     /// Activates the timer, if needed
     func activate() {
-        if state == .activated { return }
-        state = .activated
+        lock.lock()
+        defer { lock.unlock() }
+
+        guard _state == .suspended else { return }
+        _state = .activated
         timer.resume()
     }
 
     /// Suspends the timer, if needed.
     func suspend() {
-        if state == .suspended { return }
-        state = .suspended
+        lock.lock()
+        defer { lock.unlock() }
+
+        guard _state == .activated else { return }
+        _state = .suspended
         timer.suspend()
     }
 
