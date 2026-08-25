@@ -2,8 +2,9 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
 #include <opus/opusfile.h>
+
+#include "OggRingBuffer.h"
 
 // Ring buffer + opusfile callback shim.
 //
@@ -12,101 +13,27 @@
 // callback signatures: opusfile uses a byte-count read (op_read_func) rather
 // than libvorbisfile's fread-style (size, nmemb) pair.
 
-struct OFRemoteStream {
-    uint8_t *buf;
-    size_t cap, head, tail, size;
-    int eof;
-    long long pos;           // Current read position in the stream
-    long long total_pushed;  // Total bytes pushed into the buffer
-    pthread_mutex_t m;
-    pthread_cond_t cv;
-};
-
-static size_t rb_write(struct OFRemoteStream *s, const uint8_t *src, size_t len) {
-    size_t written = 0;
-    while (written < len) {
-        size_t free_space = s->cap - s->size;
-        if (free_space == 0) break;
-        size_t chunk = s->cap - s->tail;
-        if (chunk > len - written) chunk = len - written;
-        if (chunk > free_space) chunk = free_space;
-        memcpy(s->buf + s->tail, src + written, chunk);
-        s->tail = (s->tail + chunk) % s->cap;
-        s->size += chunk;
-        written += chunk;
-    }
-    return written;
-}
-
-static size_t rb_read(struct OFRemoteStream *s, uint8_t *dst, size_t len) {
-    size_t read = 0;
-    while (read < len && s->size > 0) {
-        size_t chunk = s->cap - s->head;
-        if (chunk > s->size) chunk = s->size;
-        if (chunk > len - read) chunk = len - read;
-        memcpy(dst + read, s->buf + s->head, chunk);
-        s->head = (s->head + chunk) % s->cap;
-        s->size -= chunk;
-        read += chunk;
-    }
-    return read;
-}
+// The ring buffer lives in OggRingBuffer.c, shared with VorbisFileBridge.c.
+// These wrappers keep the OF* API surface the Swift layer expects.
 
 OFStreamRef OFStreamCreate(size_t capacity_bytes) {
-    struct OFRemoteStream *s = (struct OFRemoteStream *)calloc(1, sizeof(struct OFRemoteStream));
-    if (!s) return NULL;
-    s->buf = (uint8_t *)malloc(capacity_bytes);
-    if (!s->buf) { free(s); return NULL; }
-    s->cap = capacity_bytes;
-    pthread_mutex_init(&s->m, NULL);
-    pthread_cond_init(&s->cv, NULL);
-    return s;
+    return (OFStreamRef)ogg_rb_create(capacity_bytes);
 }
 
 void OFStreamDestroy(OFStreamRef sr) {
-    struct OFRemoteStream *s = (struct OFRemoteStream *)sr;
-    if (!s) return;
-    pthread_mutex_destroy(&s->m);
-    pthread_cond_destroy(&s->cv);
-    free(s->buf);
-    free(s);
+    ogg_rb_destroy((struct OggRingBuffer *)sr);
 }
 
 size_t OFStreamAvailableBytes(OFStreamRef sr) {
-    struct OFRemoteStream *s = (struct OFRemoteStream *)sr;
-    if (!s) return 0;
-    pthread_mutex_lock(&s->m);
-    size_t sz = s->size;
-    pthread_mutex_unlock(&s->m);
-    return sz;
+    return ogg_rb_available((struct OggRingBuffer *)sr);
 }
 
 void OFStreamPush(OFStreamRef sr, const uint8_t *data, size_t len) {
-    struct OFRemoteStream *s = (struct OFRemoteStream *)sr;
-    if (!s || !data || len == 0) return;
-
-    pthread_mutex_lock(&s->m);
-    size_t written_total = 0;
-    while (written_total < len) {
-        size_t w = rb_write(s, data + written_total, len - written_total);
-        written_total += w;
-        if (written_total < len) {
-            // Buffer full, wait for consumer to read
-            pthread_cond_wait(&s->cv, &s->m);
-        }
-    }
-    s->total_pushed += (long long)len;
-    pthread_cond_broadcast(&s->cv);
-    pthread_mutex_unlock(&s->m);
+    ogg_rb_push((struct OggRingBuffer *)sr, data, len);
 }
 
 void OFStreamMarkEOF(OFStreamRef sr) {
-    struct OFRemoteStream *s = (struct OFRemoteStream *)sr;
-    if (!s) return;
-    pthread_mutex_lock(&s->m);
-    s->eof = 1;
-    pthread_cond_broadcast(&s->cv);
-    pthread_mutex_unlock(&s->m);
+    ogg_rb_mark_eof((struct OggRingBuffer *)sr);
 }
 
 // A decoder handle: the opusfile object plus a scratch buffer.
@@ -137,26 +64,11 @@ static float *of_scratch(struct OFFile *f, size_t floats_needed) {
 // op_read_func: returns bytes read, 0 on EOF, <0 on error.
 // Non-blocking: returns whatever is available now, exactly like the Vorbis shim.
 static int read_cb(void *stream, unsigned char *ptr, int nbytes) {
-    struct OFRemoteStream *s = (struct OFRemoteStream *)stream;
-    if (!s || nbytes <= 0) return 0;
-
-    size_t want_bytes = (size_t)nbytes;
-    size_t got = 0;
-
-    pthread_mutex_lock(&s->m);
-    while (got < want_bytes && s->size > 0) {
-        size_t chunk = rb_read(s, ptr + got, want_bytes - got);
-        if (chunk == 0) break;
-        s->pos += (long long)chunk;
-        got += chunk;
-        pthread_cond_broadcast(&s->cv);
-    }
-    pthread_mutex_unlock(&s->m);
-
+    if (!stream || nbytes <= 0) return 0;
     // got == 0 with eof set signals EOF to opusfile; got == 0 without eof is a
     // short read, which opusfile also treats as end-of-stream. The Swift layer
     // gates calls on availableBytes() to avoid the latter.
-    return (int)got;
+    return (int)ogg_rb_take((struct OggRingBuffer *)stream, ptr, (size_t)nbytes);
 }
 
 static int close_cb(void *stream) {
@@ -165,13 +77,13 @@ static int close_cb(void *stream) {
 }
 
 static opus_int64 tell_cb(void *stream) {
-    struct OFRemoteStream *s = (struct OFRemoteStream *)stream;
+    struct OggRingBuffer *s = (struct OggRingBuffer *)stream;
     if (!s) return -1;
     return (opus_int64)s->pos;
 }
 
 int OFOpen(OFStreamRef sr, OFFileRef *out_of) {
-    struct OFRemoteStream *s = (struct OFRemoteStream *)sr;
+    struct OggRingBuffer *s = (struct OggRingBuffer *)sr;
     if (!s || !out_of) return -1;
 
     OpusFileCallbacks cbs;
@@ -191,22 +103,12 @@ int OFOpen(OFStreamRef sr, OFFileRef *out_of) {
     // it took, so the delta is the amount to give back. Callers serialise open
     // against push (OpusFileDecoder holds decoderLock across both), so no
     // producer can have overwritten the reclaimed region.
-    pthread_mutex_lock(&s->m);
-    long long saved_pos = s->pos;
-    pthread_mutex_unlock(&s->m);
+    long long saved_pos = ogg_rb_position(s);
 
     int err = 0;
     OggOpusFile *of = op_open_callbacks((void *)s, &cbs, NULL, 0, &err);
     if (!of) {
-        pthread_mutex_lock(&s->m);
-        long long consumed = s->pos - saved_pos;
-        if (consumed > 0 && (size_t)consumed <= s->cap - s->size) {
-            s->head = (s->head + s->cap - ((size_t)consumed % s->cap)) % s->cap;
-            s->size += (size_t)consumed;
-            s->pos = saved_pos;
-        }
-        pthread_cond_broadcast(&s->cv);
-        pthread_mutex_unlock(&s->m);
+        ogg_rb_rewind_to(s, saved_pos);
         return err != 0 ? err : -1;
     }
 
