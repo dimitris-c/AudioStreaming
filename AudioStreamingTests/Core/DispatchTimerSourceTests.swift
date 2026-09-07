@@ -66,6 +66,34 @@ class DispatchTimerSourceTests: XCTestCase {
         timerSource?.removeHandler()
     }
 
+    func test_DispatchTimerSource_Can_Be_Deallocated_While_Activated() {
+        // `deinit` used to resume unconditionally to balance a suspended source. When the source
+        // was still activated — a pending retry whose owner is torn down — that extra resume is an
+        // over-resume and libdispatch traps on it. Reaching the end of this test is the assertion.
+        var source: DispatchTimerSource? = DispatchTimerSource(interval: .milliseconds(100), queue: dispatchQueue)
+        source?.activate()
+        XCTAssertTrue(source!.isRunning)
+
+        source = nil
+        XCTAssertNil(source)
+    }
+
+    func test_DispatchTimerSource_Repeated_Activate_And_Suspend_Stay_Balanced() {
+        // Each activate/suspend must move the suspend count exactly once, no matter how often the
+        // no-op path is taken.
+        timerSource?.activate()
+        timerSource?.activate()
+        XCTAssertTrue(timerSource!.isRunning)
+
+        timerSource?.suspend()
+        timerSource?.suspend()
+        XCTAssertFalse(timerSource!.isRunning)
+
+        timerSource?.activate()
+        XCTAssertTrue(timerSource!.isRunning)
+        timerSource?.suspend()
+    }
+
     func test_HandlerIsExecuted_On_The_Specified_Queue() {
         let expectaction = expectation(description: "fired")
 
