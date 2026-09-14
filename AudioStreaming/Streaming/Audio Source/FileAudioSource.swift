@@ -152,7 +152,7 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
     func performMp4Restructure(inputStream: InputStream, moovOffset: Int) throws {
         let offsetAccepted = inputStream.setProperty(moovOffset, forKey: .fileCurrentOffsetKey)
         if !offsetAccepted {
-            delegate?.errorOccurred(source: self, error: inputStream.streamError ?? AudioSystemError.playerStartError)
+            delegate?.errorOccurred(source: self, error: inputStream.streamError ?? AudioSystemError.playerStartError(nil))
             return
         }
 
@@ -160,7 +160,7 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
         var header = [UInt8](repeating: 0, count: 8)
         let headerRead = inputStream.read(&header, maxLength: 8)
         guard headerRead == 8 else {
-            delegate?.errorOccurred(source: self, error: AudioSystemError.playerStartError)
+            delegate?.errorOccurred(source: self, error: AudioSystemError.playerStartError(nil))
             return
         }
 
@@ -180,7 +180,7 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
             var ext = [UInt8](repeating: 0, count: 8)
             let extRead = inputStream.read(&ext, maxLength: 8)
             guard extRead == 8 else {
-                delegate?.errorOccurred(source: self, error: AudioSystemError.playerStartError)
+                delegate?.errorOccurred(source: self, error: AudioSystemError.playerStartError(nil))
                 return
             }
             let ext64 = Data(ext).withUnsafeBytes { $0.load(as: UInt64.self) }.bigEndian
@@ -190,7 +190,7 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
 
         let remaining = moovSize - moovData.count
         if remaining < 0 {
-            delegate?.errorOccurred(source: self, error: AudioSystemError.playerStartError)
+            delegate?.errorOccurred(source: self, error: AudioSystemError.playerStartError(nil))
             return
         }
         if remaining > 0 {
@@ -202,7 +202,7 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
                     return inputStream.read(base, maxLength: remaining - total)
                 }
                 guard readBytes > 0 else {
-                    delegate?.errorOccurred(source: self, error: AudioSystemError.playerStartError)
+                    delegate?.errorOccurred(source: self, error: AudioSystemError.playerStartError(nil))
                     return
                 }
                 total += readBytes
@@ -213,13 +213,13 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
         let moovResult = try mp4Restructure.restructureMoov(data: moovData)
         delegate?.dataAvailable(source: self, data: moovResult.initialData)
         if !inputStream.setProperty(moovResult.mdatOffset, forKey: .fileCurrentOffsetKey) {
-            delegate?.errorOccurred(source: self, error: AudioSystemError.playerStartError)
+            delegate?.errorOccurred(source: self, error: AudioSystemError.playerStartError(nil))
         }
     }
 
     private func open() throws {
         guard let inputStream = InputStream(url: url) else {
-            throw AudioSystemError.playerStartError
+            throw AudioSystemError.playerStartError(nil)
         }
         self.inputStream = inputStream
         CFReadStreamSetDispatchQueue(inputStream, underlyingQueue)

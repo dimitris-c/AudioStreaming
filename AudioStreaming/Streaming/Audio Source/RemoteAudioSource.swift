@@ -36,11 +36,13 @@ public class RemoteAudioSource: AudioStreamSource {
     private var relativePosition: Int
     private var seekOffset: Int
     private var supportsSeek: Bool
+    private var pendingHTTPError: HTTPResponseDetails?
 
     var metadataStreamProcessor: MetadataStreamSource
 
     private var shouldTryParsingIcycastHeaders: Bool = false
     private let icycastHeadersProcessor: IcycastHeadersProcessor
+    private static let maxErrorBodySnippetLength = 256
 
     public var audioFileHint: AudioFileTypeID {
         guard let output = parsedHeaderOutput, output.typeId != 0 else {
@@ -269,6 +271,9 @@ public class RemoteAudioSource: AudioStreamSource {
         case let .complete(event):
             if let error = event.error {
                 delegate?.errorOccurred(source: self, error: error)
+            } else if let pendingHTTPError {
+                self.pendingHTTPError = nil
+                delegate?.errorOccurred(source: self, error: NetworkError.serverError(pendingHTTPError))
             } else {
                 addCompletionOperation { [weak self] in
                     guard let self = self else { return }
@@ -279,6 +284,16 @@ public class RemoteAudioSource: AudioStreamSource {
     }
 
     private func handleSuccessfulStreamEvent(response: NetworkDataStream.Response) {
+        if let pendingHTTPError {
+            let details = pendingHTTPError.appendingBodySnippet(
+                extractTextBodySnippet(data: response.data, contentType: pendingHTTPError.contentType)
+            )
+            self.pendingHTTPError = nil
+            close()
+            delegate?.errorOccurred(source: self, error: NetworkError.serverError(details))
+            return
+        }
+
         guard let audioData = response.data else {
             delegate?.errorOccurred(source: self, error: NetworkError.missingData)
             return
@@ -335,7 +350,7 @@ public class RemoteAudioSource: AudioStreamSource {
 
         if parsedHeaderOutput == nil {
             shouldTryParsingIcycastHeaders = true
-            checkHTTP(statusCode: httpStatusCode)
+            checkHTTP(response: response)
             return
         }
 
@@ -349,20 +364,44 @@ public class RemoteAudioSource: AudioStreamSource {
         if let metadataStep = parsedHeaderOutput?.metadataStep {
             metadataStreamProcessor.metadataAvailable(step: metadataStep)
         }
-        checkHTTP(statusCode: httpStatusCode)
+        checkHTTP(response: response)
     }
 
-    private func checkHTTP(statusCode: Int) {
+    private func checkHTTP(response: HTTPURLResponse) {
+        let statusCode = response.statusCode
         // check for error
         if statusCode == 416 { // range not satisfied error
             if length >= 0 { seekOffset = length }
             delegate?.endOfFileOccurred(source: self)
         } else if statusCode >= 300 {
-            delegate?.errorOccurred(
-                source: self,
-                error: NetworkError.serverError
-            )
+            pendingHTTPError = .init(response: response)
         }
+    }
+
+    private func extractTextBodySnippet(data: Data?, contentType: String?) -> String? {
+        guard let data, !data.isEmpty else { return nil }
+        guard isTextualContentType(contentType) else { return nil }
+
+        let prefixData = data.prefix(Self.maxErrorBodySnippetLength)
+        let decoded = String(data: prefixData, encoding: .utf8)
+            ?? String(data: prefixData, encoding: .isoLatin1)
+        guard let decoded else { return nil }
+
+        let normalized = decoded
+            .replacingOccurrences(of: "\n", with: " ")
+            .replacingOccurrences(of: "\r", with: " ")
+            .split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
+
+        return normalized.isEmpty ? nil : normalized
+    }
+
+    private func isTextualContentType(_ contentType: String?) -> Bool {
+        guard let contentType = contentType?.lowercased() else { return false }
+        return contentType.hasPrefix("text/")
+            || contentType.contains("json")
+            || contentType.contains("xml")
+            || contentType.contains("javascript")
     }
 
     private func buildUrlRequest(with url: URL, seekIfNeeded seekOffset: Int) -> URLRequest {
