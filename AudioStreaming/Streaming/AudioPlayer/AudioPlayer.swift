@@ -183,7 +183,8 @@ open class AudioPlayer {
     /// Tracks the current loop iteration (how many times we've looped so far)
     private var currentLoopIteration: Int = 0
 
-    public init(configuration: AudioPlayerConfiguration = .default) {
+    public init(configuration: AudioPlayerConfiguration = .default,
+                clientCertificateProvider: ClientCertificateProvider? = nil) {
         self.configuration = configuration.normalizeValues()
         let engine = AVAudioEngine()
         audioEngine = engine
@@ -195,7 +196,7 @@ open class AudioPlayer {
         sourceQueue = DispatchQueue(label: "source.queue", qos: .default)
 
         entryProvider = AudioEntryProvider(
-            networkingClient: NetworkingClient(),
+            networkingClient: NetworkingClient(clientCertificateProvider: clientCertificateProvider),
             underlyingQueue: sourceQueue,
             outputAudioFormat: outputAudioFormat
         )
