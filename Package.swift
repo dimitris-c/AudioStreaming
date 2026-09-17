@@ -17,7 +17,9 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/sbooth/ogg-binary-xcframework", exact: "0.1.2"),
-        .package(url: "https://github.com/sbooth/vorbis-binary-xcframework", exact: "0.1.2")
+        .package(url: "https://github.com/sbooth/vorbis-binary-xcframework", exact: "0.1.2"),
+        // Ships libopus AND libopusfile (<opus/opusfile.h>)
+        .package(url: "https://github.com/sbooth/opus-binary-xcframework", exact: "0.3.0")
     ],
     targets: [
         // C target for audio codec bridges
@@ -25,7 +27,8 @@ let package = Package(
             name: "AudioCodecs",
             dependencies: [
                 .product(name: "ogg", package: "ogg-binary-xcframework"),
-                .product(name: "vorbis", package: "vorbis-binary-xcframework")
+                .product(name: "vorbis", package: "vorbis-binary-xcframework"),
+                .product(name: "opus", package: "opus-binary-xcframework")
             ],
             path: "AudioCodecs",
             publicHeadersPath: "include",
@@ -45,7 +48,8 @@ let package = Package(
             dependencies: [
                 "AudioCodecs",
                 .product(name: "ogg", package: "ogg-binary-xcframework"),
-                .product(name: "vorbis", package: "vorbis-binary-xcframework")
+                .product(name: "vorbis", package: "vorbis-binary-xcframework"),
+                .product(name: "opus", package: "opus-binary-xcframework")
             ],
             path: "AudioStreaming",
             exclude: ["AudioStreaming.h", "Streaming/OggVorbis", "Info.plist"],
@@ -54,13 +58,17 @@ let package = Package(
         .testTarget(
             name: "AudioStreamingTests",
             dependencies: [
-                "AudioStreaming"
+                "AudioStreaming",
+                // OpusFileBridgeTests drives the C bridge directly.
+                "AudioCodecs"
             ],
             path: "AudioStreamingTests",
             exclude: ["Info.plist", "Streaming/output"],
             resources: [
                 // Test resources for metadata stream processor tests
-                .copy("Streaming/Metadata Stream Processor/raw-audio-streams")
+                .copy("Streaming/Metadata Stream Processor/raw-audio-streams"),
+                // Ogg Opus / Vorbis fixtures for the codec tests
+                .copy("Codecs/ogg-fixtures")
             ]
         )
     ]

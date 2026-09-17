@@ -1,5 +1,5 @@
 //
-//  OggVorbisStreamProcessor.swift
+//  OggStreamProcessor.swift
 //  AudioStreaming
 //
 //  Created on 25/10/2025.
@@ -10,8 +10,15 @@ import AVFoundation
 import CoreAudio
 import OSLog
 
-/// A processor for Ogg Vorbis audio streams using libvorbisfile
-final class OggVorbisStreamProcessor {
+/// A processor for Ogg audio streams.
+///
+/// Ogg is a container, so the renderer plumbing here is codec-agnostic: it
+/// drives whatever `OggAudioDecoder` it was handed. `VorbisFileDecoder` wraps
+/// libvorbisfile and `OpusFileDecoder` wraps libopusfile.
+///
+/// Previously named `OggVorbisStreamProcessor`, when Vorbis was the only Ogg
+/// codec supported.
+final class OggStreamProcessor {
     /// The callback to notify when processing is complete or an error occurs
     var processorCallback: ((FileStreamProcessorEffect) -> Void)?
     
@@ -23,9 +30,8 @@ final class OggVorbisStreamProcessor {
     /// By reducing the bitrate slightly, we increase the calculated duration to match reality.
     private let oggContainerOverheadFactor: Double = 0.96  // 4% overhead
     
-    /// Fallback bitrate estimates when nominal bitrate is unavailable
-    private let fallbackBitrateStereo: Double = 160_000  // 160 kbps for stereo
-    private let fallbackBitrateMono: Double = 96_000     // 96 kbps for mono
+    // Fallback bitrate estimates now come from the decoder, since sensible
+    // values differ per codec (Vorbis 160/96 kbps, Opus 128/64 kbps).
     
     // MARK: - Properties
     
@@ -33,7 +39,7 @@ final class OggVorbisStreamProcessor {
     private let rendererContext: AudioRendererContext
     private let outputAudioFormat: AudioStreamBasicDescription
     
-    private let vfDecoder = VorbisFileDecoder()
+    private let decoder: any OggAudioDecoder
     private var isInitialized = false
     
     // Audio converter for format conversion
@@ -52,17 +58,20 @@ final class OggVorbisStreamProcessor {
     
     // MARK: - Initialization
     
-    /// Initialize the OggVorbisStreamProcessor
+    /// Initialize the OggStreamProcessor
     /// - Parameters:
     ///   - playerContext: The audio player context
     ///   - rendererContext: The audio renderer context
     ///   - outputAudioFormat: The output audio format
+    ///   - decoder: The codec-specific decoder to drive
     init(playerContext: AudioPlayerContext,
          rendererContext: AudioRendererContext,
-         outputAudioFormat: AudioStreamBasicDescription) {
+         outputAudioFormat: AudioStreamBasicDescription,
+         decoder: any OggAudioDecoder) {
         self.playerContext = playerContext
         self.rendererContext = rendererContext
         self.outputAudioFormat = outputAudioFormat
+        self.decoder = decoder
     }
     
     deinit {
@@ -76,40 +85,40 @@ final class OggVorbisStreamProcessor {
         audioConverter = nil
         
         // Destroy and reset the decoder
-        vfDecoder.destroy()
+        decoder.destroy()
         isInitialized = false
         totalFramesProcessed = 0
     }
     
     // MARK: - Data Processing
     
-    /// Parse Ogg Vorbis data
-    /// - Parameter data: The Ogg Vorbis data to parse
+    /// Parse Ogg data
+    /// - Parameter data: The Ogg data to parse
     /// - Returns: An OSStatus indicating success or failure
-    func parseOggVorbisData(data: Data) -> OSStatus {
+    func parseOggData(data: Data) -> OSStatus {
         guard let entry = playerContext.audioReadingEntry else { return 0 }
         
         dataChunkCount += 1
         
         if !isInitialized {
-            vfDecoder.create(capacityBytes: 2_097_152)
+            decoder.create(capacityBytes: 2_097_152)
             isInitialized = true
             totalFramesProcessed = 0
         }
         
-        vfDecoder.push(data)
+        decoder.push(data)
         
         if !entry.audioStreamState.processedDataFormat {
-            let availableBytes = vfDecoder.availableBytes()
+            let availableBytes = decoder.availableBytes()
             
             if availableBytes >= 16384 {
                 do {
-                    try vfDecoder.openIfNeeded()
+                    try decoder.openIfNeeded()
                     
-                    if vfDecoder.sampleRate > 0 && vfDecoder.channels > 0 {
+                    if decoder.sampleRate > 0 && decoder.channels > 0 {
                         setupAudioFormat()
                         
-                        if pcmBuffer == nil, let processingFormat = vfDecoder.processingFormat {
+                        if pcmBuffer == nil, let processingFormat = decoder.processingFormat {
                             pcmBuffer = AVAudioPCMBuffer(pcmFormat: processingFormat, frameCapacity: UInt32(frameCount))
                         }
                     }
@@ -199,7 +208,7 @@ final class OggVorbisStreamProcessor {
                 }
             }
             
-            let availableBytes = vfDecoder.availableBytes()
+            let availableBytes = decoder.availableBytes()
             if availableBytes < 4096 {
                 consecutiveNoFrames += 1
                 if consecutiveNoFrames >= 3 {
@@ -234,7 +243,7 @@ final class OggVorbisStreamProcessor {
             return OSStatus(-1)
         }
         
-        let framesRead = vfDecoder.readFrames(into: pcmBuffer, frameCount: frameCount)
+        let framesRead = decoder.readFrames(into: pcmBuffer, frameCount: frameCount)
         
         if framesRead <= 0 {
             return OSStatus(-1)
@@ -249,10 +258,10 @@ final class OggVorbisStreamProcessor {
     
     // MARK: - Audio Format Setup
     
-    // Setup audio format using the processingFormat from VorbisFileDecoder
+    // Setup audio format using the processingFormat from the decoder
     private func setupAudioFormat() {
         guard let entry = playerContext.audioReadingEntry, 
-              let processingFormat = vfDecoder.processingFormat else { return }
+              let processingFormat = decoder.processingFormat else { return }
         
         entry.lock.lock()
         
@@ -261,21 +270,21 @@ final class OggVorbisStreamProcessor {
         
         // Store the format in the entry
         entry.audioStreamFormat = asbd
-        entry.sampleRate = Float(vfDecoder.sampleRate)
-        entry.packetDuration = Double(1) / Double(vfDecoder.sampleRate)
+        entry.sampleRate = Float(decoder.sampleRate)
+        entry.packetDuration = Double(1) / Double(decoder.sampleRate)
         
         // For streaming Ogg files, totalPcmSamples may not be available (returns error code)
         // In that case, use bitrate-based duration calculation with container overhead correction
-        if vfDecoder.totalPcmSamples > 0 {
+        if decoder.totalPcmSamples > 0 {
             // We have total samples - use packet offset for accurate duration
-            entry.audioStreamState.dataPacketOffset = UInt64(vfDecoder.totalPcmSamples)
+            entry.audioStreamState.dataPacketOffset = UInt64(decoder.totalPcmSamples)
         } else {
             // Streaming - use bitrate for duration estimation
-            if vfDecoder.nominalBitrate > 0 {
-                entry.audioStreamState.bitRate = Double(vfDecoder.nominalBitrate) * oggContainerOverheadFactor
+            if decoder.nominalBitrate > 0 {
+                entry.audioStreamState.bitRate = Double(decoder.nominalBitrate) * oggContainerOverheadFactor
             } else {
-                // Fallback: use typical bitrates for Vorbis quality
-                let estimatedBitrate = vfDecoder.channels == 2 ? fallbackBitrateStereo : fallbackBitrateMono
+                // Fallback: use typical bitrates for this codec
+                let estimatedBitrate = decoder.channels == 2 ? decoder.fallbackBitrateStereo : decoder.fallbackBitrateMono
                 entry.audioStreamState.bitRate = estimatedBitrate * oggContainerOverheadFactor
             }
         }
@@ -438,10 +447,10 @@ final class OggVorbisStreamProcessor {
     
     /// Process a seek request
     ///
-    /// Seeking is not supported for Ogg Vorbis streams.
+    /// Seeking is not supported for Ogg streams.
     /// For HTTP streams, seeking is extremely difficult because:
     /// 1. Need to find Ogg page boundaries
-    /// 2. Need Vorbis headers to initialize decoder
+    /// 2. Need codec headers to initialize decoder
     /// 3. Headers are only at the beginning of the file
     ///
     /// Note: Future enhancement could support seeking in local files
