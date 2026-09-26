@@ -96,6 +96,9 @@ class DispatchTimerSourceTests: XCTestCase {
 
     func test_HandlerIsExecuted_On_The_Specified_Queue() {
         let expectaction = expectation(description: "fired")
+        // The source repeats every 100 ms; on a slow runner it can fire again before
+        // `wait` returns, and a second `fulfill()` raises an API violation.
+        expectaction.assertForOverFulfill = false
 
         timerSource?.add {
             XCTAssertEqual(DispatchQueue.getSpecific(key: self.dispatchKey), 1)
