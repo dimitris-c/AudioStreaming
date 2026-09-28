@@ -30,6 +30,7 @@ public enum NetworkError: Error, Equatable {
 
 protocol StreamTaskProvider: AnyObject {
     func dataStream(for request: URLSessionTask) -> NetworkDataStream?
+    func removeDataStream(for request: URLSessionTask) -> NetworkDataStream?
 }
 
 extension URLSessionConfiguration {
@@ -77,10 +78,8 @@ final class NetworkingClient {
     }
 
     func remove(task: NetworkDataStream) {
-        tasksLock.withLock {
-            if !tasks.isEmpty {
-                tasks[task] = nil
-            }
+        _ = tasksLock.withLock {
+            tasks.removeValue(forRight: task)
         }
     }
 
@@ -124,6 +123,12 @@ extension NetworkingClient: StreamTaskProvider {
     func sessionTask(for stream: NetworkDataStream) -> URLSessionTask? {
         tasksLock.withLock {
             tasks[stream] ?? nil
+        }
+    }
+
+    func removeDataStream(for request: URLSessionTask) -> NetworkDataStream? {
+        tasksLock.withLock {
+            tasks.removeValue(forLeft: request)
         }
     }
 }

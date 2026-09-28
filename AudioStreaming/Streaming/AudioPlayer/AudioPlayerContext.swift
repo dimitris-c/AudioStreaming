@@ -17,6 +17,12 @@ final class AudioPlayerContext {
         playerInternalState.value
     }
 
+    var shouldAbortDecodingForLivePause: Bool {
+        guard internalState == .paused else { return false }
+        let playingEntry = entriesLock.withLock { audioPlayingEntry }
+        return playingEntry?.contentType == .live
+    }
+
     let entriesLock: UnfairLock
     var audioReadingEntry: AudioEntry?
     var audioPlayingEntry: AudioEntry?

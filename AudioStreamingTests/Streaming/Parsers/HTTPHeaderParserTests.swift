@@ -47,6 +47,7 @@ class HTTPHeaderParserTests: XCTestCase {
         XCTAssertEqual(output!.fileLength, 1000)
         XCTAssertEqual(output!.typeId, kAudioFileMP3Type)
         XCTAssertEqual(output!.metadataStep, 16000)
+        XCTAssertEqual(output!.contentTypeHint, .finite)
     }
 
     func testReturnCorectValuesOnCaseInsensitiveHeaderFiels() throws {
@@ -70,5 +71,40 @@ class HTTPHeaderParserTests: XCTestCase {
         XCTAssertEqual(output!.fileLength, 1000)
         XCTAssertEqual(output!.typeId, kAudioFileMP3Type)
         XCTAssertEqual(output!.metadataStep, 16000)
+        XCTAssertEqual(output!.contentTypeHint, .finite)
+    }
+
+    func testDetectsLengthlessIcyResponseAsLive() throws {
+        let response = HTTPURLResponse(
+            url: URL(string: "https://example.com/live")!,
+            statusCode: 200,
+            httpVersion: "HTTP/1.1",
+            headerFields: [
+                HeaderField.contentType: "audio/mpeg",
+                IcyHeaderField.icyMetaint: "1024",
+                "icy-name": "Test Radio"
+            ]
+        )!
+
+        let output = HTTPHeaderParser().parse(input: response)
+
+        XCTAssertEqual(output?.contentTypeHint, .live)
+    }
+
+    func testKeepsAmbiguousLengthlessResponseOnDemand() throws {
+        let response = HTTPURLResponse(
+            url: URL(string: "https://example.com/generated-audio")!,
+            statusCode: 200,
+            httpVersion: "HTTP/1.1",
+            headerFields: [
+                HeaderField.contentType: "audio/mpeg",
+                "Transfer-Encoding": "chunked",
+                "Cache-Control": "no-cache"
+            ]
+        )!
+
+        let output = HTTPHeaderParser().parse(input: response)
+
+        XCTAssertEqual(output?.contentTypeHint, .unknown)
     }
 }

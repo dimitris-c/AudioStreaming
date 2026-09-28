@@ -29,7 +29,8 @@ struct IcycastHeaderParser: Parser {
             fileLength: 0,
             typeId: typeId,
             metadataStep: metadataStep,
-            seekable: false
+            seekable: false,
+            contentTypeHint: .live
         )
     }
 }

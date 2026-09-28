@@ -12,26 +12,31 @@ final class RemoteMp4Restructure {
         var mdatOffset: Int
     }
 
+    private enum OptimizationDecision {
+        case none
+        case complete(Result<RestructuredData?, Error>, taskToCancel: NetworkDataStream?)
+        case fetchMoov(offset: Int, taskToCancel: NetworkDataStream?)
+    }
+
+    private let stateLock = UnfairLock()
     private var audioData: Data
 
-    private var atomOffset: Int = 0
-    private var atoms: [MP4Atom] = []
-    private var ftyp: MP4Atom?
-    private var foundMoov = false
-    private var foundMdat = false
-
     private var task: NetworkDataStream?
+    private var restructureTask: URLSessionDataTask?
+    private var generation: UInt64 = 0
 
-    private(set) var dataOptimized: Bool = false
+    private var _dataOptimized: Bool = false
 
-    private var moovAtomSize: Int = 0
+    var dataOptimized: Bool {
+        stateLock.withLock {
+            _dataOptimized
+        }
+    }
 
     private let url: URL
     private let networking: NetworkingClient
 
     private let mp4Restructure: Mp4Restructure
-
-    private var ignoreFailureDueToCancel: Bool = false
 
     init(url: URL, networking: NetworkingClient, restructure: Mp4Restructure = Mp4Restructure()) {
         self.url = url
@@ -41,17 +46,31 @@ final class RemoteMp4Restructure {
     }
 
     func clear() {
-        mp4Restructure.clear()
-        audioData = Data()
-        task?.cancel()
-        task = nil
+        let tasks = stateLock.withLock { () -> (NetworkDataStream?, URLSessionDataTask?) in
+            generation &+= 1
+            mp4Restructure.clear()
+            audioData = Data()
+
+            let tasks = (task, restructureTask)
+            task = nil
+            restructureTask = nil
+            return tasks
+        }
+
+        if let task = tasks.0 {
+            task.cancel()
+            networking.remove(task: task)
+        }
+        tasks.1?.cancel()
     }
 
     /// Adjust the seekOffset of subtracting the moovAtomSize
     /// - Parameter offset: A byte offset
     /// - Returns: An adjusted byte offset
     func seekAdjusted(offset: Int) -> Int {
-        mp4Restructure.seekAdjusted(offset: offset)
+        stateLock.withLock {
+            mp4Restructure.seekAdjusted(offset: offset)
+        }
     }
 
     ///
@@ -64,85 +83,155 @@ final class RemoteMp4Restructure {
     /// [ftyp][moov][mdat]
     ///
     func optimizeIfNeeded(completion: @escaping (Result<RestructuredData?, Error>) -> Void) {
-        task = networking.stream(request: urlForPartialContent(with: url, offset: 0))
-            .responseStream { [weak self] event in
-                guard let self else { return }
-                switch event {
-                case .response:
-                    break
-                case let .stream(.success(response)):
-                    guard let data = response.data else {
-                        self.audioData = Data()
-                        completion(.failure(Mp4RestructureError.unableToRestructureData))
-                        return
-                    }
-                    self.audioData.append(data)
-                    do {
-                        switch try self.mp4Restructure.checkIsOptimized(data: self.audioData) {
-                        case .undetermined:
-                            break // keep streaming until decision can be made
-                        case .optimized:
-                            self.audioData = Data()
-                            self.ignoreFailureDueToCancel = true
-                            self.task?.cancel()
-                            self.task = nil
-                            completion(.success(nil))
-                        case let .needsRestructure(moovOffset):
-                            guard response.response?.statusCode == 206 else {
-                                Logger.error("⛔️ mp4 error: no moov before mdat and the stream is not seekable", category: .networking)
-                                completion(.failure(Mp4RestructureError.nonOptimizedMp4AndServerCannotSeek))
-                                return
-                            }
-                            // stop request, fetch moov and restructure
-                            self.audioData = Data()
-                            self.ignoreFailureDueToCancel = true
-                            self.task?.cancel()
-                            self.task = nil
-                            self.fetchAndRestructureMoovAtom(offset: moovOffset) { result in
-                                switch result {
-                                case let .success(value):
-                                    self.dataOptimized = true
-                                    completion(.success(RestructuredData(initialData: value.data, mdatOffset: value.offset)))
-                                case let .failure(error):
-                                    completion(.failure(Mp4RestructureError.networkError(error)))
-                                }
-                            }
-                        }
-                    } catch {
-                        completion(.failure(Mp4RestructureError.invalidAtomSize))
-                    }
-                case let .stream(.failure(error)):
-                    // Ignore the error if it was caused by our intentional cancel
-                    if ignoreFailureDueToCancel {
-                        ignoreFailureDueToCancel = false
-                        break
-                    }
-                    let nsError = error as NSError
-                    if nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled {
-                        break
-                    }
-                    completion(.failure(Mp4RestructureError.networkError(error)))
-                case .complete:
-                    break
-                }
-            }
-        task?.resume()
+        let generation = stateLock.withLock { self.generation }
+        let stream = networking.stream(request: urlForPartialContent(with: url, offset: 0))
+        let shouldResume = stateLock.withLock { () -> Bool in
+            guard generation == self.generation else { return false }
+            task = stream
+            return true
+        }
+
+        guard shouldResume else {
+            stream.cancel()
+            networking.remove(task: stream)
+            return
+        }
+
+        stream.responseStream { [weak self] event in
+            self?.handleOptimizationEvent(event, generation: generation, completion: completion)
+        }
+        stream.resume()
     }
 
-    func fetchAndRestructureMoovAtom(offset: Int, completion: @escaping (Result<(data: Data, offset: Int), Error>) -> Void) {
-        networking.task(request: urlForPartialContent(with: url, offset: offset)) { [weak self] result in
-            guard let self else { return }
-            switch result {
-            case let .success(data):
-                do {
-                    let (initialData, mdatOffset) = try self.mp4Restructure.restructureMoov(data: data)
-                    completion(.success((initialData, mdatOffset)))
-                } catch {
-                    completion(.failure(error))
-                }
-            case let .failure(failure):
-                completion(.failure(Mp4RestructureError.networkError(failure)))
+    private func handleOptimizationEvent(
+        _ event: NetworkDataStream.ResponseEvent,
+        generation: UInt64,
+        completion: @escaping (Result<RestructuredData?, Error>) -> Void
+    ) {
+        switch event {
+        case .response:
+            break
+        case let .stream(.success(response)):
+            handleOptimizationData(response, generation: generation, completion: completion)
+        case let .stream(.failure(error)):
+            let shouldComplete = stateLock.withLock { () -> Bool in
+                guard generation == self.generation else { return false }
+                task = nil
+                audioData = Data()
+                return true
             }
+            guard shouldComplete else { return }
+
+            let nsError = error as NSError
+            guard nsError.domain != NSURLErrorDomain || nsError.code != NSURLErrorCancelled else {
+                return
+            }
+            completion(.failure(Mp4RestructureError.networkError(error)))
+        case .complete:
+            let shouldComplete = stateLock.withLock { () -> Bool in
+                guard generation == self.generation else { return false }
+                task = nil
+                audioData = Data()
+                return true
+            }
+            if shouldComplete {
+                completion(.failure(Mp4RestructureError.unableToRestructureData))
+            }
+        }
+    }
+
+    private func handleOptimizationData(
+        _ response: NetworkDataStream.Response,
+        generation: UInt64,
+        completion: @escaping (Result<RestructuredData?, Error>) -> Void
+    ) {
+        let decision = stateLock.withLock { () -> OptimizationDecision in
+            guard generation == self.generation else { return .none }
+            guard let data = response.data else {
+                let taskToCancel = detachCurrentTask()
+                audioData = Data()
+                return .complete(
+                    .failure(Mp4RestructureError.unableToRestructureData),
+                    taskToCancel: taskToCancel
+                )
+            }
+
+            audioData.append(data)
+            do {
+                switch try mp4Restructure.checkIsOptimized(data: audioData) {
+                case .undetermined:
+                    return .none
+                case .optimized:
+                    audioData = Data()
+                    return .complete(.success(nil), taskToCancel: detachCurrentTask())
+                case let .needsRestructure(moovOffset):
+                    guard response.response?.statusCode == 206 else {
+                        Logger.error("⛔️ mp4 error: no moov before mdat and the stream is not seekable", category: .networking)
+                        return .complete(
+                            .failure(Mp4RestructureError.nonOptimizedMp4AndServerCannotSeek),
+                            taskToCancel: detachCurrentTask()
+                        )
+                    }
+                    audioData = Data()
+                    return .fetchMoov(offset: moovOffset, taskToCancel: detachCurrentTask())
+                }
+            } catch {
+                audioData = Data()
+                return .complete(
+                    .failure(Mp4RestructureError.invalidAtomSize),
+                    taskToCancel: detachCurrentTask()
+                )
+            }
+        }
+
+        switch decision {
+        case .none:
+            break
+        case let .complete(result, taskToCancel):
+            cancelAndRemove(taskToCancel)
+            completion(result)
+        case let .fetchMoov(offset, taskToCancel):
+            cancelAndRemove(taskToCancel)
+            fetchAndRestructureMoovAtom(offset: offset, generation: generation, completion: completion)
+        }
+    }
+
+    private func fetchAndRestructureMoovAtom(
+        offset: Int,
+        generation: UInt64,
+        completion: @escaping (Result<RestructuredData?, Error>) -> Void
+    ) {
+        let task = networking.task(request: urlForPartialContent(with: url, offset: offset)) { [weak self] result in
+            guard let self else { return }
+            let completionResult = self.stateLock.withLock { () -> Result<RestructuredData?, Error>? in
+                guard generation == self.generation else { return nil }
+                self.restructureTask = nil
+
+                switch result {
+                case let .success(data):
+                    do {
+                        let (initialData, mdatOffset) = try self.mp4Restructure.restructureMoov(data: data)
+                        self._dataOptimized = true
+                        return .success(RestructuredData(initialData: initialData, mdatOffset: mdatOffset))
+                    } catch {
+                        return .failure(error)
+                    }
+                case let .failure(error):
+                    return .failure(Mp4RestructureError.networkError(error))
+                }
+            }
+            if let completionResult {
+                completion(completionResult)
+            }
+        }
+
+        let shouldCancel = stateLock.withLock { () -> Bool in
+            guard generation == self.generation else { return true }
+            restructureTask = task
+            return false
+        }
+        if shouldCancel {
+            task.cancel()
         }
     }
 
@@ -158,5 +247,17 @@ final class RemoteMp4Restructure {
         urlRequest.addValue("identity", forHTTPHeaderField: "Accept-Encoding")
         urlRequest.addValue("bytes=\(offset)-", forHTTPHeaderField: "Range")
         return urlRequest
+    }
+
+    private func detachCurrentTask() -> NetworkDataStream? {
+        let task = self.task
+        self.task = nil
+        return task
+    }
+
+    private func cancelAndRemove(_ task: NetworkDataStream?) {
+        guard let task else { return }
+        task.cancel()
+        networking.remove(task: task)
     }
 }

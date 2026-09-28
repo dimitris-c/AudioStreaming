@@ -22,16 +22,28 @@ struct BiMap<Left, Right> where Left: Hashable, Right: Hashable {
         leftToRight.lazy.map(\.value)
     }
 
+    @discardableResult
+    mutating func removeValue(forLeft left: Left) -> Right? {
+        guard let right = leftToRight.removeValue(forKey: left) else { return nil }
+        rightToLeft.removeValue(forKey: right)
+        return right
+    }
+
+    @discardableResult
+    mutating func removeValue(forRight right: Right) -> Left? {
+        guard let left = rightToLeft.removeValue(forKey: right) else { return nil }
+        leftToRight.removeValue(forKey: left)
+        return left
+    }
+
     subscript(_ left: Left) -> Right? {
         get { leftToRight[left] }
         set {
             guard let newValue = newValue else {
-                guard let right = leftToRight[left] else {
+                guard removeValue(forLeft: left) != nil else {
                     assertionFailure("inconsistency error: no right value found for left key")
                     return
                 }
-                leftToRight.removeValue(forKey: left)
-                rightToLeft.removeValue(forKey: right)
                 return
             }
             leftToRight[left] = newValue
@@ -43,12 +55,10 @@ struct BiMap<Left, Right> where Left: Hashable, Right: Hashable {
         get { rightToLeft[right] }
         set {
             guard let newValue = newValue else {
-                guard let left = rightToLeft[right] else {
+                guard removeValue(forRight: right) != nil else {
                     assertionFailure("inconsistency error: no left value found for right key")
                     return
                 }
-                leftToRight.removeValue(forKey: left)
-                rightToLeft.removeValue(forKey: right)
                 return
             }
 

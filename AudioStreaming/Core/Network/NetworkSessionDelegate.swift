@@ -33,7 +33,7 @@ final class NetworkSessionDelegate: NSObject, URLSessionDataDelegate {
                     task: URLSessionTask,
                     didCompleteWithError error: Error?)
     {
-        guard let stream = stream(for: task) else {
+        guard let stream = taskProvider?.removeDataStream(for: task) else {
             return
         }
         stream.didComplete(with: error, response: task.response as? HTTPURLResponse)
@@ -45,6 +45,7 @@ final class NetworkSessionDelegate: NSObject, URLSessionDataDelegate {
                     completionHandler: @escaping (URLSession.ResponseDisposition) -> Void)
     {
         guard let stream = stream(for: dataTask) else {
+            completionHandler(.cancel)
             return
         }
         stream.didReceive(response: response as? HTTPURLResponse)

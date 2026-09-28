@@ -15,6 +15,15 @@ enum HeaderField {
 
 enum IcyHeaderField {
     public static let icyMetaint = "icy-metaint"
+    public static let icyName = "icy-name"
+    public static let icyAudioInfo = "icy-audio-info"
+    public static let iceAudioInfo = "ice-audio-info"
+}
+
+enum AudioContentTypeHint: Equatable {
+    case finite
+    case live
+    case unknown
 }
 
 struct HTTPHeaderParserOutput {
@@ -23,6 +32,7 @@ struct HTTPHeaderParserOutput {
     // Metadata Support
     let metadataStep: Int
     let seekable: Bool
+    let contentTypeHint: AudioContentTypeHint
 
     var isMp4: Bool {
         (typeId == kAudioFileMPEG4Type || typeId == kAudioFileM4AType)
@@ -75,12 +85,31 @@ struct HTTPHeaderParser: HTTPHeaderParsing {
             metadataStep = intValue
         }
 
+        let contentTypeHint: AudioContentTypeHint
+        if fileLength > 0 {
+            contentTypeHint = .finite
+        } else if hasBroadcastMetadata(in: input) {
+            contentTypeHint = .live
+        } else {
+            contentTypeHint = .unknown
+        }
+
         return HTTPHeaderParserOutput(
             fileLength: fileLength,
             typeId: typeId,
             metadataStep: metadataStep,
-            seekable: input.statusCode == 206
+            seekable: input.statusCode == 206,
+            contentTypeHint: contentTypeHint
         )
+    }
+
+    private func hasBroadcastMetadata(in response: HTTPURLResponse) -> Bool {
+        [
+            IcyHeaderField.icyMetaint,
+            IcyHeaderField.icyName,
+            IcyHeaderField.icyAudioInfo,
+            IcyHeaderField.iceAudioInfo
+        ].contains { value(forHTTPHeaderField: $0, in: response) != nil }
     }
 }
 

@@ -38,6 +38,20 @@ let player = AudioPlayer()
 player.play(url: URL(string: "https://your-remote-url/to/audio-file.mp3")!)
 ```
 
+### Playing a live stream
+The library automatically recognizes ICY broadcasts as live content. Pausing a
+live source closes its HTTP connection and discards buffered audio; resuming opens
+a fresh connection at the current live edge.
+```swift
+let player = AudioPlayer()
+player.play(url: URL(string: "https://your-radio-url/live")!)
+```
+
+HTTP cannot reliably distinguish a finite chunked response from an endless stream.
+Live servers without recognized broadcast metadata must therefore be explicitly
+marked with `contentType: .live`. Ambiguous responses remain on-demand so pausing
+never discards finite or dynamically generated audio.
+
 ### Playing a local file 
 ```swift
 let player = AudioPlayer()

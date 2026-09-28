@@ -180,7 +180,8 @@ final class OggVorbisStreamProcessor {
                     
                     if playerContext.internalState == .disposed
                         || playerContext.internalState == .pendingNext
-                        || playerContext.internalState == .stopped {
+                        || playerContext.internalState == .stopped
+                        || playerContext.shouldAbortDecodingForLivePause {
                         break decodeLoop
                     }
                     
@@ -358,7 +359,8 @@ final class OggVorbisStreamProcessor {
                 
                 if playerContext.internalState == .disposed
                     || playerContext.internalState == .pendingNext
-                    || playerContext.internalState == .stopped {
+                    || playerContext.internalState == .stopped
+                    || playerContext.shouldAbortDecodingForLivePause {
                     return
                 }
                 

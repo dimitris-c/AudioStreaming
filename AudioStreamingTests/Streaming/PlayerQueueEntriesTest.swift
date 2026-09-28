@@ -164,6 +164,29 @@ class PlayerQueueEntriesTest: XCTestCase {
 
         XCTAssertEqual(queue.pendingEntriesId().count, 100)
     }
+
+    func testResetForLiveStreamRestartClearsDecoderState() {
+        let entry = audioEntry(id: "live")
+        entry.framesState.played = 100
+        entry.framesState.queued = 200
+        entry.framesState.lastFrameQueued = 300
+        entry.audioStreamState.processedDataFormat = true
+        entry.audioStreamState.readyForDecoding = true
+        entry.audioStreamState.oggVorbisStreamInfo = OggVorbisStreamInfo(serialNumber: 42)
+        entry.audioStreamState.hasAttemptedOggVorbisParse = true
+        entry.audioStreamState.initialOggBytes = Data([1, 2, 3])
+
+        entry.resetForLiveStreamRestart()
+
+        XCTAssertEqual(entry.framesState.played, 0)
+        XCTAssertEqual(entry.framesState.queued, 0)
+        XCTAssertEqual(entry.framesState.lastFrameQueued, -1)
+        XCTAssertFalse(entry.audioStreamState.processedDataFormat)
+        XCTAssertFalse(entry.audioStreamState.readyForDecoding)
+        XCTAssertNil(entry.audioStreamState.oggVorbisStreamInfo)
+        XCTAssertFalse(entry.audioStreamState.hasAttemptedOggVorbisParse)
+        XCTAssertNil(entry.audioStreamState.initialOggBytes)
+    }
 }
 
 private let networkingClient = NetworkingClient(configuration: .ephemeral)

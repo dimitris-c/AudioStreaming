@@ -6,6 +6,15 @@
 import AudioToolbox
 import Foundation
 
+public enum AudioContentType: Equatable, Sendable {
+    /// Infers live broadcasts from response metadata, defaulting ambiguous streams to on-demand.
+    case automatic
+    /// Finite content whose buffered data is preserved while playback is paused.
+    case onDemand
+    /// A continuous broadcast that reconnects at the live edge after a pause.
+    case live
+}
+
 public protocol AudioStreamSourceDelegate: AnyObject {
     /// Indicates that there's data available
     func dataAvailable(source: CoreAudioStreamSource, data: Data)
@@ -18,6 +27,9 @@ public protocol AudioStreamSourceDelegate: AnyObject {
 }
 
 public protocol CoreAudioStreamSource: AnyObject {
+    /// Controls how pausing affects the source.
+    var contentType: AudioContentType { get }
+
     /// An `Int` that represents the position of the audio
     var position: Int { get }
     /// The length of the audio in bytes
@@ -43,6 +55,10 @@ public protocol CoreAudioStreamSource: AnyObject {
 
     /// The `DispatchQueue` network object will receive data
     var underlyingQueue: DispatchQueue { get }
+}
+
+public extension CoreAudioStreamSource {
+    var contentType: AudioContentType { .onDemand }
 }
 
 protocol AudioStreamSource: CoreAudioStreamSource {

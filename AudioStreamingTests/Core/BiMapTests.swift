@@ -63,6 +63,18 @@ class BiMapTests: XCTestCase {
         XCTAssert(map.leftValues.isEmpty)
         XCTAssert(map.rightValues.isEmpty)
     }
+
+    func test_BiMap_IdempotentRemovalMethodsIgnoreMissingValues() {
+        var map = BiMap<SomeClass, SomeOtherClass>()
+        let left = SomeClass(item: 0)
+        let right = SomeOtherClass(item: 0)
+        map[left] = right
+
+        XCTAssertEqual(map.removeValue(forLeft: left), right)
+        XCTAssertNil(map.removeValue(forLeft: left))
+        XCTAssertNil(map.removeValue(forRight: right))
+        XCTAssertTrue(map.isEmpty)
+    }
 }
 
 // For Convenience

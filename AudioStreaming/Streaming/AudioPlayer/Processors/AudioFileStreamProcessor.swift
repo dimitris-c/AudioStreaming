@@ -538,6 +538,7 @@ final class AudioFileStreamProcessor {
                     if playerContext.internalState == .disposed
                         || playerContext.internalState == .pendingNext
                         || playerContext.internalState == .stopped
+                        || playerContext.shouldAbortDecodingForLivePause
                     {
                         return
                     }

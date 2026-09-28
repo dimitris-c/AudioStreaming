@@ -28,6 +28,10 @@ class AudioEntry {
         source.audioFileHint
     }
 
+    var contentType: AudioContentType {
+        source.contentType
+    }
+
     var length: Int {
         source.length
     }
@@ -100,6 +104,18 @@ class AudioEntry {
         framesState.played = 0
         framesState.queued = 0
         framesState.lastFrameQueued = -1
+    }
+
+    func resetForLiveStreamRestart() {
+        lock.lock(); defer { lock.unlock() }
+        framesState.played = 0
+        framesState.queued = 0
+        framesState.lastFrameQueued = -1
+        audioStreamState.processedDataFormat = false
+        audioStreamState.readyForDecoding = false
+        audioStreamState.oggVorbisStreamInfo = nil
+        audioStreamState.hasAttemptedOggVorbisParse = false
+        audioStreamState.initialOggBytes = nil
     }
 
     func has(same source: CoreAudioStreamSource) -> Bool {

@@ -171,6 +171,8 @@ open class AudioPlayer {
 
     private let serializationQueue: DispatchQueue
     public let sourceQueue: DispatchQueue
+    private let sourceQueueSpecificKey = DispatchSpecificKey<UInt8>()
+    private let sourceQueueSpecificValue: UInt8 = 1
 
     private let entryProvider: AudioEntryProviding
 
@@ -217,6 +219,7 @@ open class AudioPlayer {
                 engine.mainMixerNode
             }
         )
+        sourceQueue.setSpecific(key: sourceQueueSpecificKey, value: sourceQueueSpecificValue)
         configPlayerContext()
         configPlayerNode()
         configureRateNode()
@@ -246,6 +249,17 @@ open class AudioPlayer {
         let audioEntry = entryProvider.provideAudioEntry(url: url, headers: headers)
         play(audioEntry: audioEntry)
     }
+
+    /// Starts live audio playback. Pausing disconnects the request and resuming
+    /// establishes a fresh connection at the current live edge.
+    public func play(url: URL, contentType: AudioContentType, headers: [String: String] = [:]) {
+        let audioEntry = entryProvider.provideAudioEntry(
+            url: url,
+            headers: headers,
+            contentType: contentType
+        )
+        play(audioEntry: audioEntry)
+    }
     
     /// Starts the audio playback for the given URL
     ///
@@ -255,6 +269,23 @@ open class AudioPlayer {
     /// - parameter headers: A `Dictionary` specifying any additional headers to be pass to the network request.
     public func play(url: URL, httpMethod: String?, httpBody: Data?, headers: [String: String]) {
         let audioEntry = entryProvider.provideAudioEntry(url: url, httpMethod: httpMethod, httpBody: httpBody, headers: headers)
+        play(audioEntry: audioEntry)
+    }
+
+    public func play(
+        url: URL,
+        httpMethod: String?,
+        httpBody: Data?,
+        headers: [String: String],
+        contentType: AudioContentType
+    ) {
+        let audioEntry = entryProvider.provideAudioEntry(
+            url: url,
+            httpMethod: httpMethod,
+            httpBody: httpBody,
+            headers: headers,
+            contentType: contentType
+        )
         play(audioEntry: audioEntry)
     }
 
@@ -435,7 +466,22 @@ open class AudioPlayer {
             serializationQueue.sync {
                 pauseEngine()
             }
-            playerContext.audioPlayingEntry?.suspend()
+            let playingEntry = playerContext.entriesLock.withLock {
+                playerContext.audioPlayingEntry
+            }
+            playingEntry?.suspend()
+
+            if playingEntry?.contentType == .live {
+                // Make space before waking a producer that may be blocked on a full buffer.
+                rendererContext.resetBuffers()
+                checkRenderWaitingAndNotifyIfNeeded()
+                performSyncOnSourceQueue {
+                    fileStreamProcessor.closeFileStreamIfNeeded()
+                    rendererContext.resetBuffers()
+                    playingEntry?.resetForLiveStreamRestart()
+                }
+            }
+
             sourceQueue.async { [weak self] in
                 self?.processSource()
             }
@@ -446,19 +492,24 @@ open class AudioPlayer {
     public func resume() {
         guard playerContext.internalState == .paused else { return }
         playerContext.setInternalState(to: stateBeforePaused)
+        let readingEntry = playerContext.entriesLock.withLock {
+            playerContext.audioReadingEntry
+        }
         serializationQueue.sync {
             do {
                 try startEngine()
             } catch {
                 Logger.debug("resuming audio engine failed: \(error.localizedDescription)", category: .generic)
             }
-            if let playingEntry = playerContext.audioReadingEntry {
-                if playingEntry.seekRequest.requested {
+            if let readingEntry {
+                if readingEntry.seekRequest.requested {
                     rendererContext.resetBuffers()
                 }
-                playingEntry.resume()
+                readingEntry.resume()
+                startPlayer(resetBuffers: readingEntry.contentType == .live)
+            } else {
+                startPlayer(resetBuffers: false)
             }
-            startPlayer(resetBuffers: false)
         }
     }
 
@@ -948,6 +999,14 @@ open class AudioPlayer {
     private func checkRenderWaitingAndNotifyIfNeeded() {
         if rendererContext.waiting.value {
             rendererContext.packetsSemaphore.signal()
+        }
+    }
+
+    private func performSyncOnSourceQueue(_ block: () -> Void) {
+        if DispatchQueue.getSpecific(key: sourceQueueSpecificKey) == sourceQueueSpecificValue {
+            block()
+        } else {
+            sourceQueue.sync(execute: block)
         }
     }
 

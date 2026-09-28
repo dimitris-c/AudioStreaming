@@ -13,22 +13,50 @@ enum RemoteAudioSourceError: Error {
 }
 
 public class RemoteAudioSource: AudioStreamSource {
+    private static let compressedBufferHighWatermark = 1_048_576
+    private static let compressedBufferLowWatermark = 524_288
+    private static let drainByteQuantum = 262_144
+    private static let drainChunkQuantum = 16
+
+    private enum PendingTerminal {
+        case endOfFile
+        case failure(Error)
+    }
+
+    private enum DrainAction {
+        case data(Data)
+        case terminal(PendingTerminal)
+        case stop
+    }
+
     public weak var delegate: AudioStreamSourceDelegate?
 
+    public var contentType: AudioContentType {
+        stateLock.withLock {
+            configuredContentType == .automatic ? inferredContentType : configuredContentType
+        }
+    }
+
     public var position: Int {
-        return seekOffset + relativePosition
+        stateLock.withLock {
+            seekOffset + relativePosition
+        }
     }
 
     public var length: Int {
-        guard let parsedHeader = parsedHeaderOutput else { return 0 }
-        return parsedHeader.fileLength
+        stateLock.withLock {
+            parsedHeaderOutput?.fileLength ?? 0
+        }
     }
 
     private let url: URL
     private let httpMethod: String?
     private let httpBody: Data?
+    private let configuredContentType: AudioContentType
+    private var inferredContentType: AudioContentType = .onDemand
     private let networkingClient: NetworkingClient
     private var streamRequest: NetworkDataStream?
+    private var headerRequest: NetworkDataStream?
 
     private var additionalRequestHeaders: [String: String]
 
@@ -42,20 +70,28 @@ public class RemoteAudioSource: AudioStreamSource {
     private var shouldTryParsingIcycastHeaders: Bool = false
     private let icycastHeadersProcessor: IcycastHeadersProcessor
 
+    private let stateLock = UnfairLock()
+    private let mailbox: CompressedDataMailbox<PendingTerminal>
+
     public var audioFileHint: AudioFileTypeID {
-        guard let output = parsedHeaderOutput, output.typeId != 0 else {
-            return audioFileType(fileExtension: url.pathExtension)
+        stateLock.withLock {
+            guard let output = parsedHeaderOutput, output.typeId != 0 else {
+                return audioFileType(fileExtension: url.pathExtension)
+            }
+            return output.typeId
         }
-        return output.typeId
     }
 
     private let mp4Restructure: RemoteMp4Restructure
 
     public let underlyingQueue: DispatchQueue
-    let streamOperationQueue: OperationQueue
     let netStatusService: NetStatusProvider
-    var waitingForNetwork = false
     let retrierTimeout: Retrier
+    private var waitingForNetwork = false
+    private var reconnectLiveStreamOnResume = false
+    private var consumerSuspendedOnPause = false
+    private let queueSpecificKey = DispatchSpecificKey<UInt8>()
+    private let queueSpecificValue: UInt8 = 1
 
     init(networking: NetworkingClient,
          metadataStreamSource: MetadataStreamSource,
@@ -65,6 +101,7 @@ public class RemoteAudioSource: AudioStreamSource {
          url: URL,
          httpMethod: String?,
          httpBody: Data?,
+         contentType: AudioContentType = .automatic,
          underlyingQueue: DispatchQueue,
          httpHeaders: [String: String])
     {
@@ -73,6 +110,7 @@ public class RemoteAudioSource: AudioStreamSource {
         self.url = url
         self.httpMethod = httpMethod
         self.httpBody = httpBody
+        configuredContentType = contentType
         additionalRequestHeaders = httpHeaders
         relativePosition = 0
         seekOffset = 0
@@ -80,13 +118,13 @@ public class RemoteAudioSource: AudioStreamSource {
         netStatusService = netStatusProvider
         self.icycastHeadersProcessor = icycastHeadersProcessor
         self.underlyingQueue = underlyingQueue
-        streamOperationQueue = OperationQueue()
-        streamOperationQueue.underlyingQueue = underlyingQueue
-        streamOperationQueue.maxConcurrentOperationCount = 1
-        streamOperationQueue.isSuspended = true
-        streamOperationQueue.name = "remote.audio.source.data.stream.queue"
         retrierTimeout = retrier
+        mailbox = CompressedDataMailbox(
+            highWatermark: Self.compressedBufferHighWatermark,
+            lowWatermark: Self.compressedBufferLowWatermark
+        )
         mp4Restructure = RemoteMp4Restructure(url: url, networking: networkingClient)
+        underlyingQueue.setSpecific(key: queueSpecificKey, value: queueSpecificValue)
         startNetworkService()
     }
     
@@ -94,6 +132,7 @@ public class RemoteAudioSource: AudioStreamSource {
                      url: URL,
                      httpMethod: String?,
                      httpBody: Data?,
+                     contentType: AudioContentType = .automatic,
                      underlyingQueue: DispatchQueue,
                      httpHeaders: [String: String])
     {
@@ -110,6 +149,7 @@ public class RemoteAudioSource: AudioStreamSource {
                   url: url,
                   httpMethod: httpMethod,
                   httpBody: httpBody,
+                  contentType: contentType,
                   underlyingQueue: underlyingQueue,
                   httpHeaders: httpHeaders)
     }
@@ -138,41 +178,99 @@ public class RemoteAudioSource: AudioStreamSource {
     }
 
     public func close() {
-        retrierTimeout.cancel()
-        streamOperationQueue.isSuspended = false
-        streamOperationQueue.cancelAllOperations()
-        if let streamTask = streamRequest {
-            streamTask.cancel()
-            networkingClient.remove(task: streamTask)
+        let invalidation = invalidateCurrentStream(reconnectLiveStreamOnResume: false)
+        invalidation.tasks.forEach(cancelAndRemove)
+        mp4Restructure.clear()
+
+        performOnUnderlyingQueue { [weak self] in
+            guard let self, self.isCurrent(generation: invalidation.generation) else { return }
+            self.retrierTimeout.cancel()
         }
-        streamRequest = nil
     }
 
     public func seek(at offset: Int) {
-        close()
-
-        relativePosition = 0
-        seekOffset = offset
-
-        if !supportsSeek, offset != relativePosition {
-            return
-        }
-
+        let invalidation = invalidateCurrentStream(
+            seekOffset: offset,
+            reconnectLiveStreamOnResume: false
+        )
+        invalidation.tasks.forEach(cancelAndRemove)
         mp4Restructure.clear()
-        retrierTimeout.cancel()
-        metadataStreamProcessor.reset()
-        icycastHeadersProcessor.reset()
-        shouldTryParsingIcycastHeaders = false
 
-        performOpen(seek: offset)
+        performOnUnderlyingQueue { [weak self] in
+            guard let self else { return }
+            guard self.isCurrent(generation: invalidation.generation) else { return }
+            self.retrierTimeout.cancel()
+            guard invalidation.canSeek else { return }
+
+            self.metadataStreamProcessor.reset()
+            self.icycastHeadersProcessor.reset()
+            self.stateLock.withLock {
+                self.shouldTryParsingIcycastHeaders = false
+            }
+
+            self.performOpen(seek: offset)
+        }
     }
 
     public func suspend() {
-        streamOperationQueue.isSuspended = true
+        let shouldReconnectLiveStream = stateLock.withLock { () -> Bool in
+            let contentType = configuredContentType == .automatic ? inferredContentType : configuredContentType
+            guard contentType == .onDemand else { return true }
+            mailbox.suspendConsumer()
+            consumerSuspendedOnPause = true
+            return false
+        }
+
+        if shouldReconnectLiveStream {
+            let invalidation = invalidateCurrentStream(reconnectLiveStreamOnResume: true)
+            invalidation.tasks.forEach(cancelAndRemove)
+            mp4Restructure.clear()
+            performOnUnderlyingQueue { [weak self] in
+                guard let self, self.isCurrent(generation: invalidation.generation) else { return }
+                self.retrierTimeout.cancel()
+            }
+            return
+        }
     }
 
     public func resume() {
-        streamOperationQueue.isSuspended = false
+        let bufferedResume = stateLock.withLock { () -> (generation: UInt64, shouldScheduleDrain: Bool)? in
+            guard consumerSuspendedOnPause else { return nil }
+            consumerSuspendedOnPause = false
+            let shouldScheduleDrain = mailbox.resumeConsumer()
+            return (mailbox.generation, shouldScheduleDrain)
+        }
+        if let bufferedResume {
+            if bufferedResume.shouldScheduleDrain {
+                dispatchDrain(for: bufferedResume.generation)
+            }
+            return
+        }
+
+        guard contentType != .onDemand else { return }
+        do {
+            let generation = stateLock.withLock { () -> UInt64? in
+                guard reconnectLiveStreamOnResume else { return nil }
+                reconnectLiveStreamOnResume = false
+                relativePosition = 0
+                seekOffset = 0
+                supportsSeek = false
+                return mailbox.generation
+            }
+            guard let generation else { return }
+
+            performOnUnderlyingQueue { [weak self] in
+                guard let self, self.isCurrent(generation: generation) else { return }
+                self.metadataStreamProcessor.reset()
+                self.icycastHeadersProcessor.reset()
+                self.stateLock.withLock {
+                    self.parsedHeaderOutput = nil
+                    self.shouldTryParsingIcycastHeaders = false
+                }
+                self.performOpen(seek: 0)
+            }
+            return
+        }
     }
 
     // MARK: Private
@@ -181,135 +279,160 @@ public class RemoteAudioSource: AudioStreamSource {
         netStatusService.start { [weak self] connection in
             guard let self = self else { return }
             guard connection.isConnected else { return }
-            if self.waitingForNetwork {
-                self.seek(at: self.supportsSeek ? self.position : 0)
+            let reconnectOffset = self.stateLock.withLock { () -> Int? in
+                guard self.waitingForNetwork else { return nil }
                 self.waitingForNetwork = false
+                return self.supportsSeek ? self.seekOffset + self.relativePosition : 0
+            }
+            if let reconnectOffset {
+                self.seek(at: reconnectOffset)
             }
         }
     }
 
     private func performOpen(seek seekOffset: Int) {
+        let generation = currentGeneration()
         if seekOffset == 0 {
-            initialRequest { [weak self] in
+            initialRequest(generation: generation) { [weak self] in
                 guard let self else { return }
-                if self.parsedHeaderOutput?.isMp4 == true {
-                    self.handleMp4Files()
+                guard self.isCurrent(generation: generation) else { return }
+                if self.stateLock.withLock(body: { self.parsedHeaderOutput?.isMp4 == true }) {
+                    self.handleMp4Files(generation: generation)
                 } else {
-                    self.doPerfomOpen(seek: 0)
+                    self.doPerfomOpen(seek: 0, generation: generation)
                 }
             }
         } else {
             if mp4Restructure.dataOptimized {
                 let adjustedOffset = mp4Restructure.seekAdjusted(offset: seekOffset)
-                doPerfomOpen(seek: adjustedOffset)
+                doPerfomOpen(seek: adjustedOffset, generation: generation)
             } else {
-                doPerfomOpen(seek: seekOffset)
+                doPerfomOpen(seek: seekOffset, generation: generation)
             }
         }
     }
 
-    private func doPerfomOpen(seek seekOffset: Int) {
+    private func doPerfomOpen(seek seekOffset: Int, generation: UInt64) {
         let urlRequest = buildUrlRequest(with: url, seekIfNeeded: seekOffset)
-        streamRequest = networkingClient.stream(request: urlRequest)
+        let stream = networkingClient.stream(request: urlRequest)
             .responseStream { [weak self] event in
-                guard let self = self else { return }
-                self.handleResponse(event: event)
+                self?.handleResponse(event: event, generation: generation)
             }
-            .resume()
+
+        let shouldResume = stateLock.withLock { () -> Bool in
+            guard generation == mailbox.generation else { return false }
+            streamRequest = stream
+            return true
+        }
+        guard shouldResume else {
+            stream.cancel()
+            networkingClient.remove(task: stream)
+            return
+        }
 
         metadataStreamProcessor.delegate = self
+        stream.resume()
     }
 
-    private func initialRequest(completion: @escaping () -> Void) {
+    private func initialRequest(generation: UInt64, completion: @escaping () -> Void) {
         let urlRequest = fetchUrlForPartialContent(with: url)
         let task: NetworkDataStream = networkingClient.stream(request: urlRequest)
-        task.responseStream { [weak self] event in
+        let shouldResume = stateLock.withLock { () -> Bool in
+            guard generation == mailbox.generation else { return false }
+            headerRequest = task
+            return true
+        }
+        guard shouldResume else {
+            cancelAndRemove(task)
+            return
+        }
+
+        task.responseStream { [weak self, weak task] event in
+            guard let self, let task else { return }
             switch event {
             case let .response(urlResponse):
-                self?.parseResponseHeader(response: urlResponse)
-                task.cancel()
-                completion()
-            default:
+                self.underlyingQueue.async { [weak self] in
+                    guard let self else { return }
+                    guard self.detachHeaderRequest(task, generation: generation) else {
+                        self.cancelAndRemove(task)
+                        return
+                    }
+                    self.parseResponseHeader(response: urlResponse)
+                    self.cancelAndRemove(task)
+                    completion()
+                }
+            case let .stream(.failure(error)):
+                guard self.detachHeaderRequest(task, generation: generation) else { return }
+                self.cancelAndRemove(task)
+                self.enqueueTerminal(.failure(error), generation: generation)
+            case .stream, .complete:
                 break
             }
         }.resume()
     }
 
-    private func handleMp4Files() {
+    private func handleMp4Files(generation: UInt64) {
         mp4Restructure.optimizeIfNeeded { [weak self] result in
             guard let self else { return }
-            switch result {
-            case let .success(value):
-                if let value {
-                    self.addStreamOperation {
-                        let audioCount = self.processAudio(data: value.initialData)
-                        self.relativePosition += audioCount
+            self.underlyingQueue.async { [weak self] in
+                guard let self else { return }
+                guard self.isCurrent(generation: generation) else { return }
+                switch result {
+                case let .success(value):
+                    if let value {
+                        self.enqueueData(value.initialData, generation: generation)
+                        self.doPerfomOpen(seek: value.mdatOffset, generation: generation)
+                    } else {
+                        self.doPerfomOpen(seek: 0, generation: generation)
                     }
-                    self.doPerfomOpen(seek: value.mdatOffset)
-                } else {
-                    self.doPerfomOpen(seek: 0)
+                case let .failure(failure):
+                    self.delegate?.errorOccurred(source: self, error: failure)
                 }
-            case let .failure(failure):
-                self.delegate?.errorOccurred(source: self, error: failure)
             }
         }
     }
 
     // MARK: - Network Handle Methods
 
-    private func handleResponse(event: NetworkDataStream.ResponseEvent) {
+    private func handleResponse(event: NetworkDataStream.ResponseEvent, generation: UInt64) {
+        guard isCurrent(generation: generation) else { return }
         switch event {
         case let .response(urlResponse):
-            parseResponseHeader(response: urlResponse)
-            streamOperationQueue.isSuspended = false
+            underlyingQueue.async { [weak self] in
+                guard let self, self.isCurrent(generation: generation) else { return }
+                self.parseResponseHeader(response: urlResponse)
+            }
         case let .stream(.success(response)):
-            handleSuccessfulStreamEvent(response: response)
+            handleSuccessfulStreamEvent(response: response, generation: generation)
         case let .stream(.failure(error)):
-            handleFailedStreamEvent(error: error)
+            enqueueTerminal(.failure(error), generation: generation)
         case let .complete(event):
             if let error = event.error {
-                delegate?.errorOccurred(source: self, error: error)
+                enqueueTerminal(.failure(error), generation: generation)
             } else {
-                addCompletionOperation { [weak self] in
-                    guard let self = self else { return }
-                    self.delegate?.endOfFileOccurred(source: self)
-                }
+                enqueueTerminal(.endOfFile, generation: generation)
             }
         }
     }
 
-    private func handleSuccessfulStreamEvent(response: NetworkDataStream.Response) {
+    private func handleSuccessfulStreamEvent(response: NetworkDataStream.Response, generation: UInt64) {
         guard let audioData = response.data else {
-            delegate?.errorOccurred(source: self, error: NetworkError.missingData)
+            enqueueTerminal(.failure(NetworkError.missingData), generation: generation)
             return
         }
-        addStreamOperation { [weak self] in
-            guard let self = self else { return }
-            if self.shouldTryParsingIcycastHeaders {
-                let (header, extractedAudio) = self.icycastHeadersProcessor.process(data: audioData)
-                if let header = header {
-                    self.shouldTryParsingIcycastHeaders = false
-                    let parser = IcycastHeaderParser()
-                    self.parsedHeaderOutput = parser.parse(input: header)
-                    if let metadataStep = self.parsedHeaderOutput?.metadataStep {
-                        self.metadataStreamProcessor.metadataAvailable(step: metadataStep)
-                    }
-                }
-                let audioCount = self.processAudio(data: extractedAudio)
-                self.relativePosition += audioCount
-                return
-            }
-            let audioCount = self.processAudio(data: audioData)
-            self.relativePosition += audioCount
-        }
+        enqueueData(audioData, generation: generation)
     }
 
     private func handleFailedStreamEvent(error _: Error) {
         if !netStatusService.isConnected {
-            waitingForNetwork = true
+            stateLock.withLock {
+                waitingForNetwork = true
+            }
             return
         }
-        waitingForNetwork = false
+        stateLock.withLock {
+            waitingForNetwork = false
+        }
         retryOnError()
     }
 
@@ -331,22 +454,30 @@ public class RemoteAudioSource: AudioStreamSource {
         guard let response = response else { return }
         let httpStatusCode = response.statusCode
         let parser = HTTPHeaderParser()
-        parsedHeaderOutput = parser.parse(input: response)
+        let parsedHeader = parser.parse(input: response)
 
-        if parsedHeaderOutput == nil {
-            shouldTryParsingIcycastHeaders = true
+        if parsedHeader == nil {
+            stateLock.withLock {
+                shouldTryParsingIcycastHeaders = true
+            }
             checkHTTP(statusCode: httpStatusCode)
             return
         }
 
-        if httpStatusCode == 206 {
-            supportsSeek = true
-        } else if let acceptRanges = parser.value(forHTTPHeaderField: HeaderField.acceptRanges, in: response) {
-            supportsSeek = acceptRanges != "none"
+        stateLock.withLock {
+            parsedHeaderOutput = parsedHeader
+            if configuredContentType == .automatic {
+                inferredContentType = parsedHeader?.contentTypeHint == .live ? .live : .onDemand
+            }
+            if httpStatusCode == 206 {
+                supportsSeek = true
+            } else if let acceptRanges = parser.value(forHTTPHeaderField: HeaderField.acceptRanges, in: response) {
+                supportsSeek = acceptRanges != "none"
+            }
         }
 
         // check to see if we have metadata to process
-        if let metadataStep = parsedHeaderOutput?.metadataStep {
+        if let metadataStep = parsedHeader?.metadataStep {
             metadataStreamProcessor.metadataAvailable(step: metadataStep)
         }
         checkHTTP(statusCode: httpStatusCode)
@@ -355,7 +486,10 @@ public class RemoteAudioSource: AudioStreamSource {
     private func checkHTTP(statusCode: Int) {
         // check for error
         if statusCode == 416 { // range not satisfied error
-            if length >= 0 { seekOffset = length }
+            let streamLength = length
+            stateLock.withLock {
+                seekOffset = streamLength
+            }
             delegate?.endOfFileOccurred(source: self)
         } else if statusCode >= 300 {
             delegate?.errorOccurred(
@@ -380,7 +514,10 @@ public class RemoteAudioSource: AudioStreamSource {
         urlRequest.addValue("1", forHTTPHeaderField: "Icy-MetaData")
         urlRequest.addValue("identity", forHTTPHeaderField: "Accept-Encoding")
 
-        if supportsSeek, seekOffset > 0 {
+        let supportsRangeSeek = stateLock.withLock {
+            supportsSeek
+        }
+        if supportsRangeSeek, seekOffset > 0 {
             urlRequest.addValue("bytes=\(seekOffset)-", forHTTPHeaderField: "Range")
         }
         return urlRequest
@@ -405,30 +542,208 @@ public class RemoteAudioSource: AudioStreamSource {
     }
 
     private func retryOnError() {
+        let generation = currentGeneration()
         retrierTimeout.retry { [weak self] in
             guard let self = self else { return }
-            self.seek(at: self.supportsSeek ? self.position : 0)
+            guard self.isCurrent(generation: generation) else { return }
+            let retryOffset = self.stateLock.withLock {
+                self.supportsSeek ? self.seekOffset + self.relativePosition : 0
+            }
+            self.seek(at: retryOffset)
         }
     }
 
-    // MARK: - Network Stream Operation Queue
+    // MARK: - Compressed Data Mailbox
 
-    /// Schedules the given block on the stream operation queue
-    ///
-    /// - Parameter block: A closure to be executed
-    private func addStreamOperation(_ block: @escaping () -> Void) {
-        let operation = BlockOperation(block: block)
-        operation.qualityOfService = .userInitiated
-        streamOperationQueue.addOperation(operation)
+    private func enqueueData(_ data: Data, generation: UInt64) {
+        guard !data.isEmpty else { return }
+
+        let result = stateLock.withLock { () -> CompressedDataMailbox<PendingTerminal>.EnqueueResult in
+            let result = mailbox.enqueue(
+                data,
+                generation: generation,
+                canSuspendTransport: streamRequest != nil
+            )
+            if result.shouldSuspendTransport {
+                streamRequest?.suspend()
+            }
+            return result
+        }
+
+        if result.shouldScheduleDrain {
+            dispatchDrain(for: generation)
+        }
     }
 
-    /// Schedules the given block on the stream operation queue as a completion
-    ///
-    /// - Parameter block: A closure to be executed
-    private func addCompletionOperation(_ block: @escaping () -> Void) {
-        let operation = BlockOperation(block: block)
-        operation.queuePriority = .veryLow
-        streamOperationQueue.addOperation(operation)
+    private func enqueueTerminal(_ terminal: PendingTerminal, generation: UInt64) {
+        var completedTask: NetworkDataStream?
+        let result = stateLock.withLock { () -> CompressedDataMailbox<PendingTerminal>.EnqueueResult in
+            let result = mailbox.finish(terminal, generation: generation)
+            if result.accepted {
+                completedTask = streamRequest
+                streamRequest = nil
+            }
+            return result
+        }
+
+        cancelAndRemove(completedTask)
+        if result.shouldScheduleDrain {
+            dispatchDrain(for: generation)
+        }
+    }
+
+    private func dispatchDrain(for generation: UInt64) {
+        underlyingQueue.async { [weak self] in
+            self?.drainBufferedData(generation: generation)
+        }
+    }
+
+    private func drainBufferedData(generation: UInt64) {
+        var processedBytes = 0
+        var processedChunks = 0
+
+        while true {
+            let action = stateLock.withLock { () -> DrainAction in
+                switch mailbox.next(generation: generation) {
+                case let .data(data):
+                    return .data(data)
+                case let .terminal(terminal):
+                    return .terminal(terminal)
+                case .stop:
+                    return .stop
+                }
+            }
+
+            switch action {
+            case let .data(data):
+                processBufferedData(data, generation: generation)
+
+                stateLock.withLock {
+                    if mailbox.completeData(byteCount: data.count, generation: generation) {
+                        streamRequest?.resume()
+                    }
+                }
+
+                processedBytes += data.count
+                processedChunks += 1
+                if processedBytes >= Self.drainByteQuantum
+                    || processedChunks >= Self.drainChunkQuantum
+                {
+                    dispatchDrain(for: generation)
+                    return
+                }
+            case let .terminal(terminal):
+                handleTerminal(terminal, generation: generation)
+                return
+            case .stop:
+                return
+            }
+        }
+    }
+
+    private func processBufferedData(_ data: Data, generation: UInt64) {
+        guard isCurrent(generation: generation) else { return }
+
+        let shouldParseIcyHeaders = stateLock.withLock {
+            shouldTryParsingIcycastHeaders
+        }
+
+        let audioCount: Int
+        if shouldParseIcyHeaders {
+            let (header, extractedAudio) = icycastHeadersProcessor.process(data: data)
+            if let header {
+                let parser = IcycastHeaderParser()
+                let parsedHeader = parser.parse(input: header)
+                stateLock.withLock {
+                    shouldTryParsingIcycastHeaders = false
+                    parsedHeaderOutput = parsedHeader
+                    if configuredContentType == .automatic {
+                        inferredContentType = parsedHeader?.contentTypeHint == .live ? .live : .onDemand
+                    }
+                }
+                if let metadataStep = parsedHeader?.metadataStep {
+                    metadataStreamProcessor.metadataAvailable(step: metadataStep)
+                }
+            }
+            audioCount = processAudio(data: extractedAudio)
+        } else {
+            audioCount = processAudio(data: data)
+        }
+
+        stateLock.withLock {
+            guard generation == mailbox.generation else { return }
+            relativePosition += audioCount
+        }
+    }
+
+    private func handleTerminal(_ terminal: PendingTerminal, generation: UInt64) {
+        guard isCurrent(generation: generation) else { return }
+        switch terminal {
+        case .endOfFile:
+            delegate?.endOfFileOccurred(source: self)
+        case let .failure(error):
+            handleFailedStreamEvent(error: error)
+        }
+    }
+
+    private func invalidateCurrentStream(
+        seekOffset newSeekOffset: Int? = nil,
+        reconnectLiveStreamOnResume: Bool
+    ) -> (
+        generation: UInt64,
+        tasks: [NetworkDataStream],
+        canSeek: Bool
+    ) {
+        stateLock.withLock {
+            let canSeek = newSeekOffset.map { supportsSeek || $0 == 0 } ?? false
+            let generation = mailbox.reset()
+            waitingForNetwork = false
+            self.reconnectLiveStreamOnResume = reconnectLiveStreamOnResume
+            consumerSuspendedOnPause = false
+
+            let currentTasks = [streamRequest, headerRequest].compactMap { $0 }
+            streamRequest = nil
+            headerRequest = nil
+            if let newSeekOffset {
+                relativePosition = 0
+                seekOffset = newSeekOffset
+            }
+            return (generation, currentTasks, canSeek)
+        }
+    }
+
+    private func detachHeaderRequest(_ task: NetworkDataStream, generation: UInt64) -> Bool {
+        stateLock.withLock {
+            guard generation == mailbox.generation, headerRequest === task else { return false }
+            headerRequest = nil
+            return true
+        }
+    }
+
+    private func cancelAndRemove(_ task: NetworkDataStream?) {
+        guard let task else { return }
+        task.cancel()
+        networkingClient.remove(task: task)
+    }
+
+    private func performOnUnderlyingQueue(_ block: @escaping () -> Void) {
+        if DispatchQueue.getSpecific(key: queueSpecificKey) == queueSpecificValue {
+            block()
+        } else {
+            underlyingQueue.async(execute: block)
+        }
+    }
+
+    private func currentGeneration() -> UInt64 {
+        stateLock.withLock {
+            mailbox.generation
+        }
+    }
+
+    private func isCurrent(generation: UInt64) -> Bool {
+        stateLock.withLock {
+            generation == mailbox.generation
+        }
     }
 }
 
