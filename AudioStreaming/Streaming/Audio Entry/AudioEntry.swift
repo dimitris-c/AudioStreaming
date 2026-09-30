@@ -155,8 +155,12 @@ class AudioEntry {
         if let byteCount = audioStreamState.dataByteCount {
             return UInt(byteCount)
         }
-        guard source.length > 0 else { return 0 }
-        return UInt(source.length) - UInt(audioStreamState.dataOffset)
+        let length = UInt64(max(source.length, 0))
+        let dataOffset = audioStreamState.dataOffset
+        // A live stream can report a length smaller than the parsed header offset;
+        // an unsigned subtraction would trap there.
+        guard length > dataOffset else { return 0 }
+        return UInt(length - dataOffset)
     }
 }
 
