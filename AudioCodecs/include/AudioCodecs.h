@@ -9,5 +9,6 @@
 #define AudioCodecs_h
 
 #import "VorbisFileBridge.h"
+#import "OpusFileBridge.h"
 
 #endif /* AudioCodecs_h */
