@@ -13,6 +13,12 @@ enum RemoteAudioSourceError: Error {
 }
 
 public class RemoteAudioSource: AudioStreamSource {
+    /// Time without any received data after which a request fails and is retried.
+    /// Short enough to detect a dead connection (e.g. after a cell handover) while the buffer still plays.
+    static let requestTimeoutInterval: TimeInterval = 15
+    /// A stream that has not received data for this long is reopened when the network path changes.
+    static let stallIntervalForPathChange: TimeInterval = 2
+
     public weak var delegate: AudioStreamSourceDelegate?
 
     public var position: Int {
@@ -56,6 +62,10 @@ public class RemoteAudioSource: AudioStreamSource {
     let netStatusService: NetStatusProvider
     var waitingForNetwork = false
     let retrierTimeout: Retrier
+
+    private let receiveStateLock = UnfairLock()
+    /// The time data was last received; `nil` while no stream request is open
+    private var lastDataReceivedAt: DispatchTime?
 
     init(networking: NetworkingClient,
          metadataStreamSource: MetadataStreamSource,
@@ -138,6 +148,7 @@ public class RemoteAudioSource: AudioStreamSource {
     }
 
     public func close() {
+        setLastDataReceived(nil)
         retrierTimeout.cancel()
         streamOperationQueue.isSuspended = false
         streamOperationQueue.cancelAllOperations()
@@ -184,7 +195,25 @@ public class RemoteAudioSource: AudioStreamSource {
             if self.waitingForNetwork {
                 self.seek(at: self.supportsSeek ? self.position : 0)
                 self.waitingForNetwork = false
+            } else if self.supportsSeek, self.isStreamStalled {
+                // The path changed (new cell, interface or address) while no data arrived:
+                // the open connection is most likely dead, so reopen it instead of waiting for the timeout
+                self.seek(at: self.position)
             }
+        }
+    }
+
+    private var isStreamStalled: Bool {
+        receiveStateLock.withLock { () -> Bool in
+            guard let lastDataReceivedAt else { return false }
+            let elapsed = DispatchTime.now().uptimeNanoseconds - lastDataReceivedAt.uptimeNanoseconds
+            return Double(elapsed) / Double(NSEC_PER_SEC) >= Self.stallIntervalForPathChange
+        }
+    }
+
+    private func setLastDataReceived(_ time: DispatchTime?) {
+        receiveStateLock.withLock {
+            lastDataReceivedAt = time
         }
     }
 
@@ -210,6 +239,7 @@ public class RemoteAudioSource: AudioStreamSource {
 
     private func doPerfomOpen(seek seekOffset: Int) {
         let urlRequest = buildUrlRequest(with: url, seekIfNeeded: seekOffset)
+        setLastDataReceived(.now())
         streamRequest = networkingClient.stream(request: urlRequest)
             .responseStream { [weak self] event in
                 guard let self = self else { return }
@@ -229,6 +259,11 @@ public class RemoteAudioSource: AudioStreamSource {
                 self?.parseResponseHeader(response: urlResponse)
                 task.cancel()
                 completion()
+            case let .stream(.failure(error)):
+                // No response (e.g. a timeout without network): retry, otherwise the stream never opens.
+                // The cancellation above after a response also ends up here and is ignored.
+                guard (error as? URLError)?.code != .cancelled else { return }
+                self?.handleFailedStreamEvent(error: error)
             default:
                 break
             }
@@ -258,6 +293,12 @@ public class RemoteAudioSource: AudioStreamSource {
     // MARK: - Network Handle Methods
 
     private func handleResponse(event: NetworkDataStream.ResponseEvent) {
+        switch event {
+        case .response, .stream(.success):
+            setLastDataReceived(.now())
+        case .stream(.failure), .complete:
+            setLastDataReceived(nil)
+        }
         switch event {
         case let .response(urlResponse):
             parseResponseHeader(response: urlResponse)
@@ -369,7 +410,7 @@ public class RemoteAudioSource: AudioStreamSource {
         var urlRequest = URLRequest(url: url)
         urlRequest.networkServiceType = .avStreaming
         urlRequest.cachePolicy = .reloadIgnoringLocalCacheData
-        urlRequest.timeoutInterval = 60
+        urlRequest.timeoutInterval = Self.requestTimeoutInterval
         urlRequest.httpMethod = httpMethod
         urlRequest.httpBody = httpBody
 
@@ -390,7 +431,7 @@ public class RemoteAudioSource: AudioStreamSource {
         var urlRequest = URLRequest(url: url)
         urlRequest.networkServiceType = .avStreaming
         urlRequest.cachePolicy = .reloadIgnoringLocalCacheData
-        urlRequest.timeoutInterval = 60
+        urlRequest.timeoutInterval = Self.requestTimeoutInterval
         urlRequest.httpMethod = httpMethod
         urlRequest.httpBody = httpBody
 
