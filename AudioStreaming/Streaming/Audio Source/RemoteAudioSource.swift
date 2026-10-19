@@ -67,6 +67,18 @@ public class RemoteAudioSource: AudioStreamSource {
     /// The time data was last received; `nil` while no stream request is open
     private var lastDataReceivedAt: DispatchTime?
 
+    /// Length of the stream start kept to check that a reopened stream delivers the same content
+    static let streamHeadLength = 4096
+    /// The first bytes of the stream, to verify a resume without range support
+    private var streamHead = Data()
+    /// Progress of dropping the already read bytes after reopening a stream without range support
+    private var resumeSkip: ResumeSkip?
+
+    private struct ResumeSkip {
+        let bytesToSkip: Int
+        var received = 0
+    }
+
     init(networking: NetworkingClient,
          metadataStreamSource: MetadataStreamSource,
          icycastHeadersProcessor: IcycastHeadersProcessor,
@@ -160,12 +172,18 @@ public class RemoteAudioSource: AudioStreamSource {
     }
 
     public func seek(at offset: Int) {
+        reopen(at: offset, skipping: 0)
+    }
+
+    /// - Parameter bytesToSkip: Bytes at the start of the stream the player has already read
+    private func reopen(at offset: Int, skipping bytesToSkip: Int) {
         close()
 
-        relativePosition = 0
+        relativePosition = bytesToSkip
         seekOffset = offset
+        resumeSkip = bytesToSkip > 0 ? ResumeSkip(bytesToSkip: bytesToSkip) : nil
 
-        if !supportsSeek, offset != relativePosition {
+        if !supportsSeek, offset != 0 {
             return
         }
 
@@ -193,12 +211,12 @@ public class RemoteAudioSource: AudioStreamSource {
             guard let self = self else { return }
             guard connection.isConnected else { return }
             if self.waitingForNetwork {
-                self.seek(at: self.supportsSeek ? self.position : 0)
+                self.reopenAtCurrentPosition()
                 self.waitingForNetwork = false
-            } else if self.supportsSeek, self.isStreamStalled {
+            } else if self.isStreamStalled {
                 // The path changed (new cell, interface or address) while no data arrived:
                 // the open connection is most likely dead, so reopen it instead of waiting for the timeout
-                self.seek(at: self.position)
+                self.reopenAtCurrentPosition()
             }
         }
     }
@@ -340,9 +358,40 @@ public class RemoteAudioSource: AudioStreamSource {
                 self.relativePosition += audioCount
                 return
             }
-            let audioCount = self.processAudio(data: audioData)
+            guard let unreadData = self.dropAlreadyReadBytes(of: audioData) else { return }
+            self.recordStreamHead(unreadData)
+            let audioCount = self.processAudio(data: unreadData)
             self.relativePosition += audioCount
         }
+    }
+
+    /// While resuming a stream without range support, drops the bytes the player has already read,
+    /// as long as the reopened stream starts with the same content.
+    /// - Returns: The data to process, or `nil` if the whole chunk was dropped
+    private func dropAlreadyReadBytes(of data: Data) -> Data? {
+        guard var skip = resumeSkip else { return data }
+        let compareEnd = min(streamHead.count, skip.bytesToSkip)
+        if skip.received < compareEnd {
+            let count = min(compareEnd - skip.received, data.count)
+            let expected = streamHead.subdata(in: skip.received ..< skip.received + count)
+            if Data(data.prefix(count)) != expected {
+                // Different content (e.g. a live stream): play the new stream from its start
+                resumeSkip = nil
+                relativePosition = 0
+                streamHead = Data()
+                return data
+            }
+        }
+        let dropCount = min(skip.bytesToSkip - skip.received, data.count)
+        skip.received += dropCount
+        resumeSkip = skip.received < skip.bytesToSkip ? skip : nil
+        return dropCount < data.count ? Data(data.dropFirst(dropCount)) : nil
+    }
+
+    private func recordStreamHead(_ data: Data) {
+        guard resumeSkip == nil, seekOffset == 0, streamHead.count == relativePosition,
+              streamHead.count < Self.streamHeadLength else { return }
+        streamHead.append(data.prefix(Self.streamHeadLength - streamHead.count))
     }
 
     private func handleFailedStreamEvent(error _: Error) {
@@ -448,8 +497,28 @@ public class RemoteAudioSource: AudioStreamSource {
     private func retryOnError() {
         retrierTimeout.retry { [weak self] in
             guard let self = self else { return }
-            self.seek(at: self.supportsSeek ? self.position : 0)
+            self.reopenAtCurrentPosition()
         }
+    }
+
+    /// Reopens the stream after a network failure or stall, continuing where the player stopped reading
+    private func reopenAtCurrentPosition() {
+        if supportsSeek {
+            seek(at: position)
+        } else if canResumeBySkipping {
+            // Without range support the stream starts over: drop the bytes already read
+            reopen(at: 0, skipping: position)
+        } else {
+            seek(at: 0)
+        }
+    }
+
+    private var canResumeBySkipping: Bool {
+        position > 0
+            && !metadataStreamProcessor.canProcessMetadata
+            && !shouldTryParsingIcycastHeaders
+            && !mp4Restructure.dataOptimized
+            && streamHead.count >= min(position, Self.streamHeadLength)
     }
 
     // MARK: - Network Stream Operation Queue
