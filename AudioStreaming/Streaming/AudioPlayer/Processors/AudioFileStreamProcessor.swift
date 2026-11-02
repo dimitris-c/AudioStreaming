@@ -49,6 +49,7 @@ final class AudioFileStreamProcessor {
     var inputFormat = AudioStreamBasicDescription()
 
     var currentFileFormat: String = ""
+    var currentFileType: AudioFileTypeID = 0
     let fileFormatsForDelayedConverterCreation: Set = ["fa4m", "f4pm"]
     
     // Track if we're processing Ogg Vorbis
@@ -348,6 +349,11 @@ final class AudioFileStreamProcessor {
         if let stringFileFormat = String(data: Data(fileFormat), encoding: .utf8) {
             currentFileFormat = stringFileFormat
         }
+        var fileType: AudioFileTypeID = 0
+        var fileTypeSize = UInt32(MemoryLayout<AudioFileTypeID>.size)
+        if AudioFileStreamGetProperty(fileStream, kAudioFileStreamProperty_FileFormat, &fileTypeSize, &fileType) == noErr {
+            currentFileType = fileType
+        }
     }
 
     private func processDataFormat(entry: AudioEntry, fileStream: AudioFileStreamID) {
@@ -425,13 +431,14 @@ final class AudioFileStreamProcessor {
     }
 
     /// An MP3 without packet table info (no Xing/Info header, e.g. a transcode of a server or a file
-    /// of a simple encoder) has the encoder delay of LAME at its start. The packet table info of a file
-    /// with header is reported before the stream is ready to produce packets and takes precedence.
+    /// of a simple encoder) has the encoder delay of LAME at its start, an AAC ADTS stream the one of
+    /// ffmpeg. The packet table info of a file with header is reported before the stream is ready to
+    /// produce packets and takes precedence.
     private func applyAssumedPrimingIfNeeded(entry: AudioEntry) {
         entry.lock.lock(); defer { entry.lock.unlock() }
         guard entry.framesState.validFrames == nil, entry.framesState.primingFrames == 0 else { return }
         entry.framesState.primingFrames = GaplessTrim.assumedPrimingFrames(
-            formatID: entry.audioStreamFormat.mFormatID, hasPacketTableInfo: false
+            formatID: entry.audioStreamFormat.mFormatID, fileType: currentFileType, hasPacketTableInfo: false
         )
     }
 
@@ -775,9 +782,10 @@ final class AudioFileStreamProcessor {
                 usedFrames: usedFrames
             )
         } else if framesState.validFrames == nil, framesState.primingFrames > 0 {
-            // padding of an MP3 without packet table info is unknown: drop the silence at the end
+            // padding of an MP3 or ADTS stream without packet table info is unknown: drop the silence at the end
+            let maxPadding = GaplessTrim.maxAssumedPaddingFrames(formatID: entry.audioStreamFormat.mFormatID)
             let limit = max(0, min(
-                Int((Double(GaplessTrim.maxAssumedMp3PaddingFrames) * ratio).rounded()),
+                Int((Double(maxPadding) * ratio).rounded()),
                 notPlayedFrames,
                 usedFrames
             ))

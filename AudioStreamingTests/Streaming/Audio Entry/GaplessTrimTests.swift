@@ -87,15 +87,32 @@ class GaplessTrimTests: XCTestCase {
     }
 
     func test_Assumed_Priming_For_Mp3_Without_Packet_Table_Info() {
-        XCTAssertEqual(GaplessTrim.assumedPrimingFrames(formatID: kAudioFormatMPEGLayer3, hasPacketTableInfo: false), 576)
+        XCTAssertEqual(GaplessTrim.assumedPrimingFrames(formatID: kAudioFormatMPEGLayer3, fileType: kAudioFileMP3Type, hasPacketTableInfo: false), 576)
     }
 
     func test_No_Assumed_Priming_For_Mp3_With_Packet_Table_Info() {
-        XCTAssertEqual(GaplessTrim.assumedPrimingFrames(formatID: kAudioFormatMPEGLayer3, hasPacketTableInfo: true), 0)
+        XCTAssertEqual(GaplessTrim.assumedPrimingFrames(formatID: kAudioFormatMPEGLayer3, fileType: kAudioFileMP3Type, hasPacketTableInfo: true), 0)
+    }
+
+    func test_Assumed_Priming_For_Aac_In_Adts() {
+        XCTAssertEqual(GaplessTrim.assumedPrimingFrames(formatID: kAudioFormatMPEG4AAC, fileType: kAudioFileAAC_ADTSType, hasPacketTableInfo: false), 1024)
+    }
+
+    func test_No_Assumed_Priming_For_Aac_In_Mp4() {
+        XCTAssertEqual(GaplessTrim.assumedPrimingFrames(formatID: kAudioFormatMPEG4AAC, fileType: kAudioFileM4AType, hasPacketTableInfo: false), 0)
+    }
+
+    func test_No_Assumed_Priming_For_He_Aac_In_Adts() {
+        XCTAssertEqual(GaplessTrim.assumedPrimingFrames(formatID: kAudioFormatMPEG4AAC_HE, fileType: kAudioFileAAC_ADTSType, hasPacketTableInfo: false), 0)
     }
 
     func test_No_Assumed_Priming_For_Other_Formats() {
-        XCTAssertEqual(GaplessTrim.assumedPrimingFrames(formatID: kAudioFormatMPEG4AAC, hasPacketTableInfo: false), 0)
+        XCTAssertEqual(GaplessTrim.assumedPrimingFrames(formatID: kAudioFormatFLAC, fileType: kAudioFileFLACType, hasPacketTableInfo: false), 0)
+    }
+
+    func test_Max_Assumed_Padding_Per_Format() {
+        XCTAssertEqual(GaplessTrim.maxAssumedPaddingFrames(formatID: kAudioFormatMPEGLayer3), 1728)
+        XCTAssertEqual(GaplessTrim.maxAssumedPaddingFrames(formatID: kAudioFormatMPEG4AAC), 2048)
     }
 
     func test_Trailing_Silent_Frames_Counts_Until_Signal() {

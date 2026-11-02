@@ -42,16 +42,34 @@ enum GaplessTrim {
     /// compensated by the AudioToolbox MP3 decoder.
     static let lameMp3PrimingFrames = 576
 
+    /// Encoder delay of ffmpeg's native AAC encoder, which servers use for live AAC transcodes.
+    static let ffmpegAacPrimingFrames = 1024
+
     /// The priming frames to assume for a stream without packet table info.
     /// An MP3 without Xing/Info header (a live transcode, a cached transcode of a server, a file of a
     /// simple encoder) gives no gapless info, so the decoder outputs the encoder delay as silence.
-    static func assumedPrimingFrames(formatID: AudioFormatID, hasPacketTableInfo: Bool) -> Int {
-        guard !hasPacketTableInfo, formatID == kAudioFormatMPEGLayer3 else { return 0 }
-        return lameMp3PrimingFrames
+    /// The same applies to AAC-LC in an ADTS stream, which has no place for gapless info at all.
+    static func assumedPrimingFrames(formatID: AudioFormatID, fileType: AudioFileTypeID, hasPacketTableInfo: Bool) -> Int {
+        guard !hasPacketTableInfo else { return 0 }
+        switch formatID {
+        case kAudioFormatMPEGLayer3:
+            return lameMp3PrimingFrames
+        case kAudioFormatMPEG4AAC where fileType == kAudioFileAAC_ADTSType:
+            return ffmpegAacPrimingFrames
+        default:
+            return 0
+        }
     }
 
     /// The most end padding an MP3 encoder adds (one frame plus the encoder delay), in source frames.
     static let maxAssumedMp3PaddingFrames = 1152 + 576
+    /// The most end padding an AAC encoder adds (the rest of the last frame plus one flush frame), in source frames.
+    static let maxAssumedAacPaddingFrames = 1024 + 1024
+
+    /// The most end padding to look for in a stream without padding info, in source frames.
+    static func maxAssumedPaddingFrames(formatID: AudioFormatID) -> Int {
+        formatID == kAudioFormatMPEG4AAC ? maxAssumedAacPaddingFrames : maxAssumedMp3PaddingFrames
+    }
 
     /// A frame at the end of the stream counts as padding below this fraction (-14 dB) of the peak level
     /// of the music before it: the encoder padding is silence plus the ringing of the codec, which is
