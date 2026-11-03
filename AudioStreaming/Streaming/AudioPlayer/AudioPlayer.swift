@@ -11,8 +11,16 @@ open class AudioPlayer {
     public weak var delegate: AudioPlayerDelegate?
 
     public var muted: Bool {
-        get { playerContext.muted.value }
-        set { playerContext.muted.write { $0 = newValue } }
+        get { rendererOutput?.isMuted ?? playerContext.muted.value }
+        set {
+            if let rendererOutput {
+                // the renderer output plays ahead of the engine: mute only the renderer, so it applies
+                // at once and no silenced audio stays enqueued after unmuting
+                rendererOutput.isMuted = newValue
+            } else {
+                playerContext.muted.write { $0 = newValue }
+            }
+        }
     }
 
     /// The volume of the audio
@@ -20,8 +28,16 @@ open class AudioPlayer {
     /// Defaults to 1.0. Valid ranges are 0.0 to 1.0
     /// The value is restricted from 0.0 to 1.0
     public var volume: Float {
-        get { audioEngine.mainMixerNode.outputVolume }
-        set { audioEngine.mainMixerNode.outputVolume = min(1.0, max(0.0, newValue)) }
+        get { rendererOutput?.volume ?? audioEngine.mainMixerNode.outputVolume }
+        set {
+            let volume = min(1.0, max(0.0, newValue))
+            if let rendererOutput {
+                // the renderer output plays ahead of the engine, so set the volume on the renderer
+                rendererOutput.volume = volume
+            } else {
+                audioEngine.mainMixerNode.outputVolume = volume
+            }
+        }
     }
 
     /// The playback rate of the player.
@@ -55,13 +71,9 @@ open class AudioPlayer {
     /// - Returns: A `Double` value indicating the total duration.
     public var duration: Double {
         guard playerContext.internalState != .pendingNext else { return 0 }
-        playerContext.entriesLock.lock()
-        let playingEntry = playerContext.audioPlayingEntry
-        playerContext.entriesLock.unlock()
-        guard let entry = playingEntry else { return 0 }
+        guard let (entry, progress) = audiblePosition() else { return 0 }
 
         let entryDuration = entry.duration()
-        let progress = self.progress
         if entryDuration < progress, entryDuration > 0 {
             return progress
         }
@@ -71,18 +83,36 @@ open class AudioPlayer {
     /// The progress of the audio playback, in seconds.
     public var progress: Double {
         guard playerContext.internalState != .pendingNext else { return 0 }
-        playerContext.entriesLock.lock()
-        let playingEntry = playerContext.audioPlayingEntry
-        playerContext.entriesLock.unlock()
-        guard let entry = playingEntry else { return 0 }
+        return audiblePosition()?.progress ?? 0
+    }
+
+    /// The entry that is heard right now and its progress.
+    ///
+    /// With the renderer output, audio is rendered ahead of time: the playing entry can already be
+    /// the next item while the end of the previous one is still heard (or the queue drains).
+    private func audiblePosition() -> (entry: AudioEntry, progress: Double)? {
+        let (playingEntry, previousEntry) = playerContext.entriesLock.withLock {
+            (playerContext.audioPlayingEntry, previousPlayingEntry)
+        }
+        let unheard = rendererOutput?.unheardContentSeconds ?? 0
+        guard let entry = playingEntry else {
+            if let previousEntry, unheard > 0 {
+                return (previousEntry, max(0, previousEntry.progress - unheard))
+            }
+            return nil
+        }
         entry.seekRequest.lock.lock()
         let seekRequested = entry.seekRequest.requested
         let seekTime = entry.seekRequest.time
         entry.seekRequest.lock.unlock()
         if seekRequested {
-            return seekTime
+            return (entry, seekTime)
         }
-        return entry.progress
+        let renderedOfEntry = Double(entry.framesPlayed) / outputAudioFormat.sampleRate
+        if unheard > renderedOfEntry, let previousEntry {
+            return (previousEntry, max(0, previousEntry.progress - (unheard - renderedOfEntry)))
+        }
+        return (entry, max(0, entry.progress - unheard))
     }
 
     /// The number of audio frames that have been played
@@ -92,7 +122,8 @@ open class AudioPlayer {
         let playingEntry = playerContext.audioPlayingEntry
         playerContext.entriesLock.unlock()
         guard let entry = playingEntry else { return 0 }
-        return entry.framesPlayed
+        let unheardFrames = Int((rendererOutput?.unheardContentSeconds ?? 0) * outputAudioFormat.sampleRate)
+        return max(0, entry.framesPlayed - unheardFrames)
     }
     
     /// Indicates whether seeking is supported for the currently playing audio
@@ -167,6 +198,13 @@ open class AudioPlayer {
 
     private let fileStreamProcessor: AudioFileStreamProcessor
     private let playerRenderProcessor: AudioPlayerRenderProcessor
+    /// Set when `configuration.outputMode` is `.sampleBufferRenderer`, replaces the output audio unit `player`
+    private let rendererOutput: SampleBufferRendererOutput?
+    /// Delays item change callbacks by the renderer output latency
+    private let delegateNotifier = OrderedDelayedNotifier()
+    /// Renderer output only: the item before `audioPlayingEntry`, still heard for a moment after the
+    /// next one started rendering. Guarded by `playerContext.entriesLock`.
+    private var previousPlayingEntry: AudioEntry?
     private let frameFilterProcessor: FrameFilterProcessor
 
     private let serializationQueue: DispatchQueue
@@ -213,6 +251,17 @@ open class AudioPlayer {
             outputAudioFormat: outputAudioFormat.basicStreamDescription
         )
 
+        if case let .sampleBufferRenderer(maxBufferedSeconds) = self.configuration.outputMode {
+            rendererOutput = SampleBufferRendererOutput(
+                format: outputAudioFormat,
+                maxBufferedSeconds: maxBufferedSeconds
+            ) { [playerRenderProcessor] frameCount, ioData in
+                playerRenderProcessor.renderOutput(inNumberFrames: frameCount, ioData: ioData)
+            }
+        } else {
+            rendererOutput = nil
+        }
+
         frameFilterProcessor = FrameFilterProcessor(
             mixerNodeProvider: {
                 engine.mainMixerNode
@@ -227,7 +276,11 @@ open class AudioPlayer {
     deinit {
         // The IO thread keeps pulling from the render callback until the hardware is stopped,
         // so stop it before the buffers it renders into are freed.
-        player.auAudioUnit.stopHardware()
+        if let rendererOutput {
+            rendererOutput.shutdown()
+        } else {
+            player.auAudioUnit.stopHardware()
+        }
         audioEngine.stop()
         playerContext.audioPlayingEntry?.close()
         clearQueue()
@@ -426,6 +479,7 @@ open class AudioPlayer {
             self.playerContext.entriesLock.lock()
             self.playerContext.audioReadingEntry = nil
             self.playerContext.audioPlayingEntry = nil
+            self.previousPlayingEntry = nil
             self.playerContext.entriesLock.unlock()
 
             self.processSource()
@@ -434,6 +488,11 @@ open class AudioPlayer {
 
     /// Pauses the audio playback
     public func pause() {
+        if let rendererOutput, playerContext.internalState == .stopped {
+            // the end of the queue may still be playing out of the renderer output
+            rendererOutput.stop(drain: false)
+            return
+        }
         if playerContext.internalState != .paused, playerContext.internalState.contains(.running) {
             stateBeforePaused = playerContext.internalState
             playerContext.setInternalState(to: .paused)
@@ -579,6 +638,8 @@ open class AudioPlayer {
     /// Creates and configures an `AVAudioUnit` with an output configuration
     /// and assigns it to the `player` variable.
     private func configPlayerNode() {
+        // the renderer output pulls from the engine itself, no output unit needed
+        guard rendererOutput == nil else { return }
         AVAudioUnit.createAudioUnit(with: UnitDescriptions.output) { [weak self] result in
             guard let self = self else { return }
             switch result {
@@ -683,9 +744,16 @@ open class AudioPlayer {
     /// Pauses the audio engine and stops the player's hardware
     private func pauseEngine() {
         guard isEngineRunning else { return }
+        if let rendererOutput {
+            // no rendering while the engine is reset below
+            rendererOutput.pause()
+            rendererOutput.waitForRenderToFinish()
+        }
         audioEngine.reset()
         audioEngine.pause()
-        player.auAudioUnit.stopHardware()
+        if rendererOutput == nil {
+            player.auAudioUnit.stopHardware()
+        }
         Logger.debug("engine paused ⏸", category: .generic)
     }
 
@@ -693,8 +761,16 @@ open class AudioPlayer {
     ///
     /// - parameter reason: A value of `AudioPlayerStopReason` indicating the reason the engine stopped.
     private func stopEngine(reason: AudioPlayerStopReason) {
+        if let rendererOutput {
+            // at the end of the queue the enqueued audio still has to be heard;
+            // no rendering while the engine is stopped below
+            rendererOutput.stop(drain: reason == .eof)
+            rendererOutput.waitForRenderToFinish()
+        }
         audioEngine.stop()
-        player.auAudioUnit.stopHardware()
+        if rendererOutput == nil {
+            player.auAudioUnit.stopHardware()
+        }
         rendererContext.resetBuffers()
         playerContext.setInternalState(to: .stopped)
         playerContext.stopReason.write { $0 = reason }
@@ -706,12 +782,17 @@ open class AudioPlayer {
     /// - parameter resetBuffers: A `Bool` value indicating if the buffers should be reset, prior starting the player.
     private func startPlayer(resetBuffers: Bool) {
         if resetBuffers {
+            // the renderer output was already told to drop its audio (setCurrentReading)
             rendererContext.resetBuffers()
         }
         do {
             try startEngineIfNeeded()
-            try player.auAudioUnit.allocateRenderResources()
-            try player.auAudioUnit.startHardware()
+            if let rendererOutput {
+                rendererOutput.start()
+            } else {
+                try player.auAudioUnit.allocateRenderResources()
+                try player.auAudioUnit.startHardware()
+            }
         } catch {
             stopEngine(reason: .error)
             raiseUnexpected(error: .audioSystemError(.playerStartError))
@@ -793,6 +874,8 @@ open class AudioPlayer {
         assert(playerContext.audioReadingEntry === playerContext.audioPlayingEntry,
                "reading and playing entry must be the same")
         fileStreamProcessor.processSeek()
+        // the audio enqueued for the old position must not be heard anymore
+        discardRendererOutput()
     }
 
     private func setCurrentReading(entry: AudioEntry?, startPlaying: Bool, shouldClearQueue: Bool) {
@@ -800,6 +883,9 @@ open class AudioPlayer {
         Logger.debug("Setting current reading entry to: \(entry.debugDescription)", category: .generic)
         if startPlaying {
             rendererContext.fillSilenceAudioBuffer()
+            // new item or seek: what is still enqueued must not be heard, and the item change
+            // callbacks below must not wait for it
+            discardRendererOutput()
         }
 
         fileStreamProcessor.closeFileStreamIfNeeded()
@@ -858,6 +944,9 @@ open class AudioPlayer {
             }
             
             playerContext.entriesLock.lock()
+            if rendererOutput != nil, !isPlayingSameItemProbablySeek {
+                previousPlayingEntry = entry
+            }
             playerContext.audioPlayingEntry = nextEntry
             let playingQueueEntryId = playerContext.audioPlayingEntry?.id ?? AudioEntryId(id: "")
             playerContext.entriesLock.unlock()
@@ -867,7 +956,7 @@ open class AudioPlayer {
                 let progressInFrames = entry.progressInFrames()
                 let progress = Double(progressInFrames) / outputAudioFormat.basicStreamDescription.mSampleRate
                 let duration = entry.duration()
-                asyncOnMain { [weak self] in
+                notifyDelegateWhenHeard { [weak self] in
                     guard let self else { return }
                     self.delegate?.audioPlayerDidFinishPlaying(
                         player: self,
@@ -890,7 +979,7 @@ open class AudioPlayer {
                     }
                 }
 
-                asyncOnMain { [weak self] in
+                notifyDelegateWhenHeard { [weak self] in
                     guard let self = self else { return }
                     self.delegate?.audioPlayerDidStartPlaying(player: self, with: playingQueueEntryId)
                 }
@@ -910,6 +999,9 @@ open class AudioPlayer {
             }
             
             playerContext.entriesLock.lock()
+            if rendererOutput != nil, !isPlayingSameItemProbablySeek {
+                previousPlayingEntry = entry
+            }
             playerContext.audioPlayingEntry = nil
             playerContext.entriesLock.unlock()
             if let entry = entry, !isPlayingSameItemProbablySeek {
@@ -921,7 +1013,7 @@ open class AudioPlayer {
                 sourceQueue.async { [weak self] in
                     guard let self else { return }
                     self.processSource()
-                    asyncOnMain {
+                    self.notifyDelegateWhenHeard {
                         self.delegate?.audioPlayerDidFinishPlaying(
                             player: self,
                             entryId: entryId,
@@ -937,6 +1029,25 @@ open class AudioPlayer {
             self?.processSource()
         }
         checkRenderWaitingAndNotifyIfNeeded()
+    }
+
+    /// Drops the audio enqueued in the renderer output (seek, new item).
+    private func discardRendererOutput() {
+        guard let rendererOutput else { return }
+        rendererOutput.flush()
+        playerContext.entriesLock.withLock { previousPlayingEntry = nil }
+        delegateNotifier.deliverAllPending()
+    }
+
+    /// Calls `block` on the main queue once the audio rendered so far is heard.
+    ///
+    /// Without the renderer output this is immediate, as before.
+    private func notifyDelegateWhenHeard(_ block: @escaping () -> Void) {
+        guard rendererOutput != nil else {
+            asyncOnMain(block)
+            return
+        }
+        delegateNotifier.notify(after: rendererOutput?.bufferedSeconds ?? 0, block)
     }
 
     /// Clears pending queues and informs the delegate

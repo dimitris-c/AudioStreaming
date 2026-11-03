@@ -6,6 +6,15 @@
 import Foundation
 import OSLog
 
+/// Where the rendered audio is played.
+public enum AudioPlayerOutputMode: Equatable, Sendable {
+    /// An output audio unit (RemoteIO / default output). Lowest latency.
+    case audioUnit
+    /// An `AVSampleBufferAudioRenderer`, which takes part in AirPlay 2 (multi-room playback).
+    /// Audio is enqueued up to `maxBufferedSeconds` ahead of what is heard.
+    case sampleBufferRenderer(maxBufferedSeconds: Double)
+}
+
 public struct AudioPlayerConfiguration: Equatable {
     /// All pending items will be flushed when seeking a track if this is set to `true`
     let flushQueueOnSeek: Bool
@@ -23,12 +32,16 @@ public struct AudioPlayerConfiguration: Equatable {
     /// Enables the internal logs
     let enableLogs: Bool
 
+    /// Where the rendered audio is played
+    let outputMode: AudioPlayerOutputMode
+
     public static let `default` = AudioPlayerConfiguration(flushQueueOnSeek: false,
                                                            bufferSizeInSeconds: 10,
                                                            secondsRequiredToStartPlaying: 1,
                                                            gracePeriodAfterSeekInSeconds: 0.5,
                                                            secondsRequiredToStartPlayingAfterBufferUnderrun: 7,
-                                                           enableLogs: false)
+                                                           enableLogs: false,
+                                                           outputMode: .audioUnit)
     /// Initializes the configuration for the `AudioPlayer`
     ///
     /// Parameters are pre set for convenience
@@ -39,13 +52,15 @@ public struct AudioPlayerConfiguration: Equatable {
     /// - parameter gracePeriodAfterSeekInSeconds: Number of seconds of audio required after seek occurs.
     /// - parameter secondsRequiredToStartPlayingAfterBufferUnderrun: Number of seconds of audio required to before playback resumes after a buffer underrun
     /// - parameter enableLogs: Enables the internal logs
+    /// - parameter outputMode: Where the rendered audio is played
     ///
     public init(flushQueueOnSeek: Bool = true,
                 bufferSizeInSeconds: Double = 10,
                 secondsRequiredToStartPlaying: Double = 1,
                 gracePeriodAfterSeekInSeconds: Double = 0.5,
                 secondsRequiredToStartPlayingAfterBufferUnderrun: Int = 1,
-                enableLogs: Bool = true)
+                enableLogs: Bool = true,
+                outputMode: AudioPlayerOutputMode = .audioUnit)
     {
         self.flushQueueOnSeek = flushQueueOnSeek
         self.bufferSizeInSeconds = bufferSizeInSeconds
@@ -53,6 +68,7 @@ public struct AudioPlayerConfiguration: Equatable {
         self.gracePeriodAfterSeekInSeconds = gracePeriodAfterSeekInSeconds
         self.secondsRequiredToStartPlayingAfterBufferUnderrun = secondsRequiredToStartPlayingAfterBufferUnderrun
         self.enableLogs = enableLogs
+        self.outputMode = outputMode
         Logger.isEnabled = enableLogs
     }
 
@@ -81,6 +97,7 @@ public struct AudioPlayerConfiguration: Equatable {
                                         secondsRequiredToStartPlaying: secondsRequiredToStartPlaying,
                                         gracePeriodAfterSeekInSeconds: gracePeriodAfterSeekInSeconds,
                                         secondsRequiredToStartPlayingAfterBufferUnderrun: secondsRequiredToStartPlayingAfterBufferUnderrun,
-                                        enableLogs: enableLogs)
+                                        enableLogs: enableLogs,
+                                        outputMode: outputMode)
     }
 }

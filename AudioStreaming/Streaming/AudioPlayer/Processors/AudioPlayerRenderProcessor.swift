@@ -17,6 +17,8 @@ final class AudioPlayerRenderProcessor: NSObject {
 
     private let playerContext: AudioPlayerContext
     private let rendererContext: AudioRendererContext
+    /// Frames copied from the decoded buffer (not silence padding), only touched on the render thread
+    private var copiedFramesCount: Int64 = 0
     private let outputAudioFormat: AudioStreamBasicDescription
 
     init(playerContext: AudioPlayerContext,
@@ -210,6 +212,8 @@ final class AudioPlayerRenderProcessor: NSObject {
             }
         }
 
+        copiedFramesCount += Int64(totalFramesCopied)
+
         if totalFramesCopied < inNumberFrames {
             let delta = inNumberFrames - totalFramesCopied
             if let mData = bufferList.mBuffers.mData {
@@ -342,6 +346,24 @@ final class AudioPlayerRenderProcessor: NSObject {
             }
         }
         return status
+    }
+
+    /// Renders the engine output into `ioData` without an output audio unit
+    /// (used by `SampleBufferRendererOutput`).
+    ///
+    /// - returns: The number of frames rendered into `ioData`, and how many of them are audio
+    ///   content (counted as played by the entries) rather than silence padding.
+    func renderOutput(
+        inNumberFrames: UInt32,
+        ioData: UnsafeMutablePointer<AudioBufferList>
+    ) -> (rendered: UInt32, content: UInt32) {
+        let copiedBefore = copiedFramesCount
+        var flags = AudioUnitRenderActionFlags()
+        _ = render(inNumberFrames: inNumberFrames, ioData: ioData, flags: &flags)
+        let content = UInt32(clamping: copiedFramesCount - copiedBefore)
+        let bytesRendered = rendererContext.inOutAudioBufferList[0].mBuffers.mDataByteSize
+        guard outputAudioFormat.mBytesPerFrame > 0 else { return (0, content) }
+        return (min(inNumberFrames, bytesRendered / outputAudioFormat.mBytesPerFrame), content)
     }
 
     func renderProvider(
