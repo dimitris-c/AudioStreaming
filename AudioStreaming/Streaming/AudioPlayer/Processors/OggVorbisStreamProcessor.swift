@@ -35,6 +35,11 @@ final class OggVorbisStreamProcessor {
     
     private let vfDecoder = VorbisFileDecoder()
     private var isInitialized = false
+
+    /// Size of the decoder's ring buffer. Until the decoder opens, it retains every byte.
+    private let streamBufferCapacity = 2_097_152
+    /// Set once an error was reported for the current entry; further input is dropped
+    private var streamRejected = false
     
     // Audio converter for format conversion
     private var audioConverter: AVAudioConverter?
@@ -79,6 +84,7 @@ final class OggVorbisStreamProcessor {
         vfDecoder.destroy()
         isInitialized = false
         totalFramesProcessed = 0
+        streamRejected = false
     }
     
     // MARK: - Data Processing
@@ -88,13 +94,22 @@ final class OggVorbisStreamProcessor {
     /// - Returns: An OSStatus indicating success or failure
     func parseOggVorbisData(data: Data) -> OSStatus {
         guard let entry = playerContext.audioReadingEntry else { return 0 }
+        guard !streamRejected else { return noErr }
         
         dataChunkCount += 1
         
         if !isInitialized {
-            vfDecoder.create(capacityBytes: 2_097_152)
+            vfDecoder.create(capacityBytes: streamBufferCapacity)
             isInitialized = true
             totalFramesProcessed = 0
+        }
+
+        if !entry.audioStreamState.processedDataFormat,
+           vfDecoder.availableBytes() + data.count > streamBufferCapacity {
+            // The headers outgrow the ring buffer; a push would block this queue forever.
+            Logger.error("Vorbis headers exceed the decoder buffer", category: .audioRendering)
+            streamRejected = true
+            return kAudioFileStreamError_InvalidFile
         }
         
         vfDecoder.push(data)
