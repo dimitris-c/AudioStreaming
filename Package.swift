@@ -59,6 +59,8 @@ let package = Package(
             path: "AudioStreamingTests",
             exclude: ["Info.plist", "Streaming/output"],
             resources: [
+                // Ogg Opus / Vorbis fixtures for the codec tests
+                .copy("Codecs/ogg-fixtures"),
                 // Test resources for metadata stream processor tests
                 .copy("Streaming/Metadata Stream Processor/raw-audio-streams")
             ]
