@@ -251,9 +251,18 @@ final class OggVorbisStreamProcessor {
     /// Opens the decoder if that has not happened yet and decodes everything still buffered
     /// - Returns: An OSStatus indicating success or failure
     func processEndOfInput() -> OSStatus {
-        guard !streamRejected, playerContext.audioReadingEntry != nil else { return noErr }
+        guard !streamRejected, let entry = playerContext.audioReadingEntry else { return noErr }
         vfDecoder.markEOF()
-        return parseOggVorbisData(data: Data(), endOfInput: true)
+        let status = parseOggVorbisData(data: Data(), endOfInput: true)
+
+        // Without a seek function libvorbisfile cannot count the stream's samples, so the
+        // duration so far is a bitrate estimate. Now the real frame count is known.
+        if vfDecoder.framesDecoded > 0 {
+            entry.lock.lock()
+            entry.audioStreamState.dataPacketOffset = UInt64(vfDecoder.framesDecoded)
+            entry.lock.unlock()
+        }
+        return status
     }
 
     /// Reports once that the current entry cannot be decoded

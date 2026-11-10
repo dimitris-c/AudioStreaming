@@ -25,6 +25,8 @@ final class VorbisFileDecoder {
     private var silentFrameSize = 0
     /// Set by `markEOF()`; from then on `readFrames` reports the end instead of silence
     private var endOfStream = false
+    /// Frames libvorbisfile returned since the stream was created, without generated silence
+    private(set) var framesDecoded = 0
     
     /// Create the stream buffer with specified capacity
     /// - Parameter capacityBytes: Size of the ring buffer in bytes
@@ -45,6 +47,7 @@ final class VorbisFileDecoder {
         vf = nil
         stream = nil
         endOfStream = false
+        framesDecoded = 0
         
         if let silentFrameBuffer = silentFrameBuffer {
             silentFrameBuffer.deallocate()
@@ -187,6 +190,7 @@ final class VorbisFileDecoder {
             let output = floatChannelData[ch]
             memcpy(output, input, framesRead * MemoryLayout<Float>.stride)
         }
+        framesDecoded += framesRead
         
         return framesRead
     }
