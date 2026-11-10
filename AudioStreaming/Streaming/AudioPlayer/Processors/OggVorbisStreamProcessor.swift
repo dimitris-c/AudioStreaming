@@ -40,6 +40,19 @@ final class OggVorbisStreamProcessor {
     private let streamBufferCapacity = 2_097_152
     /// Set once an error was reported for the current entry; further input is dropped
     private var streamRejected = false
+
+    /// First packets of Ogg codecs that libvorbisfile cannot decode: Opus, FLAC, Speex
+    private static let unsupportedFirstPackets: [[UInt8]] = [
+        Array("OpusHead".utf8),
+        [0x7F] + Array("FLAC".utf8),
+        Array("Speex   ".utf8),
+    ]
+    /// The longest first page header that still shows its first packet's magic:
+    /// 27 header bytes, up to 255 lacing values, 8 magic bytes
+    private let streamHeadLength = 27 + 255 + 8
+    /// The first bytes of the stream, until its first packet is checked
+    private var streamHead = Data()
+    private var streamHeadChecked = false
     
     // Audio converter for format conversion
     private var audioConverter: AVAudioConverter?
@@ -85,6 +98,8 @@ final class OggVorbisStreamProcessor {
         isInitialized = false
         totalFramesProcessed = 0
         streamRejected = false
+        streamHead = Data()
+        streamHeadChecked = false
     }
     
     // MARK: - Data Processing
@@ -104,6 +119,12 @@ final class OggVorbisStreamProcessor {
             vfDecoder.create(capacityBytes: streamBufferCapacity)
             isInitialized = true
             totalFramesProcessed = 0
+        }
+
+        if !entry.audioStreamState.processedDataFormat, startsWithUnsupportedCodec(data) {
+            Logger.error("Ogg stream carries a codec other than Vorbis", category: .audioRendering)
+            streamRejected = true
+            return kAudioFileStreamError_UnsupportedDataFormat
         }
 
         if !entry.audioStreamState.processedDataFormat,
@@ -248,6 +269,26 @@ final class OggVorbisStreamProcessor {
         return noErr
     }
     
+    /// Whether the stream starts with an Ogg page whose first packet belongs to a codec
+    /// libvorbisfile cannot decode. Collects the stream's first bytes until that is known.
+    /// Other starts, such as an ID3 tag before the first page or an Ogg Skeleton stream,
+    /// are left to libvorbisfile, which plays them.
+    private func startsWithUnsupportedCodec(_ data: Data) -> Bool {
+        guard !streamHeadChecked else { return false }
+        streamHead.append(data.prefix(streamHeadLength - streamHead.count))
+        let head = [UInt8](streamHead)
+        guard head.count >= 27 else { return false }
+        guard head.starts(with: Array("OggS".utf8)) else {
+            streamHeadChecked = true
+            return false
+        }
+        let packetStart = 27 + Int(head[26])
+        guard head.count >= packetStart + 8 else { return false }
+        streamHeadChecked = true
+        let packet = head[packetStart...]
+        return Self.unsupportedFirstPackets.contains { packet.starts(with: $0) }
+    }
+
     /// Opens the decoder if that has not happened yet and decodes everything still buffered
     /// - Returns: An OSStatus indicating success or failure
     func processEndOfInput() -> OSStatus {
