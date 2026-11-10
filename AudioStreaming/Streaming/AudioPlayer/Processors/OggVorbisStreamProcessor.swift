@@ -90,9 +90,11 @@ final class OggVorbisStreamProcessor {
     // MARK: - Data Processing
     
     /// Parse Ogg Vorbis data
-    /// - Parameter data: The Ogg Vorbis data to parse
+    /// - Parameters:
+    ///   - data: The Ogg Vorbis data to parse
+    ///   - endOfInput: Whether the source has ended, so the decoder opens and drains whatever is buffered
     /// - Returns: An OSStatus indicating success or failure
-    func parseOggVorbisData(data: Data) -> OSStatus {
+    func parseOggVorbisData(data: Data, endOfInput: Bool = false) -> OSStatus {
         guard let entry = playerContext.audioReadingEntry else { return 0 }
         guard !streamRejected else { return noErr }
         
@@ -117,7 +119,7 @@ final class OggVorbisStreamProcessor {
         if !entry.audioStreamState.processedDataFormat {
             let availableBytes = vfDecoder.availableBytes()
             
-            if availableBytes >= 16384 {
+            if availableBytes >= 16384 || endOfInput {
                 do {
                     try vfDecoder.openIfNeeded()
                     
@@ -129,6 +131,9 @@ final class OggVorbisStreamProcessor {
                         }
                     }
                 } catch {
+                    if endOfInput {
+                        reportUndecodableStream(entry: entry)
+                    }
                     return noErr
                 }
             } else {
@@ -215,7 +220,8 @@ final class OggVorbisStreamProcessor {
             }
             
             let availableBytes = vfDecoder.availableBytes()
-            if availableBytes < 4096 {
+            // At the end of input libvorbisfile may still hold the last page in its own buffer
+            if availableBytes < 4096 && !endOfInput {
                 consecutiveNoFrames += 1
                 if consecutiveNoFrames >= 3 {
                     break decodeLoop
@@ -242,6 +248,23 @@ final class OggVorbisStreamProcessor {
         return noErr
     }
     
+    /// Opens the decoder if that has not happened yet and decodes everything still buffered
+    /// - Returns: An OSStatus indicating success or failure
+    func processEndOfInput() -> OSStatus {
+        guard !streamRejected, playerContext.audioReadingEntry != nil else { return noErr }
+        vfDecoder.markEOF()
+        return parseOggVorbisData(data: Data(), endOfInput: true)
+    }
+
+    /// Reports once that the current entry cannot be decoded
+    private func reportUndecodableStream(entry: AudioEntry) {
+        Logger.error("Failed to open Vorbis stream at end of input", category: .audioRendering)
+        streamRejected = true
+        // Same condition AudioPlayer applies to parse errors: only the playing entry reports
+        guard playerContext.audioPlayingEntry === entry else { return }
+        processorCallback?(.raiseError(.streamParseBytesFailure(.invalidFile)))
+    }
+
     /// Decode audio and fill the renderer buffer
     /// - Returns: noErr if frames were decoded, otherwise an error/no-data status
     private func decodeAndFillBuffer() -> OSStatus {
