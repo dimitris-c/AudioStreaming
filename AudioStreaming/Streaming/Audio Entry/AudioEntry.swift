@@ -95,11 +95,14 @@ class AudioEntry {
         source.seek(at: offset)
     }
 
-    func reset() {
+    /// - parameter decodedPositionExact: Whether the entry is re-read from the start of the stream.
+    ///   Pass `false` when re-reading from a seek offset, so gapless trimming doesn't treat mid-stream data as the start.
+    func reset(decodedPositionExact: Bool = true) {
         lock.lock(); defer { lock.unlock() }
         framesState.played = 0
         framesState.queued = 0
         framesState.lastFrameQueued = -1
+        framesState.decoded = decodedPositionExact ? 0 : nil
     }
 
     func has(same source: CoreAudioStreamSource) -> Bool {
