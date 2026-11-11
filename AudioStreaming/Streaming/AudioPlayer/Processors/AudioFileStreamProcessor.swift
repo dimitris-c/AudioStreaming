@@ -54,6 +54,10 @@ final class AudioFileStreamProcessor {
     // Track if we're processing Ogg Vorbis
     private var isProcessingOggVorbis: Bool = false
 
+    /// Set by `processSeek()` for FLAC streams; the first packet received afterwards is used to
+    /// replace the estimated seek time with the position actually reached.
+    private var correctSeekTimeFromNextFlacFrame = false
+
     var isFileStreamOpen: Bool {
         audioFileStream != nil || isProcessingOggVorbis
     }
@@ -210,6 +214,7 @@ final class AudioFileStreamProcessor {
         }
 
         readingEntry.reset()
+        correctSeekTimeFromNextFlacFrame = readingEntry.audioStreamFormat.mFormatID == kAudioFormatFLAC
         readingEntry.seek(at: Int(seekByteOffset))
         rendererContext.waitingForDataAfterSeekFrameCount.write { $0 = 0 }
         playerContext.setInternalState(to: .waitingForDataAfterSeek)
@@ -496,6 +501,15 @@ final class AudioFileStreamProcessor {
         // reset discontinuity
         discontinuous = false
 
+        if correctSeekTimeFromNextFlacFrame {
+            correctSeekTimeFromFlacFrame(
+                entry: entry,
+                inInputData: inInputData,
+                inNumberBytes: inNumberBytes,
+                inPacketDescriptions: inPacketDescriptions
+            )
+        }
+
         var convertInfo = AudioConvertInfo(
             done: false,
             numberOfPackets: inNumberPackets,
@@ -656,6 +670,30 @@ final class AudioFileStreamProcessor {
                 }
             }
         }
+    }
+
+    /// Replaces the seek time with the start time of the first frame received after a FLAC seek.
+    ///
+    /// `processSeek()` jumps to a byte offset proportional to the requested time, but FLAC is variable
+    /// bitrate: the frame found there can be seconds away from that time, and the error would carry
+    /// on into `progress` until the end of the track.
+    private func correctSeekTimeFromFlacFrame(
+        entry: AudioEntry,
+        inInputData: UnsafeRawPointer,
+        inNumberBytes: UInt32,
+        inPacketDescriptions: UnsafeMutablePointer<AudioStreamPacketDescription>?
+    ) {
+        correctSeekTimeFromNextFlacFrame = false
+        let packetStart = Int(inPacketDescriptions?.pointee.mStartOffset ?? 0)
+        guard packetStart < Int(inNumberBytes) else { return }
+        let packet = UnsafeRawBufferPointer(start: inInputData + packetStart, count: Int(inNumberBytes) - packetStart)
+
+        entry.lock.lock(); defer { entry.lock.unlock() }
+        let format = entry.audioStreamFormat
+        guard format.mSampleRate > 0,
+              let sampleNumber = FlacFrameHeader.firstSampleNumber(in: packet, nominalBlockSize: format.mFramesPerPacket)
+        else { return }
+        entry.seekTime = Double(sampleNumber) / format.mSampleRate
     }
 
     /// Fills the `AudioBuffer` with data as required
