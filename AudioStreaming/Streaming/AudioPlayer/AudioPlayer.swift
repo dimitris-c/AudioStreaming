@@ -225,6 +225,10 @@ open class AudioPlayer {
     }
 
     deinit {
+        // The IO thread keeps pulling from the render callback until the hardware is stopped,
+        // so stop it before the buffers it renders into are freed.
+        player.auAudioUnit.stopHardware()
+        audioEngine.stop()
         playerContext.audioPlayingEntry?.close()
         clearQueue()
         rendererContext.clean()
