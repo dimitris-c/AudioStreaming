@@ -21,3 +21,33 @@ jobs:
         run: swift build
       - name: Run tests
         run: swift test --parallel
+
+  build-ios:
+    # swift build compiles the macOS slice only. The codec dependencies ship as
+    # xcframeworks, so linking against their iOS slices is a separate risk and
+    # is not covered by the job above.
+    name: Build for iOS
+    runs-on: macOS-latest
+    env:
+       DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build for iOS device
+        run: |
+          xcodebuild build \
+            -scheme AudioStreaming \
+            -destination 'generic/platform=iOS' \
+            -skipPackagePluginValidation
+
+  test-asan:
+    # The Ogg codec bridges are C: a ring buffer, raw pointer arithmetic, and
+    # callbacks driven by libvorbisfile/libopusfile. Address Sanitizer is what
+    # turns a silent overrun there into a failing test.
+    name: Test under Address Sanitizer
+    runs-on: macOS-latest
+    env:
+       DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run tests with ASan
+        run: swift test --sanitize=address

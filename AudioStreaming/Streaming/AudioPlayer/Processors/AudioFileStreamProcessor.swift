@@ -36,12 +36,11 @@ final class AudioFileStreamProcessor {
     private let rendererContext: AudioRendererContext
     private let outputAudioFormat: AudioStreamBasicDescription
     
-    // Add Ogg Vorbis processor
-    private lazy var oggVorbisProcessor = OggVorbisStreamProcessor(
-        playerContext: playerContext,
-        rendererContext: rendererContext,
-        outputAudioFormat: outputAudioFormat
-    )
+    // Ogg processor. Created lazily on first data, because the codec inside an
+    // Ogg container cannot be known from the file hint or Content-Type — see
+    // OggCodecSniffer.
+    private var oggProcessor: OggStreamProcessor?
+    private var oggHeadBuffer = Data()
 
     var audioFileStream: AudioFileStreamID?
     var audioConverter: AudioConverterRef?
@@ -51,11 +50,11 @@ final class AudioFileStreamProcessor {
     var currentFileFormat: String = ""
     let fileFormatsForDelayedConverterCreation: Set = ["fa4m", "f4pm"]
     
-    // Track if we're processing Ogg Vorbis
-    private var isProcessingOggVorbis: Bool = false
+    // Track if we're processing an Ogg container
+    private var isProcessingOgg: Bool = false
 
     var isFileStreamOpen: Bool {
-        audioFileStream != nil || isProcessingOggVorbis
+        audioFileStream != nil || isProcessingOgg
     }
 
     init(playerContext: AudioPlayerContext,
@@ -65,11 +64,26 @@ final class AudioFileStreamProcessor {
         self.playerContext = playerContext
         self.rendererContext = rendererContext
         self.outputAudioFormat = outputAudioFormat
-        
-        // Set up Ogg Vorbis processor callback
-        oggVorbisProcessor.processorCallback = { [weak self] effect in
+    }
+
+    /// Builds the Ogg processor for a sniffed codec and wires its callback.
+    private func makeOggProcessor(for codec: OggCodec) -> OggStreamProcessor? {
+        let decoder: any OggAudioDecoder
+        switch codec {
+        case .vorbis: decoder = VorbisFileDecoder()
+        case .opus: decoder = OpusFileDecoder()
+        case .unsupported: return nil
+        }
+        let processor = OggStreamProcessor(
+            playerContext: playerContext,
+            rendererContext: rendererContext,
+            outputAudioFormat: outputAudioFormat,
+            decoder: decoder
+        )
+        processor.processorCallback = { [weak self] effect in
             self?.fileStreamCallback?(effect)
         }
+        return processor
     }
 
     /// Opens the `AudioFileStream`
@@ -79,12 +93,14 @@ final class AudioFileStreamProcessor {
     /// - Returns: An `OSStatus` value indicating if an error occurred or not.
 
     func openFileStream(with fileHint: AudioFileTypeID) -> OSStatus {
-        // Check if this is an Ogg Vorbis file
+        // Ogg container: defer decoder selection until the first page arrives.
         if fileHint == kAudioFileOggType {
-            isProcessingOggVorbis = true
+            isProcessingOgg = true
+            oggProcessor = nil
+            oggHeadBuffer.removeAll(keepingCapacity: true)
             return noErr
         } else {
-            isProcessingOggVorbis = false
+            isProcessingOgg = false
             let data = UnsafeMutableRawPointer.from(object: self)
             return AudioFileStreamOpen(data, _propertyListenerProc, _propertyPacketsProc, fileHint, &audioFileStream)
         }
@@ -92,9 +108,11 @@ final class AudioFileStreamProcessor {
 
     /// Closes the currently open `AudioFileStream` instance, if opened.
     func closeFileStreamIfNeeded() {
-        if isProcessingOggVorbis {
-            isProcessingOggVorbis = false
-            oggVorbisProcessor.cleanup()
+        if isProcessingOgg {
+            isProcessingOgg = false
+            oggProcessor?.cleanup()
+            oggProcessor = nil
+            oggHeadBuffer.removeAll(keepingCapacity: false)
             return
         }
         
@@ -114,9 +132,36 @@ final class AudioFileStreamProcessor {
     func parseFileStreamBytes(data: Data) -> OSStatus {
         guard !data.isEmpty else { return 0 }
         
-        // Check if we're processing Ogg Vorbis
-        if isProcessingOggVorbis {
-            return oggVorbisProcessor.parseOggVorbisData(data: data)
+        // Ogg: pick the decoder from the first page, then forward everything.
+        if isProcessingOgg {
+            if let processor = oggProcessor {
+                return processor.parseOggData(data: data)
+            }
+
+            oggHeadBuffer.append(data)
+            guard let codec = OggCodecSniffer.sniff(oggHeadBuffer) else {
+                // Not enough bytes to decide yet. Guard against a stream that
+                // never resolves rather than buffering without bound.
+                if oggHeadBuffer.count > OggCodecSniffer.maxHeaderLength {
+                    Logger.debug("Ogg codec undetermined after \(oggHeadBuffer.count) bytes",
+                                 category: .generic)
+                    isProcessingOgg = false
+                    return OSStatus(kAudioFileStreamError_UnsupportedFileType)
+                }
+                return noErr
+            }
+
+            guard let processor = makeOggProcessor(for: codec) else {
+                Logger.debug("Unsupported codec in Ogg container", category: .generic)
+                isProcessingOgg = false
+                return OSStatus(kAudioFileStreamError_UnsupportedDataFormat)
+            }
+
+            oggProcessor = processor
+            // Replay the buffered head so the decoder sees the stream from byte 0.
+            let buffered = oggHeadBuffer
+            oggHeadBuffer.removeAll(keepingCapacity: false)
+            return processor.parseOggData(data: buffered)
         }
         
         guard let stream = audioFileStream else { return 0 }
@@ -137,8 +182,8 @@ final class AudioFileStreamProcessor {
     ///
     /// - Returns: An `OSStatus` value indicating if an error occurred or not.
     func flushRemainingPackets() -> OSStatus {
-        // Ogg Vorbis doesn't need flushing (handled internally)
-        if isProcessingOggVorbis {
+        // Ogg doesn't need flushing (handled internally)
+        if isProcessingOgg {
             return noErr
         }
         
@@ -159,9 +204,9 @@ final class AudioFileStreamProcessor {
             return
         }
         
-        // If processing Ogg Vorbis, use the Ogg Vorbis processor
-        if isProcessingOggVorbis {
-            oggVorbisProcessor.processSeek()
+        // If processing Ogg, use the Ogg processor
+        if isProcessingOgg {
+            oggProcessor?.processSeek()
             return
         }
         

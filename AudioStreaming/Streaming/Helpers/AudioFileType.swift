@@ -38,6 +38,7 @@ let fileTypesFromMimeType: [String: AudioFileTypeID] =
         "video/3gp2": kAudioFile3GP2Type,
         "audio/flac": kAudioFileFLACType,
         "audio/ogg": kAudioFileOggType,
+        "audio/opus": kAudioFileOggType,
         "audio/vorbis": kAudioFileOggType,
         "application/ogg": kAudioFileOggType
     ]
@@ -66,6 +67,7 @@ let fileTypesFromFileExtension: [String: AudioFileTypeID] =
         "flac": kAudioFileFLACType,
         "ogg": kAudioFileOggType,
         "oga": kAudioFileOggType,
+        "opus": kAudioFileOggType,
     ]
 
 func audioFileType(fileExtension: String) -> AudioFileTypeID {
