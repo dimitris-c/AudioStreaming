@@ -209,7 +209,9 @@ final class AudioFileStreamProcessor {
             AudioConverterReset(converted)
         }
 
-        readingEntry.reset()
+        // seeking to the start of the data re-decodes the encoder delay, so the decoded position stays exact
+        let seeksToStart = seekByteOffset <= Int64(readingEntry.audioStreamState.dataOffset)
+        readingEntry.reset(decodedPositionExact: seeksToStart)
         readingEntry.seek(at: Int(seekByteOffset))
         rendererContext.waitingForDataAfterSeekFrameCount.write { $0 = 0 }
         playerContext.setInternalState(to: .waitingForDataAfterSeek)
@@ -429,8 +431,17 @@ final class AudioFileStreamProcessor {
         guard status == noErr else { return }
         // Use valid frames to refine duration if present
         entry.lock.lock(); defer { entry.lock.unlock() }
-        if pti.mNumberValidFrames > 0 {
+        // the property can be reported again after a seek; keep the values from the first report
+        if pti.mNumberValidFrames > 0, entry.framesState.validFrames == nil {
             entry.audioStreamState.dataPacketCount = Double(pti.mNumberValidFrames) / Double(max(1, entry.audioStreamFormat.mFramesPerPacket))
+            entry.framesState.primingFrames = Int(pti.mPrimingFrames)
+            entry.framesState.validFrames = Int(pti.mNumberValidFrames)
+            entry.framesState.remainderFrames = Int(pti.mRemainderFrames)
+            // Frames decoded before this info arrived were kept untrimmed, so the decoded position can't
+            // be used to trim the start; fall back to dropping only the padding at the end of the stream.
+            if let decoded = entry.framesState.decoded, decoded > 0 {
+                entry.framesState.decoded = nil
+            }
         }
     }
 
@@ -581,7 +592,7 @@ final class AudioFileStreamProcessor {
                     nil
                 )
 
-                framesAdded = framesToDecode
+                framesAdded = trimGaplessPadding(bufferIndex: end, framesCount: framesToDecode)
 
                 if status == AudioConvertStatus.done.rawValue {
                     fillUsedFrames(framesCount: framesAdded)
@@ -589,6 +600,12 @@ final class AudioFileStreamProcessor {
                 } else if status != 0 {
                     fileStreamCallback?(.raiseError(.codecError))
                     return
+                }
+
+                if framesAdded < framesToDecode {
+                    // dropped frames left a hole before the end of the buffer, continue right after the kept ones
+                    fillUsedFrames(framesCount: framesAdded)
+                    continue packetProcess
                 }
 
                 framesToDecode = start
@@ -611,7 +628,7 @@ final class AudioFileStreamProcessor {
                     nil
                 )
 
-                framesAdded += framesToDecode
+                framesAdded += trimGaplessPadding(bufferIndex: 0, framesCount: framesToDecode)
 
                 if status == AudioConvertStatus.done.rawValue {
                     fillUsedFrames(framesCount: framesAdded)
@@ -623,6 +640,8 @@ final class AudioFileStreamProcessor {
                     fileStreamCallback?(.raiseError(.codecError))
                     return
                 }
+                // the requested frames were all filled: account for them before decoding more
+                fillUsedFrames(framesCount: framesAdded)
             } else {
                 var framesAdded: UInt32 = 0
                 var framesToDecode: UInt32 = start - end
@@ -643,7 +662,7 @@ final class AudioFileStreamProcessor {
                     nil
                 )
 
-                framesAdded = framesToDecode
+                framesAdded = trimGaplessPadding(bufferIndex: end, framesCount: framesToDecode)
                 if status == AudioConvertStatus.done.rawValue {
                     fillUsedFrames(framesCount: framesAdded)
                     return
@@ -654,6 +673,8 @@ final class AudioFileStreamProcessor {
                     fileStreamCallback?(.raiseError(.codecError))
                     return
                 }
+                // the requested frames were all filled: account for them before decoding more
+                fillUsedFrames(framesCount: framesAdded)
             }
         }
     }
@@ -674,6 +695,70 @@ final class AudioFileStreamProcessor {
         }
         bufferList[0].mDataByteSize = framesToDecode * rendererContext.bufferContext.sizeInBytes
         bufferList[0].mNumberChannels = rendererContext.audioBuffer.mNumberChannels
+    }
+
+    /// Drops the encoder delay (priming) and padding (remainder) that decoders output for formats like
+    /// AAC and MP3, using the packet table info of the stream. Without this, consecutive entries are
+    /// separated by a short silence (about 50 ms for AAC).
+    /// Keeps the decoded frames in [priming, priming + valid) while the decoded position is exact;
+    /// after a seek, `trimTrailingGaplessPadding()` drops the padding at the end of the stream instead.
+    ///
+    /// - parameter bufferIndex: The frame index in the renderer buffer where the decoded frames start
+    /// - parameter framesCount: The number of frames decoded there
+    /// - Returns: The number of frames to keep; they are moved to `bufferIndex`
+    @inline(__always)
+    private func trimGaplessPadding(bufferIndex: UInt32, framesCount: UInt32) -> UInt32 {
+        guard framesCount > 0, let entry = playerContext.audioReadingEntry else { return framesCount }
+        entry.lock.lock()
+        let framesState = entry.framesState
+        let decodedStart = framesState.decoded
+        if let decodedStart {
+            framesState.decoded = decodedStart + Int(framesCount)
+        }
+        let primingFrames = framesState.primingFrames
+        let validFrames = framesState.validFrames
+        let sourceSampleRate = entry.audioStreamFormat.mSampleRate
+        entry.lock.unlock()
+
+        guard let decodedStart, let validFrames, sourceSampleRate > 0 else { return framesCount }
+        let ratio = outputAudioFormat.mSampleRate / sourceSampleRate
+        let (leadingFrames, keptFrames) = GaplessTrim.keptRange(
+            decodedStart: decodedStart, framesCount: Int(framesCount),
+            primingFrames: primingFrames, validFrames: validFrames, ratio: ratio
+        )
+        guard keptFrames > 0 else { return 0 }
+        if leadingFrames > 0, let mData = rendererContext.audioBuffer.mData {
+            let frameSize = Int(rendererContext.bufferContext.sizeInBytes)
+            let destination = mData + Int(bufferIndex) * frameSize
+            memmove(destination, destination + leadingFrames * frameSize, keptFrames * frameSize)
+        }
+        return UInt32(keptFrames)
+    }
+
+    /// Drops the encoder padding (remainder) at the end of the stream when `trimGaplessPadding` could not,
+    /// because the decoded position is not exact after a seek.
+    /// Must be called once all packets of the reading entry have been decoded: the padding is the
+    /// last part written to the renderer buffer then.
+    ///
+    /// - parameter entry: The entry whose stream just ended
+    func trimTrailingGaplessPadding(for entry: AudioEntry) {
+        // same lock order as the renderer: buffer first, then entry
+        rendererContext.lock.lock(); defer { rendererContext.lock.unlock() }
+        entry.lock.lock(); defer { entry.lock.unlock() }
+
+        let framesState = entry.framesState
+        let sourceSampleRate = entry.audioStreamFormat.mSampleRate
+        guard framesState.decoded == nil, framesState.remainderFrames > 0, sourceSampleRate > 0 else { return }
+        let droppedFrames = GaplessTrim.trailingFramesToDrop(
+            remainderFrames: framesState.remainderFrames,
+            ratio: outputAudioFormat.mSampleRate / sourceSampleRate,
+            notPlayedFrames: framesState.queued - framesState.played,
+            usedFrames: Int(rendererContext.bufferContext.frameUsedCount)
+        )
+        guard droppedFrames > 0 else { return }
+
+        rendererContext.bufferContext.frameUsedCount -= UInt32(droppedFrames)
+        framesState.queued -= droppedFrames
     }
 
     /// Advances the processed frames for buffer and reading entry
