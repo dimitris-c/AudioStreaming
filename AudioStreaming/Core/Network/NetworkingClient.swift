@@ -12,19 +12,104 @@ enum DataStreamError: Error {
 
 public enum NetworkError: Error, Equatable {
     case failure(Error)
-    case serverError
+    case serverError(HTTPResponseDetails)
     case missingData
+
     public static func == (lhs: NetworkError, rhs: NetworkError) -> Bool {
         switch (lhs, rhs) {
-        case (.failure, failure):
-            return true
-        case (.serverError, .serverError):
-            return true
+        case let (.failure(lhsError), .failure(rhsError)):
+            return compareErrors(lhsError, rhsError)
+        case let (.serverError(lhsDetails), .serverError(rhsDetails)):
+            return lhsDetails == rhsDetails
         case (.missingData, .missingData):
             return true
         default:
             return false
         }
+    }
+}
+
+extension NetworkError: LocalizedError {
+    public var errorDescription: String? {
+        switch self {
+        case let .failure(error):
+            let nsError = error as NSError
+            return "\(error.localizedDescription) [\(nsError.domain):\(nsError.code)]"
+        case let .serverError(details):
+            return details.localizedDescription
+        case .missingData:
+            return "Missing audio data from network stream"
+        }
+    }
+}
+
+public struct HTTPResponseDetails: Equatable, Sendable {
+    public let statusCode: Int
+    public let url: String?
+    public let contentType: String?
+    public let headers: [String: String]
+    public let bodySnippet: String?
+
+    init(response: HTTPURLResponse, bodySnippet: String? = nil) {
+        statusCode = response.statusCode
+        url = response.url?.absoluteString
+        contentType = response.value(forHTTPHeaderField: "Content-Type")
+        headers = response.allHeaderFields.reduce(into: [:]) { result, entry in
+            result[String(describing: entry.key)] = String(describing: entry.value)
+        }
+        self.bodySnippet = bodySnippet
+    }
+
+    func appendingBodySnippet(_ bodySnippet: String?) -> HTTPResponseDetails {
+        HTTPResponseDetails(
+            statusCode: statusCode,
+            url: url,
+            contentType: contentType,
+            headers: headers,
+            bodySnippet: bodySnippet ?? self.bodySnippet
+        )
+    }
+
+    private init(
+        statusCode: Int,
+        url: String?,
+        contentType: String?,
+        headers: [String: String],
+        bodySnippet: String?
+    ) {
+        self.statusCode = statusCode
+        self.url = url
+        self.contentType = contentType
+        self.headers = headers
+        self.bodySnippet = bodySnippet
+    }
+
+    public var localizedDescription: String {
+        var parts = ["HTTP server error \(statusCode)"]
+        if let contentType, !contentType.isEmpty {
+            parts.append("contentType=\(contentType)")
+        }
+        if let url, !url.isEmpty {
+            parts.append("url=\(url)")
+        }
+        if let bodySnippet, !bodySnippet.isEmpty {
+            parts.append("bodySnippet=\(bodySnippet)")
+        }
+        return parts.joined(separator: " ")
+    }
+}
+
+private func compareErrors(_ lhs: Error?, _ rhs: Error?) -> Bool {
+    switch (lhs, rhs) {
+    case (nil, nil):
+        return true
+    case let (lhs?, rhs?):
+        let lhsNSError = lhs as NSError
+        let rhsNSError = rhs as NSError
+        return lhsNSError.domain == rhsNSError.domain &&
+            lhsNSError.code == rhsNSError.code
+    default:
+        return false
     }
 }
 
