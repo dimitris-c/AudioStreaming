@@ -461,6 +461,10 @@ open class AudioPlayer {
             }
             startPlayer(resetBuffers: false)
         }
+        // A seek requested while paused was skipped by processSource; pick it up now.
+        sourceQueue.async { [weak self] in
+            self?.processSource()
+        }
     }
 
     /// Seeks the audio to the specified time.
