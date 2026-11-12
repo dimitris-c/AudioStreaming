@@ -145,8 +145,9 @@ open class AudioPlayer {
         frameFilterProcessor
     }
 
-    /// An `AVAudioFormat` object for the canonical audio stream
-    private var outputAudioFormat: AVAudioFormat = .init(commonFormat: .pcmFormatFloat32, sampleRate: 44100.0, channels: 2, interleaved: true)!
+    /// An `AVAudioFormat` object for the canonical audio stream.
+    /// Built from `configuration.outputSampleRate` in `init` and fixed for the player's lifetime.
+    private let outputAudioFormat: AVAudioFormat
 
     /// Keeps track of the player's state before being paused.
     private var stateBeforePaused: InternalState = .initial
@@ -185,7 +186,13 @@ open class AudioPlayer {
 
     public init(configuration: AudioPlayerConfiguration = .default,
                 clientCertificateProvider: ClientCertificateProvider? = nil) {
-        self.configuration = configuration.normalizeValues()
+        let normalizedConfiguration = configuration.normalizeValues()
+        self.configuration = normalizedConfiguration
+        // `normalizeValues` guarantees a positive rate, so this cannot fail.
+        outputAudioFormat = .init(commonFormat: .pcmFormatFloat32,
+                                  sampleRate: normalizedConfiguration.outputSampleRate,
+                                  channels: 2,
+                                  interleaved: true)!
         let engine = AVAudioEngine()
         audioEngine = engine
         rendererContext = AudioRendererContext(configuration: configuration, outputAudioFormat: outputAudioFormat)
