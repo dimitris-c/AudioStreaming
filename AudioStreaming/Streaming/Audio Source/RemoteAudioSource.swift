@@ -229,6 +229,9 @@ public class RemoteAudioSource: AudioStreamSource {
                 self?.parseResponseHeader(response: urlResponse)
                 task.cancel()
                 completion()
+            case let .stream(.failure(error)):
+                // Every reconnect starts with this request, so its failure must reach the retry path.
+                self?.handleFailedStreamEvent(error: error)
             default:
                 break
             }
