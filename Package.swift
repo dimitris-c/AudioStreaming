@@ -60,7 +60,9 @@ let package = Package(
             exclude: ["Info.plist", "Streaming/output"],
             resources: [
                 // Test resources for metadata stream processor tests
-                .copy("Streaming/Metadata Stream Processor/raw-audio-streams")
+                .copy("Streaming/Metadata Stream Processor/raw-audio-streams"),
+                .copy("Streaming/Mp4 Restructure/moov-at-end.m4a"),
+                .copy("Streaming/Mp4 Restructure/moov-at-start.m4a")
             ]
         )
     ]
