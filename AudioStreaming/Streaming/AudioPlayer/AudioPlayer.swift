@@ -738,7 +738,7 @@ open class AudioPlayer {
                   playingEntry != snapshot.reading
         {
             playingEntry.audioStreamState.processedDataFormat = false
-            playingEntry.reset()
+            playingEntry.reset(decodedPositionExact: false)
             if let readingEntry = snapshot.reading {
                 readingEntry.delegate = nil
                 readingEntry.close()
@@ -1098,6 +1098,8 @@ extension AudioPlayer: AudioStreamSourceDelegate {
         if flushStatus != noErr {
             Logger.debug("Failed to flush remaining packets at EOF: \(flushStatus)", category: .generic)
         }
+
+        fileStreamProcessor.trimTrailingGaplessPadding(for: readingEntry)
 
         readingEntry.lock.lock()
         readingEntry.framesState.lastFrameQueued = readingEntry.framesState.queued
