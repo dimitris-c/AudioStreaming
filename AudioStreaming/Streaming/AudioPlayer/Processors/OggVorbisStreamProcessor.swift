@@ -35,6 +35,24 @@ final class OggVorbisStreamProcessor {
     
     private let vfDecoder = VorbisFileDecoder()
     private var isInitialized = false
+
+    /// Size of the decoder's ring buffer. Until the decoder opens, it retains every byte.
+    private let streamBufferCapacity = 2_097_152
+    /// Set once an error was reported for the current entry; further input is dropped
+    private var streamRejected = false
+
+    /// First packets of Ogg codecs that libvorbisfile cannot decode: Opus, FLAC, Speex
+    private static let unsupportedFirstPackets: [[UInt8]] = [
+        Array("OpusHead".utf8),
+        [0x7F] + Array("FLAC".utf8),
+        Array("Speex   ".utf8),
+    ]
+    /// The longest first page header that still shows its first packet's magic:
+    /// 27 header bytes, up to 255 lacing values, 8 magic bytes
+    private let streamHeadLength = 27 + 255 + 8
+    /// The first bytes of the stream, until its first packet is checked
+    private var streamHead = Data()
+    private var streamHeadChecked = false
     
     // Audio converter for format conversion
     private var audioConverter: AVAudioConverter?
@@ -79,22 +97,42 @@ final class OggVorbisStreamProcessor {
         vfDecoder.destroy()
         isInitialized = false
         totalFramesProcessed = 0
+        streamRejected = false
+        streamHead = Data()
+        streamHeadChecked = false
     }
     
     // MARK: - Data Processing
     
     /// Parse Ogg Vorbis data
-    /// - Parameter data: The Ogg Vorbis data to parse
+    /// - Parameters:
+    ///   - data: The Ogg Vorbis data to parse
+    ///   - endOfInput: Whether the source has ended, so the decoder opens and drains whatever is buffered
     /// - Returns: An OSStatus indicating success or failure
-    func parseOggVorbisData(data: Data) -> OSStatus {
+    func parseOggVorbisData(data: Data, endOfInput: Bool = false) -> OSStatus {
         guard let entry = playerContext.audioReadingEntry else { return 0 }
+        guard !streamRejected else { return noErr }
         
         dataChunkCount += 1
         
         if !isInitialized {
-            vfDecoder.create(capacityBytes: 2_097_152)
+            vfDecoder.create(capacityBytes: streamBufferCapacity)
             isInitialized = true
             totalFramesProcessed = 0
+        }
+
+        if !entry.audioStreamState.processedDataFormat, startsWithUnsupportedCodec(data) {
+            Logger.error("Ogg stream carries a codec other than Vorbis", category: .audioRendering)
+            streamRejected = true
+            return kAudioFileStreamError_UnsupportedDataFormat
+        }
+
+        if !entry.audioStreamState.processedDataFormat,
+           vfDecoder.availableBytes() + data.count > streamBufferCapacity {
+            // The headers outgrow the ring buffer; a push would block this queue forever.
+            Logger.error("Vorbis headers exceed the decoder buffer", category: .audioRendering)
+            streamRejected = true
+            return kAudioFileStreamError_InvalidFile
         }
         
         vfDecoder.push(data)
@@ -102,7 +140,7 @@ final class OggVorbisStreamProcessor {
         if !entry.audioStreamState.processedDataFormat {
             let availableBytes = vfDecoder.availableBytes()
             
-            if availableBytes >= 16384 {
+            if availableBytes >= 16384 || endOfInput {
                 do {
                     try vfDecoder.openIfNeeded()
                     
@@ -114,6 +152,9 @@ final class OggVorbisStreamProcessor {
                         }
                     }
                 } catch {
+                    if endOfInput {
+                        reportUndecodableStream(entry: entry)
+                    }
                     return noErr
                 }
             } else {
@@ -200,7 +241,8 @@ final class OggVorbisStreamProcessor {
             }
             
             let availableBytes = vfDecoder.availableBytes()
-            if availableBytes < 4096 {
+            // At the end of input libvorbisfile may still hold the last page in its own buffer
+            if availableBytes < 4096 && !endOfInput {
                 consecutiveNoFrames += 1
                 if consecutiveNoFrames >= 3 {
                     break decodeLoop
@@ -227,6 +269,52 @@ final class OggVorbisStreamProcessor {
         return noErr
     }
     
+    /// Whether the stream starts with an Ogg page whose first packet belongs to a codec
+    /// libvorbisfile cannot decode. Collects the stream's first bytes until that is known.
+    /// Other starts, such as an ID3 tag before the first page or an Ogg Skeleton stream,
+    /// are left to libvorbisfile, which plays them.
+    private func startsWithUnsupportedCodec(_ data: Data) -> Bool {
+        guard !streamHeadChecked else { return false }
+        streamHead.append(data.prefix(streamHeadLength - streamHead.count))
+        let head = [UInt8](streamHead)
+        guard head.count >= 27 else { return false }
+        guard head.starts(with: Array("OggS".utf8)) else {
+            streamHeadChecked = true
+            return false
+        }
+        let packetStart = 27 + Int(head[26])
+        guard head.count >= packetStart + 8 else { return false }
+        streamHeadChecked = true
+        let packet = head[packetStart...]
+        return Self.unsupportedFirstPackets.contains { packet.starts(with: $0) }
+    }
+
+    /// Opens the decoder if that has not happened yet and decodes everything still buffered
+    /// - Returns: An OSStatus indicating success or failure
+    func processEndOfInput() -> OSStatus {
+        guard !streamRejected, let entry = playerContext.audioReadingEntry else { return noErr }
+        vfDecoder.markEOF()
+        let status = parseOggVorbisData(data: Data(), endOfInput: true)
+
+        // Without a seek function libvorbisfile cannot count the stream's samples, so the
+        // duration so far is a bitrate estimate. Now the real frame count is known.
+        if vfDecoder.framesDecoded > 0 {
+            entry.lock.lock()
+            entry.audioStreamState.dataPacketOffset = UInt64(vfDecoder.framesDecoded)
+            entry.lock.unlock()
+        }
+        return status
+    }
+
+    /// Reports once that the current entry cannot be decoded
+    private func reportUndecodableStream(entry: AudioEntry) {
+        Logger.error("Failed to open Vorbis stream at end of input", category: .audioRendering)
+        streamRejected = true
+        // Same condition AudioPlayer applies to parse errors: only the playing entry reports
+        guard playerContext.audioPlayingEntry === entry else { return }
+        processorCallback?(.raiseError(.streamParseBytesFailure(.invalidFile)))
+    }
+
     /// Decode audio and fill the renderer buffer
     /// - Returns: noErr if frames were decoded, otherwise an error/no-data status
     private func decodeAndFillBuffer() -> OSStatus {

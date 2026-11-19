@@ -23,6 +23,10 @@ final class VorbisFileDecoder {
     // Silent frame generation
     private var silentFrameBuffer: UnsafeMutablePointer<Float>?
     private var silentFrameSize = 0
+    /// Set by `markEOF()`; from then on `readFrames` reports the end instead of silence
+    private var endOfStream = false
+    /// Frames libvorbisfile returned since the stream was created, without generated silence
+    private(set) var framesDecoded = 0
     
     /// Create the stream buffer with specified capacity
     /// - Parameter capacityBytes: Size of the ring buffer in bytes
@@ -42,6 +46,8 @@ final class VorbisFileDecoder {
         if let stream = stream { VFStreamDestroy(stream) }
         vf = nil
         stream = nil
+        endOfStream = false
+        framesDecoded = 0
         
         if let silentFrameBuffer = silentFrameBuffer {
             silentFrameBuffer.deallocate()
@@ -86,6 +92,7 @@ final class VorbisFileDecoder {
         if let stream = stream { 
             VFStreamMarkEOF(stream)
         }
+        endOfStream = true
     }
     
     /// Try to open the Vorbis file if enough data is available
@@ -166,9 +173,10 @@ final class VorbisFileDecoder {
         var pcmChannels: UnsafeMutablePointer<UnsafeMutablePointer<Float>?>?
         let framesRead = Int(VFReadFloat(vf, &pcmChannels, Int32(maxFrames)))
         
-        // If no frames were read, generate silent frames instead of returning 0
+        // If no frames were read, generate silent frames instead of returning 0,
+        // unless the input has ended and the decoder is drained
         if framesRead <= 0 {
-            return generateSilentFrames(into: buffer, frameCount: frameCount)
+            return endOfStream ? framesRead : generateSilentFrames(into: buffer, frameCount: frameCount)
         }
         
         // Copy deinterleaved data directly (no conversion needed!)
@@ -182,6 +190,7 @@ final class VorbisFileDecoder {
             let output = floatChannelData[ch]
             memcpy(output, input, framesRead * MemoryLayout<Float>.stride)
         }
+        framesDecoded += framesRead
         
         return framesRead
     }

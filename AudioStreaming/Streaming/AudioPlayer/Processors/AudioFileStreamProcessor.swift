@@ -137,9 +137,9 @@ final class AudioFileStreamProcessor {
     ///
     /// - Returns: An `OSStatus` value indicating if an error occurred or not.
     func flushRemainingPackets() -> OSStatus {
-        // Ogg Vorbis doesn't need flushing (handled internally)
+        // Ogg Vorbis opens the decoder if needed and decodes what is still buffered
         if isProcessingOggVorbis {
-            return noErr
+            return oggVorbisProcessor.processEndOfInput()
         }
         
         guard let stream = audioFileStream else { return noErr }
