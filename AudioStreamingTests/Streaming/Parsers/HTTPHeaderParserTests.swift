@@ -71,4 +71,28 @@ class HTTPHeaderParserTests: XCTestCase {
         XCTAssertEqual(output!.typeId, kAudioFileMP3Type)
         XCTAssertEqual(output!.metadataStep, 16000)
     }
+
+    func testM4bContentTypesAreParsedAsMp4() throws {
+        let parser = HTTPHeaderParser()
+
+        for contentType in ["audio/m4b", "audio/x-m4b"] {
+            let headers: [String: String] =
+                [HeaderField.contentLength: "1000",
+                 HeaderField.contentType: contentType,
+                 HeaderField.acceptRanges: "bytes"]
+            let httpURLResponse = HTTPURLResponse(url: URL(string: "www.google.com")!,
+                                                  statusCode: 200,
+                                                  httpVersion: "",
+                                                  headerFields: headers)
+
+            let output = parser.parse(input: httpURLResponse!)
+
+            XCTAssertEqual(output?.typeId, kAudioFileM4AType, contentType)
+            XCTAssertEqual(output?.isMp4, true, contentType)
+        }
+    }
+
+    func testM4bFileExtensionIsMp4() throws {
+        XCTAssertEqual(audioFileType(fileExtension: "m4b"), kAudioFileM4AType)
+    }
 }
