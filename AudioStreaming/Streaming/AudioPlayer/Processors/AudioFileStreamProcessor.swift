@@ -587,7 +587,7 @@ final class AudioFileStreamProcessor {
                     fillUsedFrames(framesCount: framesAdded)
                     return
                 } else if status != 0 {
-                    fileStreamCallback?(.raiseError(.codecError))
+                    raiseCodecError(resetting: converter)
                     return
                 }
 
@@ -620,7 +620,7 @@ final class AudioFileStreamProcessor {
                     fillUsedFrames(framesCount: framesAdded)
                     continue packetProcess
                 } else if status != 0 {
-                    fileStreamCallback?(.raiseError(.codecError))
+                    raiseCodecError(resetting: converter)
                     return
                 }
             } else {
@@ -651,11 +651,22 @@ final class AudioFileStreamProcessor {
                     fillUsedFrames(framesCount: framesAdded)
                     continue packetProcess
                 } else if status != 0 {
-                    fileStreamCallback?(.raiseError(.codecError))
+                    raiseCodecError(resetting: converter)
                     return
                 }
             }
         }
+    }
+
+    /// Resets the converter and raises `.codecError`.
+    ///
+    /// A failed fill can leave the converter holding a span of `inInputData`, which is freed once the
+    /// packets proc returns; resetting drops it, as `processSeek()` does.
+    ///
+    /// - parameter converter: The `AudioConverterRef` that failed.
+    private func raiseCodecError(resetting converter: AudioConverterRef) {
+        AudioConverterReset(converter)
+        fileStreamCallback?(.raiseError(.codecError))
     }
 
     /// Fills the `AudioBuffer` with data as required
