@@ -268,26 +268,42 @@ final class Mp4Restructure {
     }
 
     /// logic taken from qt-faststart.c over at ffmpeg
-    /// https://github.com/FFmpeg/FFmpeg/blob/b47b2c5b912558b639c8542993e1256f9c69e675/tools/qt-faststart.c
+    /// https://github.com/FFmpeg/FFmpeg/blob/master/tools/qt-faststart.c
     private func doRestructureMoov(data: Data) throws -> (Data, Int) {
         var moovAtomSize: Int = 0
         var moovAtomType: Int = 0
         var originalData = ByteBuffer(data: data)
         var offset: Int = 0
         // do search for moov within the new data
-        while offset < originalData.length {
+        while offset + Atoms.atomPreampleSize <= originalData.length {
+            // other atoms (e.g. free, udta) can sit between mdat and moov: read each header at its own offset
+            originalData.offset = offset
             moovAtomSize = Int(try originalData.getInteger() as UInt32)
             moovAtomType = Int(try originalData.getInteger() as UInt32)
+            if moovAtomSize == 1 {
+                // 64-bit size follows the type
+                guard offset + 2 * Atoms.atomPreampleSize <= originalData.length else { break }
+                let extendedSize: UInt64 = try originalData.getInteger()
+                guard extendedSize <= UInt64(Int.max) else { break }
+                moovAtomSize = Int(extendedSize)
+            }
 
             if moovAtomType == Atoms.moov {
                 break
             }
+            // a size smaller than the header is malformed and would never advance;
+            // one past the end of the data means moov can't follow
+            guard moovAtomSize >= Atoms.atomPreampleSize, moovAtomSize <= originalData.length - offset else { break }
             offset += moovAtomSize
         }
 
         // error if we couldn't find an moov type
         guard moovAtomType == Atoms.moov else {
             throw Mp4RestructureError.missingMoovAtom
+        }
+        // the cmov check below reads past the moov header
+        guard moovAtomSize >= 16 else {
+            throw Mp4RestructureError.invalidMoovAtom
         }
 
         originalData.offset = offset
