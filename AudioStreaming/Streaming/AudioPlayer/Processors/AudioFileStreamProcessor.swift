@@ -54,6 +54,12 @@ final class AudioFileStreamProcessor {
     // Track if we're processing Ogg Vorbis
     private var isProcessingOggVorbis: Bool = false
 
+    private var fileHint: AudioFileTypeID = 0
+    /// The stream byte offset of the next data passed to the parser
+    private var parserByteOffset: Int64 = 0
+    /// Set once the parser rejected the trailing data after the audio of an MP4 stream
+    private var ignoresTrailingData: Bool = false
+
     var isFileStreamOpen: Bool {
         audioFileStream != nil || isProcessingOggVorbis
     }
@@ -85,6 +91,9 @@ final class AudioFileStreamProcessor {
             return noErr
         } else {
             isProcessingOggVorbis = false
+            self.fileHint = fileHint
+            parserByteOffset = 0
+            ignoresTrailingData = false
             let data = UnsafeMutableRawPointer.from(object: self)
             return AudioFileStreamOpen(data, _propertyListenerProc, _propertyPacketsProc, fileHint, &audioFileStream)
         }
@@ -120,10 +129,42 @@ final class AudioFileStreamProcessor {
         }
         
         guard let stream = audioFileStream else { return 0 }
+        guard !ignoresTrailingData else { return noErr }
+        parserByteOffset += Int64(data.count)
         let flags: AudioFileStreamParseFlags = discontinuous ? .discontinuity : .init()
-        return data.withUnsafeBytes { buffer -> OSStatus in
+        let status = data.withUnsafeBytes { buffer -> OSStatus in
             AudioFileStreamParseBytes(stream, UInt32(buffer.count), buffer.baseAddress, flags)
         }
+        if status != noErr, isParsedDataPastMp4AudioData() {
+            // Some files carry trailing padding after the mdat atom (e.g. zero bytes left by tag editors),
+            // which the parser rejects although all audio packets have been parsed already.
+            Logger.debug("Ignoring data after the end of the mp4 audio data: \(status)", category: .generic)
+            ignoresTrailingData = true
+            return noErr
+        }
+        return status
+    }
+
+    private func isParsedDataPastMp4AudioData() -> Bool {
+        guard fileHint == kAudioFileM4AType || fileHint == kAudioFileMPEG4Type,
+              let readingEntry = playerContext.audioReadingEntry
+        else { return false }
+        readingEntry.lock.lock()
+        let streamState = readingEntry.audioStreamState
+        let dataOffset = streamState.dataOffset
+        let dataByteCount = streamState.dataByteCount
+        readingEntry.lock.unlock()
+        return Self.isPastMp4AudioData(byteOffset: parserByteOffset, dataOffset: dataOffset, dataByteCount: dataByteCount)
+    }
+
+    /// Whether the stream reached the end of the audio data of an MP4 stream
+    ///
+    /// - parameter byteOffset: The stream byte offset up to which data has been passed to the parser
+    /// - parameter dataOffset: The stream byte offset of the audio data
+    /// - parameter dataByteCount: The size of the audio data, if known
+    static func isPastMp4AudioData(byteOffset: Int64, dataOffset: UInt64, dataByteCount: UInt64?) -> Bool {
+        guard dataOffset > 0, let dataByteCount, dataByteCount > 0 else { return false }
+        return byteOffset > Int64(dataOffset + dataByteCount)
     }
     
     /// Flushes any remaining packets from the AudioFileStream parser.
@@ -138,7 +179,7 @@ final class AudioFileStreamProcessor {
     /// - Returns: An `OSStatus` value indicating if an error occurred or not.
     func flushRemainingPackets() -> OSStatus {
         // Ogg Vorbis doesn't need flushing (handled internally)
-        if isProcessingOggVorbis {
+        if isProcessingOggVorbis || ignoresTrailingData {
             return noErr
         }
         
@@ -211,6 +252,8 @@ final class AudioFileStreamProcessor {
 
         readingEntry.reset()
         readingEntry.seek(at: Int(seekByteOffset))
+        parserByteOffset = seekByteOffset
+        ignoresTrailingData = false
         rendererContext.waitingForDataAfterSeekFrameCount.write { $0 = 0 }
         playerContext.setInternalState(to: .waitingForDataAfterSeek)
         rendererContext.resetBuffers()
