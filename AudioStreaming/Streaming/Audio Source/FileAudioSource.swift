@@ -128,8 +128,10 @@ final class FileAudioSource: NSObject, CoreAudioStreamSource {
                             break
                         case .optimized:
                             mp4IsAlreadyOptimized = true
+                            // The probe buffer holds every byte read so far, not just this chunk
+                            let probedData = mp4ProbeBuffer
                             mp4ProbeBuffer = Data()
-                            delegate?.dataAvailable(source: self, data: data)
+                            delegate?.dataAvailable(source: self, data: probedData)
                         case let .needsRestructure(moovOffset):
                             mp4ProbeBuffer = Data()
                             try performMp4Restructure(inputStream: inputStream, moovOffset: moovOffset)

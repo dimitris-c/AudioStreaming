@@ -59,6 +59,8 @@ let package = Package(
             path: "AudioStreamingTests",
             exclude: ["Info.plist", "Streaming/output"],
             resources: [
+                // MP4 fixture for the FileAudioSource playback test
+                .copy("Streaming/Audio Source/faststart-free-before-moov.m4a"),
                 // Test resources for metadata stream processor tests
                 .copy("Streaming/Metadata Stream Processor/raw-audio-streams")
             ]
