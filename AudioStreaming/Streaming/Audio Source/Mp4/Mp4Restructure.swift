@@ -211,10 +211,16 @@ final class Mp4Restructure {
                     foundMoov = true
                 case Atoms.mdat:
                     foundMdat = true
+                    // The mdat header carries its size, so the moov offset is known without buffering the whole mdat.
+                    if ftyp != nil, !foundMoov {
+                        atoms.append(MP4Atom(type: atomType, size: atomSize, offset: atomOffset))
+                        Logger.debug("🕵️ detected a non-optimized mp4 (header-only observation)", category: .generic)
+                        return .needsRestructure(moovOffset: atomOffset + atomSize)
+                    }
                 default:
                     break
                 }
-                
+
                 if ftyp != nil {
                     if foundMoov && !foundMdat {
                         Logger.debug("🕵️ detected an optimized mp4 (header-only observation)", category: .generic)
