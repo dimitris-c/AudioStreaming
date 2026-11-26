@@ -21,7 +21,7 @@ extension AVAudioUnit {
                     completion(.failure(error))
                     return
                 }
-                completion(.failure(AudioPlayerError.audioSystemError(.playerNotFound)))
+                completion(.failure(AudioPlayerError.audioSystemError(.playerNotFound(nil))))
                 return
             }
             completion(.success(audioUnit))

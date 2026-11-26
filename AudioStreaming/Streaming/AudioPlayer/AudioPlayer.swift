@@ -287,7 +287,7 @@ open class AudioPlayer {
             do {
                 try self.startEngineIfNeeded()
             } catch {
-                self.raiseUnexpected(error: .audioSystemError(.engineFailure))
+                self.raiseUnexpected(error: .audioSystemError(.engineFailure(.init(error: error))))
             }
         }
 
@@ -306,7 +306,7 @@ open class AudioPlayer {
             do {
                 try self.startEngineIfNeeded()
             } catch {
-                self.raiseUnexpected(error: .audioSystemError(.engineFailure))
+                self.raiseUnexpected(error: .audioSystemError(.engineFailure(nil)))
             }
         }
 
@@ -587,7 +587,7 @@ open class AudioPlayer {
                 self.playerRenderProcessor.attachCallback(on: unit, audioFormat: self.outputAudioFormat)
             case let .failure(error):
                 assertionFailure("couldn't create player unit: \(error)")
-                self.raiseUnexpected(error: .audioSystemError(.playerNotFound))
+                self.raiseUnexpected(error: .audioSystemError(.playerNotFound(.init(error: error))))
             }
         }
     }
@@ -714,7 +714,7 @@ open class AudioPlayer {
             try player.auAudioUnit.startHardware()
         } catch {
             stopEngine(reason: .error)
-            raiseUnexpected(error: .audioSystemError(.playerStartError))
+            raiseUnexpected(error: .audioSystemError(.playerStartError(.init(error: error))))
         }
     }
 
@@ -1068,7 +1068,11 @@ extension AudioPlayer: AudioStreamSourceDelegate {
 
     public func errorOccurred(source: CoreAudioStreamSource, error: Error) {
         guard let entry = playerContext.audioReadingEntry, entry.has(same: source) else { return }
-        raiseUnexpected(error: .networkError(.failure(error)))
+        if let networkError = error as? NetworkError {
+            raiseUnexpected(error: .networkError(networkError))
+        } else {
+            raiseUnexpected(error: .networkError(.failure(error)))
+        }
     }
 
     public func endOfFileOccurred(source: CoreAudioStreamSource) {
