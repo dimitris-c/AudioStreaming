@@ -61,6 +61,8 @@ let package = Package(
             resources: [
                 // MP4 fixture for the FileAudioSource playback test
                 .copy("Streaming/Audio Source/faststart-free-before-moov.m4a"),
+                // Ogg Opus / Vorbis fixtures for the codec tests
+                .copy("Codecs/ogg-fixtures"),
                 // Test resources for metadata stream processor tests
                 .copy("Streaming/Metadata Stream Processor/raw-audio-streams")
             ]

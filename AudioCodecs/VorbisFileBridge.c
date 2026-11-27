@@ -233,8 +233,25 @@ int VFOpen(VFStreamRef sr, VFFileRef *out_vf) {
     cbs.close_func = close_cb;
     cbs.tell_func = tell_cb;
     
+    // A failed open is normal while the headers are still arriving, but libvorbisfile has
+    // consumed the bytes it read. Give them back so the next attempt starts at the
+    // beginning of the stream again. VorbisFileDecoder holds its lock across this call and
+    // around every VFStreamPush, so nothing overwrote the consumed region meanwhile.
+    pthread_mutex_lock(&s->m);
+    long long start_pos = s->pos;
+    pthread_mutex_unlock(&s->m);
+
     int rc = ov_open_callbacks((void *)s, vf, NULL, 0, cbs);
-    if (rc < 0) { free(vf); return rc; }
+    if (rc < 0) {
+        pthread_mutex_lock(&s->m);
+        size_t consumed = (size_t)(s->pos - start_pos);
+        s->head = (s->head + s->cap - consumed) % s->cap;
+        s->size += consumed;
+        s->pos = start_pos;
+        pthread_mutex_unlock(&s->m);
+        free(vf);
+        return rc;
+    }
     
     *out_vf = (VFFileRef)vf;
     return 0;
