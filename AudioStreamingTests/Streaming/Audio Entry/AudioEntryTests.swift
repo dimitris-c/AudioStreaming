@@ -8,6 +8,14 @@ import XCTest
 @testable import AudioStreaming
 
 class AudioEntryTests: XCTestCase {
+    func test_Reset_Marks_Decoded_Position_Exact_Only_When_Asked() {
+        let entry = audioEntry(length: 100)
+        entry.reset()
+        XCTAssertEqual(entry.framesState.decoded, 0)
+        entry.reset(decodedPositionExact: false)
+        XCTAssertNil(entry.framesState.decoded)
+    }
+
     func test_AudioDataLengthBytes_Is_Zero_When_DataOffset_Exceeds_Length() {
         // a live stream can report a length smaller than the parsed header offset
         let entry = audioEntry(length: 100)
